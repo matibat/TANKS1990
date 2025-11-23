@@ -27,6 +27,10 @@ var is_active: bool = true
 
 const TILE_SIZE: int = 16
 
+# Game bounds (matches window size)
+static var game_bounds_min: Vector2 = Vector2(0, 0)
+static var game_bounds_max: Vector2 = Vector2(832, 832)
+
 func _ready() -> void:
 	_setup_collision()
 	area_entered.connect(_on_area_entered)
@@ -125,10 +129,14 @@ func _destroy() -> void:
 	# Don't queue_free - let BulletManager handle recycling
 
 func _is_out_of_bounds() -> bool:
-	# Check against game bounds (26x26 tiles = 416x416 pixels)
-	var bounds_size = 26 * TILE_SIZE
-	return global_position.x < 0 or global_position.x > bounds_size or \
-		   global_position.y < 0 or global_position.y > bounds_size
+	# Check against game bounds
+	# PlayArea in main scene: 800x800 pixels (offset 16 to 816)
+	# Using 832 for full screen bounds to account for edges
+	var bounds_min = Vector2(0, 0)
+	var bounds_max = Vector2(832, 832)
+	
+	return global_position.x < bounds_min.x or global_position.x > bounds_max.x or \
+		   global_position.y < bounds_min.y or global_position.y > bounds_max.y
 
 func _update_sprite_rotation() -> void:
 	if not sprite:
