@@ -50,7 +50,11 @@ func _ready() -> void:
 		_initialize_patrol()
 
 func _physics_process(delta: float) -> void:
-	if not tank or tank.current_state == Tank.State.DYING:
+	if not tank:
+		return
+	
+	# Skip AI while spawning or dying
+	if tank.current_state == Tank.State.DYING or tank.current_state == Tank.State.SPAWNING:
 		return
 	
 	decision_timer += delta

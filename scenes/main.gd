@@ -27,6 +27,11 @@ func _ready() -> void:
 	
 	print("Main scene ready - Player tank and enemy spawner initialized")
 
+func _exit_tree() -> void:
+	# Unsubscribe from events to prevent leaks
+	if EventBus:
+		EventBus.unsubscribe("TankSpawned", _on_enemy_tank_spawned)
+
 func _process(_delta: float) -> void:
 	if player_tank and debug_label:
 		var state_name = Tank.State.keys()[player_tank.current_state]

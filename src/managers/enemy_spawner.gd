@@ -95,6 +95,7 @@ func _try_spawn_enemy() -> void:
 	enemy.tank_type = enemy_type
 	enemy.is_player = false
 	enemy.tank_id = enemies_spawned + 1000  # Offset to avoid collision with player
+	enemy.invulnerability_duration = 1.0  # Shorter spawn protection for enemies
 	
 	# Configure based on type
 	match enemy_type:
@@ -118,6 +119,10 @@ func _try_spawn_enemy() -> void:
 	get_parent().add_child(enemy)
 	enemy.add_to_group("tanks")
 	enemy.add_to_group("enemies")
+	
+	# Reduce spawn time for enemies
+	enemy.spawn_timer = 0.5  # Faster spawn for enemies
+	
 	active_enemies.append(enemy)
 	enemies_spawned += 1
 	
