@@ -6,8 +6,8 @@
 
 ## Current Status
 
-📋 **Phase:** Phase 2 Complete ✅ (60/60 tests passing)  
-🚀 **Next:** Phase 3 - Bullet System & Collision
+📋 **Phase:** Phase 3 Complete ✅ (73/73 tests passing)  
+🚀 **Next:** Phase 4 - Terrain & Collision Detection
 
 ---
 
@@ -49,6 +49,7 @@
 ### Phase 2: Tank Movement & Controls ✅ (Completed Nov 23, 2025)
 
 **Deliverables:**
+
 - ✅ Tank entity class with CharacterBody2D physics
 - ✅ 4-directional movement system
 - ✅ State machine (Spawning, Idle, Moving, Shooting, Dying, Invulnerable)
@@ -61,6 +62,7 @@
 - ✅ 17 new BDD tests for tank behavior (100% passing)
 
 **Test Coverage:**
+
 - Tank Movement: 5 tests (directional movement, velocity, event emission)
 - Tank Combat: 4 tests (fire cooldown, bullet events)
 - Tank Health: 3 tests (damage, death, invulnerability)
@@ -68,25 +70,55 @@
 - Tank Speed: 3 tests (type-based speed variations)
 
 **Key Features:**
+
 - Event-driven architecture: TankMovedEvent, BulletFiredEvent, TankDestroyedEvent
 - Physics-based movement with move_and_slide()
 - Configurable tank parameters (@export vars)
 - Score values per tank type (100-400 points)
 - Level-based upgrades for player tank (0-3)
 
+### Phase 3: Bullet System & Collision ✅ (Completed Nov 23, 2025)
+
+**Deliverables:**
+- ✅ Bullet entity (Area2D) with directional movement
+- ✅ Bullet level system (Normal, Enhanced, Super)
+- ✅ Speed variations per level (200/250/300)
+- ✅ Penetration system (1-3 targets per level)
+- ✅ Steel destruction capability (Super bullets only)
+- ✅ Bullet-tank collision detection
+- ✅ Bullet-bullet collision (destroy each other)
+- ✅ Out-of-bounds detection and cleanup
+- ✅ BulletManager with object pooling (20 bullet pool)
+- ✅ EventBus integration for bullet spawning
+- ✅ Max 2 bullets per tank limit enforcement
+- ✅ 13 new BDD tests for bullets (100% passing)
+
+**Test Coverage:**
+- Bullet Movement: 3 tests (directional movement, out of bounds)
+- Bullet Levels: 3 tests (Normal/Enhanced/Super stats)
+- Bullet Collision: 4 tests (tank damage, friendly fire, penetration)
+- Bullet Manager: 4 tests (pooling, EventBus integration, limits)
+
+**Key Features:**
+- Object pooling for performance (reuse bullets)
+- EventBus-driven: Listens to BulletFiredEvent
+- Level-based bonuses (speed, penetration, steel destruction)
+- Collision layers: Bullets on layer 4, detect tanks (1) & terrain (2)
+- Automatic pool return on bullet destruction
+
 ---
 
 ## Remaining Work
 
-### Phase 3: Bullet System & Collision
+### Phase 4: Terrain & Collision Detection
 
-- [ ] Bullet entity with physics
-- [ ] Bullet-tank collision detection
-- [ ] Bullet-terrain collision & destruction
-- [ ] Bullet pooling system
-- [ ] Max bullets per tank limit
+- [ ] TileMap terrain system (26x26 grid)
+- [ ] 5 tile types (Brick, Steel, Water, Forest, Ice)
+- [ ] Destructible terrain (brick walls)
+- [ ] Tank-terrain collision
+- [ ] Bullet-terrain interaction
 
-### Phase 4: Core Gameplay (Continued)
+### Phase 5: Core Gameplay (Continued)
 
 - [ ] Enemy AI (4 types)
 - [ ] Terrain system (5 tile types)

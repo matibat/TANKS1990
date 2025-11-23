@@ -28,6 +28,9 @@ class TestStartRecording:
 	func before_each():
 		event_bus = EventBus
 		event_bus.clear_all_listeners()
+		# Ensure clean state
+		if event_bus.is_recording:
+			event_bus.stop_recording()
 	
 	func test_given_game_not_recording_when_start_recording_then_recording_flag_set():
 		# Given
