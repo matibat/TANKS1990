@@ -2,7 +2,7 @@ extends GutTest
 ## Tests collision shape alignment with visual elements
 
 var main_scene: PackedScene
-var test_instance: Node2D
+var test_instance: Node
 
 func before_each():
 	main_scene = load("res://scenes/main.tscn")

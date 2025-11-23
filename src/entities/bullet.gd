@@ -7,6 +7,7 @@ signal hit_terrain(position: Vector2)
 signal destroyed()
 
 enum BulletLevel { NORMAL = 1, ENHANCED = 2, SUPER = 3 }
+enum OwnerType { PLAYER, ENEMY }
 
 # Configuration
 @export var speed: float = 200.0
@@ -17,6 +18,7 @@ enum BulletLevel { NORMAL = 1, ENHANCED = 2, SUPER = 3 }
 # State
 var direction: Vector2 = Vector2.UP
 var owner_tank_id: int = -1
+var owner_type: OwnerType = OwnerType.ENEMY
 var bullet_id: int = 0
 var targets_hit: int = 0
 var is_active: bool = true
@@ -62,11 +64,12 @@ func _physics_process(delta: float) -> void:
 	if _is_out_of_bounds():
 		_destroy()
 
-func initialize(start_pos: Vector2, dir: Vector2, tank_id: int, bullet_level: BulletLevel = BulletLevel.NORMAL) -> void:
+func initialize(start_pos: Vector2, dir: Vector2, tank_id: int, bullet_level: BulletLevel = BulletLevel.NORMAL, is_player: bool = false) -> void:
 	global_position = start_pos
 	direction = dir.normalized()
 	owner_tank_id = tank_id
 	level = bullet_level
+	owner_type = OwnerType.PLAYER if is_player else OwnerType.ENEMY
 	
 	# Apply level bonuses
 	match level:

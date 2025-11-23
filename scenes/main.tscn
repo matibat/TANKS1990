@@ -14,7 +14,7 @@ size = Vector2(32, 400)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_center"]
 size = Vector2(64, 64)
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node"]
 script = ExtResource("1_main_script")
 
 [node name="Background" type="ColorRect" parent="."]
@@ -117,3 +117,7 @@ Space: Fire (coming soon)
 ESC: Quit"
 theme_override_colors/font_color = Color(0, 1, 0, 1)
 theme_override_font_sizes/font_size = 16
+
+[node name="MainMenu" parent="UI" instance_placeholder="res://scenes/main_menu.tscn"]
+
+[node name="GameOver" parent="UI" instance_placeholder="res://scenes/game_over.tscn"]

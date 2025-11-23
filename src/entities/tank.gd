@@ -24,6 +24,7 @@ var current_health: int
 var level: int = 0  # 0-3 for player upgrades
 var is_player: bool = false
 var tank_id: int = 0
+var lives: int = 3  # Player lives (only used for player tank)
 
 # Internal
 var fire_cooldown: float = 0.0
@@ -282,4 +283,5 @@ func _emit_bullet_fired_event() -> void:
 	event.position = global_position
 	event.direction = _direction_to_vector(facing_direction)
 	event.bullet_level = level
+	event.is_player_bullet = is_player  # Set owner type based on tank type
 	EventBus.emit_game_event(event)

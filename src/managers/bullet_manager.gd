@@ -63,11 +63,12 @@ func _on_bullet_fired(event: GameEvent) -> void:
 	var spawn_position = bullet_event.position
 	var direction = bullet_event.direction
 	var level = bullet_event.bullet_level
+	var is_player = bullet_event.is_player_bullet
 	
 	bullet.bullet_id = next_bullet_id
 	next_bullet_id += 1
 	
-	bullet.initialize(spawn_position, direction, tank_id, level)
+	bullet.initialize(spawn_position, direction, tank_id, level, is_player)
 	bullet.process_mode = Node.PROCESS_MODE_INHERIT
 	bullet.visible = true
 	bullet.is_active = true

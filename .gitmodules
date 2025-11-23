@@ -1,0 +1,7 @@
+[submodule "gut"]
+	path = addons/gut
+	url = https://github.com/bitwes/Gut.git
+	branch = v9.5.0
+[submodule ".gut"]
+	path = .gut
+	url = https://github.com/bitwes/Gut.git

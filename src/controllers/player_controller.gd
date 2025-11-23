@@ -24,6 +24,10 @@ func _physics_process(_delta: float) -> void:
 	if not tank or not is_instance_valid(tank):
 		return
 	
+	# Skip input processing when game is paused
+	if get_tree().paused:
+		return
+	
 	_process_input()
 
 func _process_input() -> void:

@@ -3,7 +3,7 @@ extends GutTest
 
 var bullet: Bullet
 var main_scene: PackedScene
-var main_instance: Node2D
+var main_instance: Node
 
 const TILE_SIZE = 16
 const EXPECTED_GRID_SIZE = 26  # 26x26 tiles as per spec (416x416 play area)
