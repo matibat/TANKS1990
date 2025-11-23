@@ -6,8 +6,8 @@
 
 ## Current Status
 
-📋 **Phase:** Phase 1 Complete ✅ (43/43 tests passing)  
-🚀 **Next:** Phase 2 - Tank Movement Implementation
+📋 **Phase:** Phase 2 Complete ✅ (60/60 tests passing)  
+🚀 **Next:** Phase 3 - Bullet System & Collision
 
 ---
 
@@ -46,14 +46,48 @@
 - Subscription system for event listeners
 - Frame counter and timestamp tracking
 
+### Phase 2: Tank Movement & Controls ✅ (Completed Nov 23, 2025)
+
+**Deliverables:**
+- ✅ Tank entity class with CharacterBody2D physics
+- ✅ 4-directional movement system
+- ✅ State machine (Spawning, Idle, Moving, Shooting, Dying, Invulnerable)
+- ✅ PlayerController for input handling
+- ✅ Fire cooldown and bullet event emission
+- ✅ Health system with damage and death
+- ✅ Tank type variations (Player, Basic, Fast, Power, Armored)
+- ✅ Speed modifiers per tank type
+- ✅ Invulnerability system with timed duration
+- ✅ 17 new BDD tests for tank behavior (100% passing)
+
+**Test Coverage:**
+- Tank Movement: 5 tests (directional movement, velocity, event emission)
+- Tank Combat: 4 tests (fire cooldown, bullet events)
+- Tank Health: 3 tests (damage, death, invulnerability)
+- Tank States: 3 tests (spawning, state transitions)
+- Tank Speed: 3 tests (type-based speed variations)
+
+**Key Features:**
+- Event-driven architecture: TankMovedEvent, BulletFiredEvent, TankDestroyedEvent
+- Physics-based movement with move_and_slide()
+- Configurable tank parameters (@export vars)
+- Score values per tank type (100-400 points)
+- Level-based upgrades for player tank (0-3)
+
 ---
 
 ## Remaining Work
 
-### Phase 2: Core Gameplay
+### Phase 3: Bullet System & Collision
 
-- [ ] Tank movement & controls
-- [ ] Bullet firing & collision
+- [ ] Bullet entity with physics
+- [ ] Bullet-tank collision detection
+- [ ] Bullet-terrain collision & destruction
+- [ ] Bullet pooling system
+- [ ] Max bullets per tank limit
+
+### Phase 4: Core Gameplay (Continued)
+
 - [ ] Enemy AI (4 types)
 - [ ] Terrain system (5 tile types)
 - [ ] Base defense mechanics

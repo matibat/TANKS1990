@@ -1,0 +1,40 @@
+[gd_scene load_steps=4 format=3 uid="uid://cqv8m3yh1n8xo"]
+
+[ext_resource type="Script" path="res://src/entities/tank.gd" id="1"]
+[ext_resource type="Script" path="res://src/controllers/player_controller.gd" id="2"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
+size = Vector2(16, 16)
+
+[node name="PlayerTank" type="CharacterBody2D"]
+script = ExtResource("1")
+tank_type = 0
+base_speed = 100.0
+max_health = 1
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(0.2, 0.8, 0.2, 1)
+position = Vector2(0, 0)
+
+[node name="Placeholder" type="ColorRect" parent="Sprite2D"]
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+color = Color(0.2, 0.8, 0.2, 1)
+
+[node name="TurretIndicator" type="ColorRect" parent="Sprite2D"]
+offset_left = -2.0
+offset_top = -10.0
+offset_right = 2.0
+offset_bottom = -8.0
+color = Color(0, 1, 0, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_1")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+
+[node name="PlayerController" type="Node" parent="."]
+script = ExtResource("2")
+player_id = 0
