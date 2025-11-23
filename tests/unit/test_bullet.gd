@@ -47,15 +47,15 @@ class TestBulletMovement:
 		assert_gt(bullet.global_position.x, start_pos.x, "Bullet should move right")
 	
 	func test_given_bullet_when_out_of_bounds_then_destroys():
-		# Given: Bullet near boundary
-		bullet.initialize(Vector2(500, 100), Vector2.RIGHT, 1)
+		# Given: Bullet near right boundary (832 - 20 = 812)
+		bullet.initialize(Vector2(812, 100), Vector2.RIGHT, 1)
 		bullet.is_active = true
 		
-		# When: Physics processes multiple frames
-		for i in range(10):
+		# When: Physics processes enough frames to go out (20 pixels at speed 200)
+		for i in range(2):
 			bullet._physics_process(0.1)
 		
-		# Then: Bullet is destroyed
+		# Then: Bullet is destroyed (should be at ~852, which is > 832)
 		assert_false(bullet.is_active, "Bullet should be destroyed out of bounds")
 
 ## Feature: Bullet Levels

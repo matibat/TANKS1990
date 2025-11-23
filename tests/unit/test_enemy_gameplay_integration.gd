@@ -123,9 +123,11 @@ func test_given_enemy_tank_when_tries_to_shoot_then_emits_bullet_fired_event() -
 	var enemy = Tank.new()
 	enemy.tank_type = Tank.TankType.BASIC
 	enemy.position = Vector2(200, 200)
-	enemy.current_state = Tank.State.IDLE
-	enemy.fire_cooldown = 0.0  # Ready to fire
 	test_scene.add_child(enemy)
+	enemy._ready()  # Ensure ready is called
+	enemy.spawn_timer = 0.0  # Skip spawn phase
+	enemy.current_state = Tank.State.IDLE  # Set after ready
+	enemy.fire_cooldown = 0.0  # Ready to fire
 	
 	EventBus.start_recording()
 	
@@ -180,11 +182,12 @@ func test_given_player_bullet_when_hits_enemy_then_enemy_takes_damage() -> void:
 	var enemy = Tank.new()
 	enemy.tank_type = Tank.TankType.BASIC
 	enemy.position = Vector2(200, 200)
-	enemy.current_state = Tank.State.IDLE
 	enemy.max_health = 1
-	enemy.current_health = 1
-	enemy.invulnerability_timer = 0.0  # Not invulnerable
 	test_scene.add_child(enemy)
+	enemy._ready()  # Ensure ready is called
+	enemy.spawn_timer = 0.0  # Skip spawn phase
+	enemy.invulnerability_timer = 0.0  # Not invulnerable
+	enemy.current_state = Tank.State.IDLE  # Set state after ready
 	enemy.add_to_group("enemies")
 	
 	# When: Enemy takes damage (simulating bullet hit)
@@ -237,8 +240,10 @@ func test_given_enemy_near_player_when_processing_then_switches_to_chase() -> vo
 	var enemy = Tank.new()
 	enemy.tank_type = Tank.TankType.BASIC
 	enemy.position = Vector2(200, 200)
-	enemy.current_state = Tank.State.IDLE
 	test_scene.add_child(enemy)
+	enemy._ready()  # Ensure ready is called
+	enemy.spawn_timer = 0.0  # Skip spawn phase
+	enemy.current_state = Tank.State.IDLE  # Set to idle after ready
 	
 	player_tank.position = Vector2(200, 350)  # Within chase range (300)
 	

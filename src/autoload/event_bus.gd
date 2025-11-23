@@ -159,8 +159,15 @@ func _process_replay_events() -> void:
 func _notify_listeners(event: GameEvent) -> void:
 	var event_type = event.get_event_type()
 	if listeners.has(event_type):
+		# Filter out invalid callbacks and notify valid ones
+		var valid_callbacks: Array[Callable] = []
 		for callback in listeners[event_type]:
-			callback.call(event)
+			if callback.is_valid():
+				callback.call(event)
+				valid_callbacks.append(callback)
+		
+		# Update listener list to remove invalid callbacks
+		listeners[event_type] = valid_callbacks
 
 ## Reconstruct event from dictionary
 func _reconstruct_event(data: Dictionary) -> GameEvent:

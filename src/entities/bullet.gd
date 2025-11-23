@@ -33,8 +33,10 @@ static var game_bounds_max: Vector2 = Vector2(832, 832)
 
 func _ready() -> void:
 	_setup_collision()
-	area_entered.connect(_on_area_entered)
-	body_entered.connect(_on_body_entered)
+	if not area_entered.is_connected(_on_area_entered):
+		area_entered.connect(_on_area_entered)
+	if not body_entered.is_connected(_on_body_entered):
+		body_entered.connect(_on_body_entered)
 
 func _setup_collision() -> void:
 	# Bullet collision is 4x4 (smaller than tank)

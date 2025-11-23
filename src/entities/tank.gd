@@ -43,7 +43,13 @@ func _ready() -> void:
 	current_health = max_health
 	is_player = (tank_type == TankType.PLAYER)
 	_setup_collision()
+	_setup_collision_layers()
 	_change_state(State.SPAWNING)
+
+func _setup_collision_layers() -> void:
+	# Tanks are on layer 1 and collide with terrain (layer 2) and other tanks (layer 1)
+	collision_layer = 1
+	collision_mask = 3  # Collide with layers 1 (tanks) and 2 (terrain)
 
 func _setup_collision() -> void:
 	# Tank collision is 16x16 (1 tile)
