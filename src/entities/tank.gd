@@ -31,6 +31,8 @@ var invulnerability_timer: float = 0.0
 var spawn_timer: float = 0.0
 const SPAWN_DURATION: float = 2.0
 const TILE_SIZE: int = 16
+const MAP_WIDTH: int = 416  # 26 tiles * 16px
+const MAP_HEIGHT: int = 832  # 52 tiles * 16px
 
 # Visual
 @onready var sprite: Sprite2D = $Sprite2D if has_node("Sprite2D") else null
@@ -74,6 +76,10 @@ func _physics_process(delta: float) -> void:
 func _process_movement(_delta: float) -> void:
 	# Move and slide using velocity
 	var collision = move_and_slide()
+	
+	# Clamp position to map boundaries
+	global_position.x = clampf(global_position.x, 0.0, MAP_WIDTH)
+	global_position.y = clampf(global_position.y, 0.0, MAP_HEIGHT)
 	
 	# Emit event if actually moved
 	if velocity.length() > 0 and collision:

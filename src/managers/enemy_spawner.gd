@@ -32,7 +32,7 @@ var is_spawning: bool = false
 var enemy_queue: Array[Tank.TankType] = []
 
 # Tank scene for instantiation
-var tank_scene: PackedScene = preload("res://scenes/player_tank.tscn")
+var tank_scene: PackedScene = preload("res://scenes/enemy_tank.tscn")
 
 func _ready() -> void:
 	EventBus.subscribe("TankDestroyed", _on_tank_destroyed)
