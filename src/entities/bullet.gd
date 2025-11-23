@@ -122,7 +122,7 @@ func _destroy() -> void:
 	
 	is_active = false
 	destroyed.emit()
-	queue_free()
+	# Don't queue_free - let BulletManager handle recycling
 
 func _is_out_of_bounds() -> bool:
 	# Check against game bounds (26x26 tiles = 416x416 pixels)

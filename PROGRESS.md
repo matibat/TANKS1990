@@ -6,8 +6,8 @@
 
 ## Current Status
 
-📋 **Phase:** Phase 4 Complete ✅ (All core unit tests passing)  
-🚀 **Next:** Phase 5 - Enemy AI & Spawning
+📋 **Phase:** Phase 5 - Enemy Spawning ✅ (91/91 tests passing)  
+🚀 **Next:** Phase 5 (continued) - Enemy AI Controller
 
 ---
 
@@ -144,25 +144,48 @@
 - Collision events emitted to EventBus
 - Grid coordinate system (16px tiles)
 
+### Phase 5: Enemy Spawning ✅ (Completed Nov 23, 2025)
+
+**Deliverables:**
+
+- ✅ EnemySpawner manager with wave control
+- ✅ 4 enemy tank type configurations (Basic, Fast, Power, Armored)
+- ✅ 3 spawn points at top of screen
+- ✅ Wave spawning system (20 enemies per stage)
+- ✅ Max 4 concurrent enemies enforcement
+- ✅ Stage-based difficulty scaling
+- ✅ EventBus integration for spawning
+- ✅ 18 BDD tests for enemy spawning (100% passing)
+
+**Test Coverage:**
+
+- Wave Initialization: 3 tests (state setup, queue generation, signals)
+- Enemy Spawning: 4 tests (creation, concurrent limit, wave limit, positions)
+- Enemy Types: 4 tests (Basic, Fast, Power, Armored configurations)
+- Wave Progression: 2 tests (enemy destruction tracking, wave completion)
+- Enemy Queue: 2 tests (difficulty scaling, total count)
+- EventBus Integration: 2 tests (TankSpawnedEvent, TankDestroyedEvent)
+
+**Key Features:**
+
+- Automatic wave management with 20 enemies per stage
+- Concurrent limit enforcement (max 4 active enemies)
+- Cycling spawn positions (left, center, right)
+- Dynamic enemy composition based on stage difficulty
+- Tank type stats: Basic (50 speed, 1 HP), Fast (100 speed, 1 HP), Power (50 speed, 4 HP), Armored (50 speed, 2 HP)
+- EventBus-driven: Emits TankSpawnedEvent, listens to TankDestroyedEvent
+- Wave completion detection and signals
+
 ---
 
 ## Remaining Work
 
-### Phase 5: Enemy AI & Spawning
+### Phase 5: Enemy AI & Spawning (Continued)
 
-- [ ] EnemySpawner system
-- [ ] 4 enemy tank types (Basic, Fast, Power, Armored)
-- [ ] Enemy AI behaviors (patrol, chase, attack)
-- [ ] Wave spawning (20 enemies per stage)
-- [ ] Max 4 enemies on screen limit
-
-### Phase 5: Enemy AI & Spawning
-
-- [ ] EnemySpawner system
-- [ ] Enemy AI (4 types: Basic, Fast, Power, Armored)
+- [ ] EnemyAIController with state machine
 - [ ] AI behaviors (patrol, chase, attack base)
-- [ ] Wave spawning (20 enemies per stage)
-- [ ] Max 4 concurrent enemies
+- [ ] Simple pathfinding for base targeting
+- [ ] Power-up drop system (from Armored tanks)
 
 ### Phase 6: Base Defense
 
@@ -196,20 +219,30 @@
 
 ## Last Session
 
-**Focus:** Phase 4 - Terrain & Collision Detection
+**Focus:** Phase 5 - Enemy Spawning System
 
 **Completed:**
+
+- ✅ EnemySpawner manager class with wave control
+- ✅ 4 enemy tank type configurations with unique stats
+- ✅ Wave spawning system (20 enemies, max 4 concurrent)
+- ✅ 3 spawn points at top of screen with cycling logic
+- ✅ Stage-based difficulty scaling (more Fast/Power/Armored in later stages)
+- ✅ Enemy queue generation with randomization
+- ✅ Active enemy tracking and wave completion detection
+- ✅ EventBus integration (TankSpawned, TankDestroyed events)
+- ✅ 18 BDD unit tests with 100% passing
+- ✅ Fixed test file loading issues (preload pattern)
+- ✅ All 91 tests passing across full suite
+
+**Previous Focus:** Phase 4 - Terrain & Collision Detection
 
 - ✅ TerrainManager system with TileMapLayer
 - ✅ 5 tile types with proper collision layers
 - ✅ Destructible terrain (brick, steel with power-up)
 - ✅ Terrain loading/export from arrays
-- ✅ Bullet-terrain collision integration
-- ✅ Tank-terrain collision via CharacterBody2D
 - ✅ Unit tests for terrain system
 - ✅ Integration test foundation
-- ✅ Collision event emission to EventBus
-- ✅ Verified existing Bullet and Tank collision work
 
 **Previous Sessions:**
 
@@ -236,32 +269,32 @@
 
 ## Next Session Recommendation
 
-**Priority:** Phase 5 - Enemy AI & Spawning System
+**Priority:** Phase 5 (Continued) - Enemy AI Controller
 
 **Tasks:**
 
-1. Create EnemySpawner manager
-2. Implement enemy tank variants (Basic, Fast, Power, Armored)
-3. Design simple AI state machine (Patrol, Chase, Attack Base)
-4. Implement spawn wave system (20 enemies per stage)
-5. Add max 4 concurrent enemies limit
-6. Write BDD tests for enemy spawning and AI
-7. Create power-up drop system (from Armored tanks)
+1. Create EnemyAIController class
+2. Implement AI state machine (Idle, Patrol, Chase, AttackBase)
+3. Add patrol behavior (random movement)
+4. Add chase behavior (pursue player tank)
+5. Add attack base behavior (move toward base)
+6. Integrate with existing Tank entity
+7. Write BDD tests for AI behaviors
+8. Add power-up drop system (Armored tanks)
 
-**Goal:** Enemies spawn in waves and attack player/base with basic AI
+**Goal:** Enemy tanks move autonomously with intelligent behavior
 
 **User Stories to Implement:**
 
-> US1.2: As a player, I want to destroy enemy tanks so I can progress through stages
-
 > US2.1: As a player, I want to protect my base so I can continue playing
+
+> US4.1: As a player, I want to collect power-ups so I can gain temporary advantages
 
 **Files to Create:**
 
-- src/managers/enemy_spawner.gd
 - src/controllers/enemy_ai_controller.gd
-- tests/unit/test_enemy_spawner.gd
 - tests/unit/test_enemy_ai.gd
+- src/entities/power_up.gd (if needed)
 
 ---
 

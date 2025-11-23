@@ -22,10 +22,9 @@ signal tile_destroyed(tile_pos: Vector2i, tile_type: TileType)
 signal tile_damaged(tile_pos: Vector2i, tile_type: TileType)
 
 func _ready() -> void:
-	# Set collision layers
-	collision_enabled = true
-	collision_layer = 2  # Terrain layer
-	collision_mask = 0   # Doesn't need to detect anything
+	# TileMapLayer has collision enabled by default
+	# Collision layers are controlled by the TileSet physics layers
+	pass
 
 ## Get tile type at world position
 func get_tile_at_position(world_pos: Vector2) -> TileType:

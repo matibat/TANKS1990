@@ -25,6 +25,7 @@ func _initialize_pool() -> void:
 		var bullet = _create_bullet()
 		bullet.process_mode = Node.PROCESS_MODE_DISABLED
 		bullet.visible = false
+		bullet.is_active = false
 		bullet_pool.append(bullet)
 
 func _create_bullet() -> Bullet:
@@ -59,14 +60,14 @@ func _on_bullet_fired(event: GameEvent) -> void:
 		return  # Pool exhausted
 	
 	# Initialize bullet
-	var position = bullet_event.position
+	var spawn_position = bullet_event.position
 	var direction = bullet_event.direction
 	var level = bullet_event.bullet_level
 	
 	bullet.bullet_id = next_bullet_id
 	next_bullet_id += 1
 	
-	bullet.initialize(position, direction, tank_id, level)
+	bullet.initialize(spawn_position, direction, tank_id, level)
 	bullet.process_mode = Node.PROCESS_MODE_INHERIT
 	bullet.visible = true
 	bullet.is_active = true
@@ -79,17 +80,27 @@ func _get_bullet_from_pool() -> Bullet:
 		# Pool exhausted, create new bullet
 		return _create_bullet()
 	
-	return bullet_pool.pop_back()
+	# Get bullet from pool
+	var bullet = bullet_pool.pop_back()
+	return bullet
 
 func _on_bullet_destroyed(bullet: Bullet) -> void:
+	if not is_instance_valid(bullet):
+		return
+	
 	# Remove from active tracking
 	if active_bullets.has(bullet.owner_tank_id):
 		active_bullets[bullet.owner_tank_id].erase(bullet)
 	
 	# Return to pool
+	bullet.is_active = false
 	bullet.process_mode = Node.PROCESS_MODE_DISABLED
 	bullet.visible = false
-	bullet_pool.append(bullet)
+	bullet.global_position = Vector2(-1000, -1000)  # Move off screen
+	
+	# Only return to pool if not already there
+	if not bullet_pool.has(bullet):
+		bullet_pool.append(bullet)
 
 func clear_all_bullets() -> void:
 	for tank_id in active_bullets.keys():

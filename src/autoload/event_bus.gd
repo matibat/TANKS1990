@@ -73,17 +73,17 @@ func clear_all_listeners() -> void:
 	listeners.clear()
 
 ## Start recording gameplay
-func start_recording(seed: int = -1) -> void:
+func start_recording(random_seed: int = -1) -> void:
 	recorded_events.clear()
 	current_frame = 0
 	start_time = Time.get_ticks_msec()
 	is_recording = true
 	
 	# Set deterministic seed
-	if seed == -1:
+	if random_seed == -1:
 		game_seed = Time.get_ticks_msec() % 1000000
 	else:
-		game_seed = seed
+		game_seed = random_seed
 	
 	seed(game_seed)
 	recording_started.emit()
