@@ -1,8 +1,9 @@
-[gd_scene load_steps=7 format=3 uid="uid://c2qk5yqh1wxhn"]
+[gd_scene load_steps=8 format=3 uid="uid://c2qk5yqh1wxhn"]
 
 [ext_resource type="PackedScene" uid="uid://cqv8m3yh1n8xo" path="res://scenes/player_tank.tscn" id="1_player_tank"]
 [ext_resource type="Script" path="res://scenes/main.gd" id="1_main_script"]
 [ext_resource type="Script" path="res://src/managers/bullet_manager.gd" id="2_bullet_manager"]
+[ext_resource type="Script" path="res://src/managers/enemy_spawner.gd" id="3_enemy_spawner"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_h"]
 size = Vector2(400, 32)
@@ -96,6 +97,9 @@ color = Color(0.6, 0.3, 0.1, 1)
 
 [node name="BulletManager" type="Node2D" parent="."]
 script = ExtResource("2_bullet_manager")
+
+[node name="EnemySpawner" type="Node2D" parent="."]
+script = ExtResource("3_enemy_spawner")
 
 [node name="PlayerTank" parent="." instance=ExtResource("1_player_tank")]
 position = Vector2(416, 750)

@@ -6,7 +6,7 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
 size = Vector2(16, 16)
 
-[node name="PlayerTank" type="CharacterBody2D"]
+[node name="PlayerTank" type="CharacterBody2D" groups=["tanks"]]
 collision_layer = 1
 collision_mask = 6
 script = ExtResource("1")

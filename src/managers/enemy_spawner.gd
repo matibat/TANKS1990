@@ -116,6 +116,8 @@ func _try_spawn_enemy() -> void:
 	
 	# Add to scene and track
 	get_parent().add_child(enemy)
+	enemy.add_to_group("tanks")
+	enemy.add_to_group("enemies")
 	active_enemies.append(enemy)
 	enemies_spawned += 1
 	
@@ -141,7 +143,7 @@ func _generate_enemy_queue(stage: int) -> void:
 	# Stage difficulty progression
 	var fast_count: int = mini(stage * 2, 8)
 	var power_count: int = mini(stage, 5)
-	var armored_count: int = mini(stage / 3, 3)
+	var armored_count: int = mini(int(stage / 3.0), 3)  # Integer division
 	var basic_count: int = ENEMIES_PER_STAGE - fast_count - power_count - armored_count
 	
 	# Build queue

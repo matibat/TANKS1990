@@ -2,12 +2,16 @@ extends GutTest
 ## BDD tests for TerrainManager and collision detection
 
 var terrain: TerrainManager
+var destroyed_signal_received: bool = false
+var destroyed_tile_pos: Vector2i
 const TILE_SIZE = 16
 
 func before_each():
 	terrain = TerrainManager.new()
 	terrain.tile_set = TileSet.new()
 	add_child_autofree(terrain)
+	destroyed_signal_received = false
+	terrain.tile_destroyed.connect(_on_tile_destroyed)
 
 ## Feature: Terrain Tile Management
 
@@ -58,13 +62,6 @@ func test_given_forest_tile_when_checked_then_not_solid():
 	assert_false(terrain.is_tile_solid(tile_pos), "Forest should not be solid")
 
 ## Feature: Destructible Terrain
-
-var destroyed_signal_received: bool = false
-var destroyed_tile_pos: Vector2i
-
-	destroyed_signal_received = false
-	terrain.tile_set = TileSet.new()
-	terrain.tile_destroyed.connect(_on_tile_destroyed)
 
 func _on_tile_destroyed(tile_pos: Vector2i, tile_type):
 	destroyed_signal_received = true

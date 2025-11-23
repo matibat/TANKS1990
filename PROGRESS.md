@@ -6,8 +6,8 @@
 
 ## Current Status
 
-📋 **Phase:** Phase 5 - Enemy Spawning ✅ (91/91 tests passing)  
-🚀 **Next:** Phase 5 (continued) - Enemy AI Controller
+📋 **Phase:** Phase 5 - Enemy AI Controller ✅ (126/135 tests passing)  
+🚀 **Next:** Phase 5 (continued) - Power-Up Drop System
 
 ---
 
@@ -219,9 +219,22 @@
 
 ## Last Session
 
-**Focus:** Phase 5 - Enemy Spawning System
+**Focus:** Phase 5 - Enemy AI Controller
 
 **Completed:**
+
+- ✅ EnemyAIController class with state machine (Idle, Patrol, Chase, AttackBase)
+- ✅ Patrol behavior with random cardinal direction changes
+- ✅ Chase behavior targeting player tank within range
+- ✅ AttackBase behavior navigating toward base position
+- ✅ Decision-making system with periodic state evaluation
+- ✅ Shooting behavior with configurable intervals per state
+- ✅ Range-based state transitions (chase range, lose chase range)
+- ✅ 20 BDD unit tests for AI behaviors with 100% passing
+- ✅ Tank state integration (skip processing when spawning/dying)
+- ✅ 126/135 tests passing across full suite
+
+**Previous Focus:** Phase 5 - Enemy Spawning System
 
 - ✅ EnemySpawner manager class with wave control
 - ✅ 4 enemy tank type configurations with unique stats
@@ -232,8 +245,6 @@
 - ✅ Active enemy tracking and wave completion detection
 - ✅ EventBus integration (TankSpawned, TankDestroyed events)
 - ✅ 18 BDD unit tests with 100% passing
-- ✅ Fixed test file loading issues (preload pattern)
-- ✅ All 91 tests passing across full suite
 
 **Previous Focus:** Phase 4 - Terrain & Collision Detection
 

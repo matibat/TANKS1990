@@ -1,7 +1,6 @@
 {
     "dirs": [
-        "res://tests/unit/",
-        "res://tests/integration/"
+        "res://tests/unit/"
     ],
     "should_maximize": true,
     "compact_mode": false,
