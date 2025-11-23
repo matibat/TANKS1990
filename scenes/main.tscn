@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://c2qk5yqh1wxhn"]
+
+[node name="Main" type="Node"]
+
+[node name="Label" type="Label" parent="."]
+offset_left = 300.0
+offset_top = 400.0
+offset_right = 532.0
+offset_bottom = 426.0
+text = "Tank 1990 - Development Build"
+horizontal_alignment = 1
