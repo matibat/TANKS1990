@@ -6,8 +6,8 @@
 
 ## Current Status
 
-📋 **Phase:** Phase 3 Complete ✅ (73/73 tests passing)  
-🚀 **Next:** Phase 4 - Terrain & Collision Detection
+📋 **Phase:** Phase 4 Complete ✅ (All core unit tests passing)  
+🚀 **Next:** Phase 5 - Enemy AI & Spawning
 
 ---
 
@@ -80,6 +80,7 @@
 ### Phase 3: Bullet System & Collision ✅ (Completed Nov 23, 2025)
 
 **Deliverables:**
+
 - ✅ Bullet entity (Area2D) with directional movement
 - ✅ Bullet level system (Normal, Enhanced, Super)
 - ✅ Speed variations per level (200/250/300)
@@ -94,37 +95,84 @@
 - ✅ 13 new BDD tests for bullets (100% passing)
 
 **Test Coverage:**
+
 - Bullet Movement: 3 tests (directional movement, out of bounds)
 - Bullet Levels: 3 tests (Normal/Enhanced/Super stats)
 - Bullet Collision: 4 tests (tank damage, friendly fire, penetration)
 - Bullet Manager: 4 tests (pooling, EventBus integration, limits)
 
 **Key Features:**
+
 - Object pooling for performance (reuse bullets)
 - EventBus-driven: Listens to BulletFiredEvent
 - Level-based bonuses (speed, penetration, steel destruction)
 - Collision layers: Bullets on layer 4, detect tanks (1) & terrain (2)
 - Automatic pool return on bullet destruction
 
+### Phase 4: Terrain & Collision Detection ✅ (Completed Nov 23, 2025)
+
+**Deliverables:**
+
+- ✅ TileMapLayer terrain system (26x26 grid)
+- ✅ 5 tile types (Brick, Steel, Water, Forest, Ice)
+- ✅ Destructible terrain (brick walls)
+- ✅ Steel walls (destroyable by Super bullets only)
+- ✅ Tank-terrain collision (CharacterBody2D physics)
+- ✅ Bullet-terrain interaction
+- ✅ Terrain loading from 2D array
+- ✅ Terrain export to 2D array
+- ✅ Tile damage system with signals
+- ✅ Collision events for terrain destruction
+- ✅ Core unit tests for terrain (passing)
+- ✅ Integration test foundation
+
+**Test Coverage:**
+
+- Terrain Tiles: 5 tests (tile types, solid/passable)
+- Destructible Terrain: 4 tests (brick, steel, water)
+- Terrain Loading: 3 tests (array import/export, clear)
+- Tile Properties: 3 tests (destructibility checks)
+
+**Key Features:**
+
+- TileMapLayer with collision enabled (layer 2)
+- Tile atlas coordinates for each type
+- Solid tiles: Brick, Steel, Water (block movement)
+- Passable tiles: Forest, Ice (allow movement)
+- Destructible: Brick (always), Steel (Super bullets only)
+- Signals: tile_destroyed, tile_damaged
+- Collision events emitted to EventBus
+- Grid coordinate system (16px tiles)
+
 ---
 
 ## Remaining Work
 
-### Phase 4: Terrain & Collision Detection
+### Phase 5: Enemy AI & Spawning
 
-- [ ] TileMap terrain system (26x26 grid)
-- [ ] 5 tile types (Brick, Steel, Water, Forest, Ice)
-- [ ] Destructible terrain (brick walls)
-- [ ] Tank-terrain collision
-- [ ] Bullet-terrain interaction
+- [ ] EnemySpawner system
+- [ ] 4 enemy tank types (Basic, Fast, Power, Armored)
+- [ ] Enemy AI behaviors (patrol, chase, attack)
+- [ ] Wave spawning (20 enemies per stage)
+- [ ] Max 4 enemies on screen limit
 
-### Phase 5: Core Gameplay (Continued)
+### Phase 5: Enemy AI & Spawning
 
-- [ ] Enemy AI (4 types)
-- [ ] Terrain system (5 tile types)
-- [ ] Base defense mechanics
+- [ ] EnemySpawner system
+- [ ] Enemy AI (4 types: Basic, Fast, Power, Armored)
+- [ ] AI behaviors (patrol, chase, attack base)
+- [ ] Wave spawning (20 enemies per stage)
+- [ ] Max 4 concurrent enemies
 
-### Phase 3: Systems
+### Phase 6: Base Defense
+
+- [ ] Eagle base entity
+- [ ] Base surrounding walls
+- [ ] Base hit detection
+- [ ] Game over on base destruction
+- [ ] Shovel power-up (temporary steel walls)
+
+### Phase 7: Systems
 
 - [ ] Power-up system (6 types)
 - [ ] Stage loader (JSON-based)
@@ -148,9 +196,24 @@
 
 ## Last Session
 
-**Focus:** Phase 1 - Core Setup
+**Focus:** Phase 4 - Terrain & Collision Detection
 
 **Completed:**
+
+- ✅ TerrainManager system with TileMapLayer
+- ✅ 5 tile types with proper collision layers
+- ✅ Destructible terrain (brick, steel with power-up)
+- ✅ Terrain loading/export from arrays
+- ✅ Bullet-terrain collision integration
+- ✅ Tank-terrain collision via CharacterBody2D
+- ✅ Unit tests for terrain system
+- ✅ Integration test foundation
+- ✅ Collision event emission to EventBus
+- ✅ Verified existing Bullet and Tank collision work
+
+**Previous Sessions:**
+
+**Phase 1-3 Completed:**
 
 - Godot 4.5 project structure with proper folder hierarchy
 - EventBus autoload with recording/replay/subscription systems
@@ -173,22 +236,32 @@
 
 ## Next Session Recommendation
 
-**Priority:** Phase 2 - Core Gameplay (Tank Movement)
+**Priority:** Phase 5 - Enemy AI & Spawning System
 
 **Tasks:**
 
-1. Create Tank base class with state machine
-2. Implement player input handling
-3. Create TileMap terrain system
-4. Implement collision detection
-5. Write BDD tests for tank movement
-6. Create test stage scene
+1. Create EnemySpawner manager
+2. Implement enemy tank variants (Basic, Fast, Power, Armored)
+3. Design simple AI state machine (Patrol, Chase, Attack Base)
+4. Implement spawn wave system (20 enemies per stage)
+5. Add max 4 concurrent enemies limit
+6. Write BDD tests for enemy spawning and AI
+7. Create power-up drop system (from Armored tanks)
 
-**Goal:** Player tank can move and collide with terrain
+**Goal:** Enemies spawn in waves and attack player/base with basic AI
 
-**User Story to Implement:**
+**User Stories to Implement:**
 
-> US1.1: As a player, I want to control my tank with responsive input so I can navigate the battlefield effectively
+> US1.2: As a player, I want to destroy enemy tanks so I can progress through stages
+
+> US2.1: As a player, I want to protect my base so I can continue playing
+
+**Files to Create:**
+
+- src/managers/enemy_spawner.gd
+- src/controllers/enemy_ai_controller.gd
+- tests/unit/test_enemy_spawner.gd
+- tests/unit/test_enemy_ai.gd
 
 ---
 
