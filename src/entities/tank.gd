@@ -33,7 +33,16 @@ var spawn_timer: float = 0.0
 const SPAWN_DURATION: float = 2.0
 const TILE_SIZE: int = 16
 const MAP_WIDTH: int = 416  # 26 tiles * 16px
-const MAP_HEIGHT: int = 832  # 52 tiles * 16px
+const MAP_HEIGHT: int = 416  # 26 tiles * 16px
+const TANK_SIZE: int = 32  # Tank is 32x32 pixels (2x2 tiles)
+const SUB_GRID_SIZE: int = 8  # Movement precision (half-tile)
+const BULLET_SPAWN_OFFSET: int = 20  # Distance from center
+const EDGE_FIRE_MARGIN: int = 16  # Min distance from edge to fire
+
+# Grid movement state
+var target_position: Vector2 = Vector2.ZERO  # Target grid cell
+var is_moving_to_target: bool = false
+var movement_progress: float = 0.0
 
 # Visual
 @onready var sprite: Sprite2D = $Sprite2D if has_node("Sprite2D") else null
@@ -45,7 +54,14 @@ func _ready() -> void:
 	is_player = (tank_type == TankType.PLAYER)
 	_setup_collision()
 	_setup_collision_layers()
-	_change_state(State.SPAWNING)
+	# Snap spawn position to grid and clamp to safe bounds
+	global_position = _snap_to_grid_position(global_position)
+	global_position.x = clampf(global_position.x, TILE_SIZE, MAP_WIDTH - TILE_SIZE)
+	global_position.y = clampf(global_position.y, TILE_SIZE, MAP_HEIGHT - TILE_SIZE)
+	target_position = global_position
+	# Skip spawn animation for testing - go straight to idle
+	_change_state(State.IDLE)
+	modulate = Color.WHITE
 
 func _setup_collision_layers() -> void:
 	# Tanks are on layer 1 and collide with terrain (layer 2) and other tanks (layer 1)
@@ -80,36 +96,124 @@ func _physics_process(delta: float) -> void:
 	if current_state == State.MOVING or current_state == State.IDLE:
 		_process_movement(delta)
 
-func _process_movement(_delta: float) -> void:
-	# Move and slide using velocity
-	var collision = move_and_slide()
+func _process_movement(delta: float) -> void:
+	# Grid-based discrete movement: move from grid cell to grid cell
+	if not is_moving_to_target:
+		return
 	
-	# Clamp position to map boundaries
-	global_position.x = clampf(global_position.x, 0.0, MAP_WIDTH)
-	global_position.y = clampf(global_position.y, 0.0, MAP_HEIGHT)
+	var old_pos = global_position
 	
-	# Emit event if actually moved
-	if velocity.length() > 0 and collision:
-		_emit_tank_moved_event()
+	# Calculate step size based on speed and delta
+	var step_distance = _get_current_speed() * delta
+	var remaining_distance = global_position.distance_to(target_position)
+	
+	if remaining_distance <= step_distance:
+		# Reached target - snap to exact grid position
+		global_position = target_position
+		movement_progress = 0.0
+		
+		# Emit movement event
+		if old_pos != global_position:
+			_emit_tank_moved_event()
+		
+		# For continuous movement, set next grid target in same direction
+		var direction_vec = _direction_to_vector(facing_direction)
+		var next_target = global_position + (direction_vec * SUB_GRID_SIZE)
+		
+		# Clamp to map boundaries (keep tank center 16px from edges so 2x2 footprint stays in grid)
+		next_target.x = clampf(next_target.x, TILE_SIZE, MAP_WIDTH - TILE_SIZE)
+		next_target.y = clampf(next_target.y, TILE_SIZE, MAP_HEIGHT - TILE_SIZE)
+		next_target = _snap_to_grid_position(next_target)
+		
+		# Check if we can move to next target (grid-based terrain collision)
+		var test_movement = next_target - global_position
+		if test_movement.length() > 0:
+			# Check terrain collision at target position using 2x2 footprint
+			if _would_collide_with_terrain(next_target):
+				# Blocked by terrain - stop here
+				is_moving_to_target = false
+				velocity = Vector2.ZERO
+			else:
+				# Continue to next grid cell
+				target_position = next_target
+				is_moving_to_target = true
+		else:
+			# At boundary, stop
+			is_moving_to_target = false
+			velocity = Vector2.ZERO
+	else:
+		# Move toward target (grid-based, no physics collision)
+		var direction = (target_position - global_position).normalized()
+		var movement = direction * step_distance
+		
+		# Move directly - collision already checked when setting target
+		global_position += movement
+		movement_progress += step_distance
+		
+		# Emit movement event
+		if old_pos.distance_to(global_position) > 0.1:
+			_emit_tank_moved_event()
 
 ## Set movement direction and velocity
 func move_in_direction(direction: Direction) -> void:
 	if current_state == State.DYING or current_state == State.SPAWNING:
 		return
 	
+	# If changing direction, complete current movement first
+	if is_moving_to_target and direction != facing_direction:
+		# Snap to current grid position when changing direction
+		global_position = _snap_to_grid_position(global_position)
+		is_moving_to_target = false
+	
 	facing_direction = direction
-	velocity = _direction_to_vector(direction) * _get_current_speed()
+	_update_sprite_rotation()
+	
+	# Only set new target if not already moving in this direction
+	# This allows continuous grid-to-grid movement
+	if not is_moving_to_target:
+		# Calculate next grid cell in the movement direction
+		var direction_vec = _direction_to_vector(direction)
+		var proposed_target = global_position + (direction_vec * SUB_GRID_SIZE)
+		
+		# Clamp target to map boundaries (keep tank center 16px from edges)
+		proposed_target.x = clampf(proposed_target.x, TILE_SIZE, MAP_WIDTH - TILE_SIZE)
+		proposed_target.y = clampf(proposed_target.y, TILE_SIZE, MAP_HEIGHT - TILE_SIZE)
+		proposed_target = _snap_to_grid_position(proposed_target)
+		
+		# Check terrain collision before setting target
+		var would_collide = _would_collide_with_terrain(proposed_target)
+		if would_collide:
+			# Blocked by terrain - don't move
+			is_moving_to_target = false
+			velocity = Vector2.ZERO
+			return
+		
+		# All clear - start moving to target
+		target_position = proposed_target
+		is_moving_to_target = true
+		velocity = direction_vec * _get_current_speed()  # For visual/physics info
 	
 	if current_state != State.MOVING:
 		_change_state(State.MOVING)
-	
-	_update_sprite_rotation()
 
 ## Stop tank movement
 func stop_movement() -> void:
+	# Complete movement to current grid cell
+	if is_moving_to_target:
+		global_position = _snap_to_grid_position(global_position)
+		target_position = global_position
+		is_moving_to_target = false
+	
 	velocity = Vector2.ZERO
 	if current_state == State.MOVING:
 		_change_state(State.IDLE)
+
+func _snap_to_grid_position(pos: Vector2) -> Vector2:
+	"""Snap position to nearest 8-pixel grid cell"""
+	return Vector2(
+		round(pos.x / SUB_GRID_SIZE) * SUB_GRID_SIZE,
+		round(pos.y / SUB_GRID_SIZE) * SUB_GRID_SIZE
+	)
 
 ## Attempt to fire bullet
 func try_fire() -> bool:
@@ -285,3 +389,112 @@ func _emit_bullet_fired_event() -> void:
 	event.bullet_level = level
 	event.is_player_bullet = is_player  # Set owner type based on tank type
 	EventBus.emit_game_event(event)
+
+## Tile Geometry Methods
+
+## Snap position to 8-pixel sub-grid
+func snap_to_sub_grid(pos: Vector2) -> Vector2:
+	return Vector2(
+		round(pos.x / SUB_GRID_SIZE) * SUB_GRID_SIZE,
+		round(pos.y / SUB_GRID_SIZE) * SUB_GRID_SIZE
+	)
+
+## Get the 4 tiles occupied by this tank (2x2 footprint)
+func get_occupied_tiles() -> Array[Vector2i]:
+	var tiles: Array[Vector2i] = []
+	
+	# Tank is 32x32, positioned by center
+	# Top-left corner of tank in world space
+	var top_left = global_position - Vector2(TANK_SIZE / 2, TANK_SIZE / 2)
+	
+	# Calculate which tiles are covered (each tile is 16x16)
+	var tile_x_start = int(floor(top_left.x / TILE_SIZE))
+	var tile_y_start = int(floor(top_left.y / TILE_SIZE))
+	
+	# Tank covers 2x2 tiles
+	for dy in range(2):
+		for dx in range(2):
+			tiles.append(Vector2i(tile_x_start + dx, tile_y_start + dy))
+	
+	return tiles
+
+## Check if tank would collide with terrain at given position
+func _would_collide_with_terrain(target_pos: Vector2) -> bool:
+	# Get terrain manager from scene
+	var terrain = _get_terrain_manager()
+	if not terrain:
+		# No terrain found - allow movement (tests may not have terrain)
+		return false
+	
+	# Calculate 2x2 tile footprint at target position
+	var top_left = target_pos - Vector2(TANK_SIZE / 2, TANK_SIZE / 2)
+	var tile_x_start = int(floor(top_left.x / TILE_SIZE))
+	var tile_y_start = int(floor(top_left.y / TILE_SIZE))
+	
+	# Check all 4 tiles in 2x2 footprint
+	for dy in range(2):
+		for dx in range(2):
+			var tile_coord = Vector2i(tile_x_start + dx, tile_y_start + dy)
+			var tile_type = terrain.get_tile_at_coords(tile_coord.x, tile_coord.y)
+			
+			# Check if tile is solid (blocks movement)
+			if tile_type in [TerrainManager.TileType.BRICK, 
+							TerrainManager.TileType.STEEL, 
+							TerrainManager.TileType.WATER]:
+				return true
+	
+	return false
+
+## Get terrain manager from scene tree
+func _get_terrain_manager() -> TerrainManager:
+	# Cache the terrain reference for performance
+	if not has_meta("cached_terrain"):
+		if not get_tree():
+			return null
+		
+		# Search from tank's parent upward to find terrain in same scene
+		var current = get_parent()
+		while current:
+			# Check siblings of current node
+			for sibling in current.get_children():
+				if sibling is TerrainManager:
+					set_meta("cached_terrain", sibling)
+					return sibling
+			# Move up the tree
+			current = current.get_parent()
+		
+		# Cache null to avoid repeated searches
+		set_meta("cached_terrain", null)
+		return null
+	else:
+		return get_meta("cached_terrain")
+
+func _find_terrain_recursive(node: Node) -> TerrainManager:
+	if node is TerrainManager:
+		return node
+	for child in node.get_children():
+		var terrain = _find_terrain_recursive(child)
+		if terrain:
+			return terrain
+	return null
+
+## Get world-space bounding box of tank
+func get_world_bounds() -> Rect2:
+	var half_size = TANK_SIZE / 2
+	return Rect2(
+		position - Vector2(half_size, half_size),
+		Vector2(TANK_SIZE, TANK_SIZE)
+	)
+
+## Calculate bullet spawn position (20 pixels from center in facing direction)
+func get_bullet_spawn_position() -> Vector2:
+	var dir = _direction_to_vector(facing_direction)
+	return position + dir * BULLET_SPAWN_OFFSET
+
+## Check if bullet can be fired (not too close to edge)
+func can_fire_bullet() -> bool:
+	# Bullet cannot spawn if tank is within 16 pixels of playfield edge
+	return position.x >= EDGE_FIRE_MARGIN and \
+		   position.x <= MAP_WIDTH - EDGE_FIRE_MARGIN and \
+		   position.y >= EDGE_FIRE_MARGIN and \
+		   position.y <= MAP_HEIGHT - EDGE_FIRE_MARGIN

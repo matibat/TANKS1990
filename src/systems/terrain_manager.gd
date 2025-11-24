@@ -121,6 +121,30 @@ func get_tile_at_coords(tile_x: int, tile_y: int) -> TileType:
 	
 	return TileType.EMPTY
 
+## Load terrain from flat array (26x26 = 676 elements)
+func load_terrain(flat_data: Array) -> void:
+	clear()
+	
+	for i in range(flat_data.size()):
+		var x = i % MAP_WIDTH_TILES
+		var y = i / MAP_WIDTH_TILES
+		var tile_type = flat_data[i] as TileType
+		if tile_type != TileType.EMPTY:
+			set_tile_at_coords(x, y, tile_type)
+
+## Set tile at coordinate using Vector2i
+func set_tile_at_coord(coord: Vector2i, tile_type: TileType) -> void:
+	set_tile_at_coords(coord.x, coord.y, tile_type)
+
+## Get tile at coordinate using Vector2i
+func get_tile_at_coord(coord: Vector2i) -> TileType:
+	return get_tile_at_coords(coord.x, coord.y)
+
+## Check if tile at coordinate is solid
+func is_tile_solid_at_coord(coord: Vector2i) -> bool:
+	var tile_type = get_tile_at_coord(coord)
+	return tile_type in SOLID_TILES
+
 ## Load terrain from 2D array
 func load_terrain_from_array(terrain_data: Array, auto_enforce_boundaries: bool = true) -> void:
 	clear()

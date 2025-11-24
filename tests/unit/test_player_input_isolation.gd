@@ -20,6 +20,9 @@ func before_each():
 	player_controller.tank = player_tank
 	player_tank.add_child(player_controller)
 	player_controller._ready()
+	player_tank._complete_spawn()
+	player_tank.invulnerability_timer = 0
+	player_tank._end_invulnerability()
 	
 	# Create enemy tank WITHOUT controller
 	enemy_tank = Tank.new()
@@ -29,6 +32,9 @@ func before_each():
 	add_child_autofree(enemy_tank)
 	enemy_tank._ready()
 	enemy_tank.spawn_timer = 0.0
+	enemy_tank._complete_spawn()
+	enemy_tank.invulnerability_timer = 0
+	enemy_tank._end_invulnerability()
 	enemy_tank.current_state = Tank.State.IDLE
 
 # ============================================================================
@@ -45,16 +51,15 @@ func test_given_player_and_enemy_when_player_input_then_only_player_moves():
 	enemy_tank.global_position = Vector2(300, 300)
 	var enemy_start_pos = enemy_tank.global_position
 	
-	# When: Simulate player pressing UP key
+	# When: Simulate player pressing UP key (grid movement requires continuous commands)
 	Input.action_press("move_up")
-	for i in range(5):
+	for i in range(15):  # More frames needed for grid-based movement
 		player_controller._physics_process(0.016)
 		player_tank._physics_process(0.016)
 		enemy_tank._physics_process(0.016)
-		await get_tree().physics_frame
 	Input.action_release("move_up")
 	
-	# Then: Player tank should have moved
+	# Then: Player tank should have moved (at least one 8-pixel grid step)
 	assert_ne(player_tank.global_position, Vector2(100, 100), "Player tank should move")
 	assert_lt(player_tank.global_position.y, 100, "Player tank should move up")
 	

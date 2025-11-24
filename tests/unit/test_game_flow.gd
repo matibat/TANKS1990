@@ -300,10 +300,13 @@ func test_given_game_over_when_quit_pressed_then_returns_to_menu():
 		"Should transition to MainMenu state")
 
 func test_given_base_destroyed_when_game_over_triggers_then_player_cannot_shoot():
-	# Given: Game flow manager with player
+	# Given: Game flow manager in playing state
 	var flow_manager = GameFlowManager.new()
 	add_child_autofree(flow_manager)
 	await get_tree().process_frame
+	
+	# Transition to playing state first
+	flow_manager.state_manager._transition_to(GameStateManager.State.PLAYING)
 	
 	# When: Base destroyed and game over triggered
 	flow_manager.state_manager.trigger_game_over("Base destroyed")

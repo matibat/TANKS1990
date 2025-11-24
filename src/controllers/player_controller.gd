@@ -33,31 +33,30 @@ func _physics_process(_delta: float) -> void:
 func _process_input() -> void:
 	# Movement input
 	var input_vector = Vector2.ZERO
+	var emit_events = EventBus != null and EventBus.has_method("emit_game_event")
 	
 	if Input.is_action_pressed(INPUT_UP):
 		input_vector.y -= 1
-		_emit_input_event(Tank.Direction.UP, true)
+		if emit_events: _emit_input_event(Tank.Direction.UP, true)
 	if Input.is_action_pressed(INPUT_DOWN):
 		input_vector.y += 1
-		_emit_input_event(Tank.Direction.DOWN, true)
+		if emit_events: _emit_input_event(Tank.Direction.DOWN, true)
 	if Input.is_action_pressed(INPUT_LEFT):
 		input_vector.x -= 1
-		_emit_input_event(Tank.Direction.LEFT, true)
+		if emit_events: _emit_input_event(Tank.Direction.LEFT, true)
 	if Input.is_action_pressed(INPUT_RIGHT):
 		input_vector.x += 1
-		_emit_input_event(Tank.Direction.RIGHT, true)
+		if emit_events: _emit_input_event(Tank.Direction.RIGHT, true)
 	
 	# Apply movement to tank
 	if input_vector.length() > 0:
 		# Tank 1990 uses 4-directional movement, prioritize vertical
 		if input_vector.y != 0:
-			tank.move_in_direction(
-				Tank.Direction.UP if input_vector.y < 0 else Tank.Direction.DOWN
-			)
+			var dir = Tank.Direction.UP if input_vector.y < 0 else Tank.Direction.DOWN
+			tank.move_in_direction(dir)
 		elif input_vector.x != 0:
-			tank.move_in_direction(
-				Tank.Direction.LEFT if input_vector.x < 0 else Tank.Direction.RIGHT
-			)
+			var dir = Tank.Direction.LEFT if input_vector.x < 0 else Tank.Direction.RIGHT
+			tank.move_in_direction(dir)
 	else:
 		tank.stop_movement()
 	

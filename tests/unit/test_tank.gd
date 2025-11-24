@@ -48,9 +48,10 @@ class TestTankMovement:
 		assert_eq(tank.current_state, Tank.State.IDLE, "Tank should be idle")
 		var start_pos = tank.global_position
 		
-		# When: Command tank to move up
+		# When: Command tank to move up and simulate physics
 		tank.move_in_direction(Tank.Direction.UP)
-		await wait_frames(5)
+		for i in range(5):
+			tank._physics_process(1.0/60.0)
 		
 		# Then: Tank moves upward
 		assert_lt(tank.global_position.y, start_pos.y, "Tank Y should decrease (move up)")
@@ -61,9 +62,10 @@ class TestTankMovement:
 		# Given: Tank is idle
 		var start_pos = tank.global_position
 		
-		# When: Command tank to move right
+		# When: Command tank to move right and simulate physics
 		tank.move_in_direction(Tank.Direction.RIGHT)
-		await wait_frames(5)
+		for i in range(5):
+			tank._physics_process(1.0/60.0)
 		
 		# Then: Tank moves right
 		assert_gt(tank.global_position.x, start_pos.x, "Tank X should increase (move right)")
@@ -72,7 +74,8 @@ class TestTankMovement:
 	func test_given_moving_tank_when_stop_then_velocity_zero():
 		# Given: Tank is moving
 		tank.move_in_direction(Tank.Direction.UP)
-		await wait_frames(2)
+		for i in range(2):
+			tank._physics_process(1.0/60.0)
 		assert_eq(tank.current_state, Tank.State.MOVING, "Tank should be moving")
 		
 		# When: Stop movement
@@ -234,7 +237,7 @@ class TestTankHealth:
 		
 		# When: Take 1 damage
 		tank.take_damage(1)
-		await wait_frames(2)
+		await wait_physics_frames(2)
 		
 		# Then: Tank survives
 		assert_eq(tank.current_health, 3, "Tank has 3 HP remaining")
@@ -248,7 +251,7 @@ class TestTankHealth:
 		
 		# When: Take damage
 		tank.take_damage(1)
-		await wait_frames(2)
+		await wait_physics_frames(2)
 		
 		# Then: No damage taken
 		assert_eq(tank.current_health, initial_health, "Health unchanged")
@@ -273,7 +276,7 @@ class TestTankStates:
 	
 	func test_given_new_tank_when_spawned_then_starts_in_spawning_state():
 		# Given/When: Tank created
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		
 		# Then: Starts in SPAWNING state
 		assert_eq(tank.current_state, Tank.State.SPAWNING, "Tank starts spawning")

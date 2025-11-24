@@ -9,7 +9,7 @@ var base: Base
 var enemy_manager: Node  # Will be EnemyAIController
 
 # Player tracking
-var player_spawn_position: Vector2 = Vector2(128, 768)  # Bottom left
+var player_spawn_position: Vector2 = Vector2(128, 368)  # Bottom left (8 tiles from left, 23 tiles from top)
 const RESPAWN_IMMUNITY_DURATION: float = 5.0
 
 # UI references
@@ -151,7 +151,7 @@ func _spawn_base() -> void:
 		base.queue_free()
 	
 	base = Base.new()
-	base.position = Vector2(208, 400)  # Bottom center (13 tiles * 16px, centered in 416px width)
+	# Position set in base._ready() - bottom center at (208, 384)
 	
 	# Add to game root
 	var game_root = get_parent()

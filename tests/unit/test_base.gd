@@ -10,8 +10,8 @@ func before_each():
 	event_bus.recorded_events.clear()
 	event_bus.current_frame = 0
 	base = Base.new()
-	base.position = Vector2(208, 400) # Center bottom of 26x26 grid
 	add_child_autofree(base)
+	await wait_physics_frames(1) # Wait for _ready() to run
 
 ## ============================================================================
 ## Epic: Base Initialization
@@ -27,8 +27,11 @@ func test_given_base_created_when_initialized_then_has_default_health():
 func test_given_base_created_when_initialized_then_positioned_correctly():
 	# Given: Base entity
 	# When: Positioned at map bottom
-	# Then: Position is correct
-	assert_eq(base.position, Vector2(208, 400), "Base should be at bottom center")
+	# Then: Position is at bottom center of viewport
+	var viewport_size = get_viewport().get_visible_rect().size
+	var expected_x = viewport_size.x / 2.0
+	var expected_y = viewport_size.y - (16 * 2) # 2 tiles from bottom
+	assert_eq(base.position, Vector2(expected_x, expected_y), "Base should be at bottom center")
 
 func test_given_base_created_when_initialized_then_has_collision_shape():
 	# Given: Base entity created
@@ -54,7 +57,7 @@ func test_given_base_intact_when_player_bullet_hits_then_bullet_destroyed_no_dam
 	base._on_area_entered(bullet)
 	
 	# Then: Bullet is destroyed but base takes no damage
-	assert_true(bullet.is_queued_for_deletion(), "Player bullet should be destroyed on base hit")
+	assert_false(bullet.is_active, "Player bullet should be destroyed on base hit")
 	assert_eq(base.health, initial_health, "Base should not take damage from player bullets")
 	assert_false(base.is_destroyed, "Base should not be destroyed by player bullets")
 
@@ -102,7 +105,7 @@ func test_given_base_intact_when_enemy_bullet_hits_then_bullet_destroyed_and_dam
 	base._on_area_entered(bullet)
 	
 	# Then: Bullet is destroyed AND base takes damage
-	assert_true(bullet.is_queued_for_deletion(), "Enemy bullet should be destroyed on base hit")
+	assert_false(bullet.is_active, "Enemy bullet should be destroyed on base hit")
 	assert_eq(base.health, initial_health - 1, "Base should take damage from enemy bullets")
 
 func test_given_base_intact_when_takes_damage_then_health_decreases():
@@ -156,7 +159,7 @@ func test_given_base_destroyed_when_event_emitted_then_creates_event():
 	
 	# When: Takes fatal damage
 	base.take_damage(1)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	
 	# Then: BaseDestroyedEvent created
 	var events = event_bus.recorded_events.filter(func(e): return e.get_event_type() == "BaseDestroyed")

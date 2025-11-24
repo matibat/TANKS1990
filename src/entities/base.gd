@@ -24,15 +24,10 @@ func _init() -> void:
 func _ready() -> void:
 	health = max_health
 	
-	# Calculate dynamic position: bottom center of play area
-	var viewport_size = get_viewport_rect().size
-	var play_area_width = viewport_size.x
-	var play_area_height = viewport_size.y
-	
-	# Position at bottom center (1 tile from bottom)
-	var center_x = play_area_width / 2.0
-	var bottom_y = play_area_height - (TILE_SIZE * 2)  # 2 tiles from bottom
-	position = Vector2(center_x, bottom_y)
+	# Position at bottom center of 26x26 grid (416x416 pixels)
+	# Center horizontally: 13 tiles * 16px = 208px
+	# Near bottom: 24 tiles * 16px = 384px (2 tiles from bottom)
+	position = Vector2(208, 384)
 	
 	# Set up collision detection
 	collision_layer = 8  # Base on layer 4 (2^3)

@@ -62,8 +62,31 @@ func test_tank_has_correct_collision_layer():
 	assert_eq(tank.collision_layer, 1, "Tank is on layer 1")
 
 func test_tank_collides_with_terrain():
-	# Given/Then: Tank should collide with terrain (layer 2)
-	assert_true((tank.collision_mask & 2) != 0, "Tank should collide with terrain layer")
+	# Given: Tank at grid position with wall ahead
+	tank.global_position = Vector2(128, 128)
+	tank._complete_spawn()
+	tank.invulnerability_timer = 0
+	tank._end_invulnerability()
+	
+	# Load terrain with wall at tile (9, 8)
+	var empty_terrain = []
+	for y in range(26):
+		for x in range(26):
+			empty_terrain.append(TerrainManager.TileType.EMPTY)
+	terrain.load_terrain(empty_terrain)
+	terrain.set_tile_at_coord(Vector2i(9, 8), TerrainManager.TileType.BRICK)
+	
+	# When: Try to move right toward wall (multiple grid cells)
+	for i in range(20):
+		tank.move_in_direction(Tank.Direction.RIGHT)
+		tank._physics_process(1.0/60.0)
+	
+	# Then: Tank should be blocked before reaching the wall
+	# Tank at (128, 128) occupies tiles (7,7)-(8,8)
+	# Moving right, it can reach (136, 128) and (144, 128)
+	# At (152, 128) it would occupy tiles (9,7)-(10,8), hitting wall at (9,8)
+	assert_lt(tank.global_position.x, 152.0, "Tank should be blocked by wall")
+	assert_gt(tank.global_position.x, 128.0, "Tank should have moved before hitting wall")
 
 ## Terrain Destruction Tests
 

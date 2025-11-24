@@ -20,6 +20,7 @@ var direction: Vector2 = Vector2.UP
 var owner_tank_id: int = -1
 var owner_type: OwnerType = OwnerType.ENEMY
 var bullet_id: int = 0
+var bullet_level: int = 1  # 1-3, matches tank level for steel destruction
 var targets_hit: int = 0
 var is_active: bool = true
 
@@ -59,6 +60,11 @@ func _physics_process(delta: float) -> void:
 	
 	# Move bullet
 	global_position += direction * speed * delta
+	
+	# Check grid-based terrain collision at bullet center
+	if _check_terrain_collision():
+		_destroy()
+		return
 	
 	# Check if out of bounds
 	if _is_out_of_bounds():
@@ -149,3 +155,67 @@ func _update_sprite_rotation() -> void:
 	
 	# Rotate sprite to match direction
 	sprite.rotation = direction.angle()
+
+## Tile Geometry Methods
+
+## Check if this bullet collides with another bullet (4-pixel radius)
+func check_bullet_collision(other: Bullet) -> bool:
+	const COLLISION_RADIUS = 4.0  # 4-pixel radius per bullet
+	const COMBINED_RADIUS = COLLISION_RADIUS * 2  # 8-pixel diameter
+	
+	var distance = position.distance_to(other.position)
+	return distance < COMBINED_RADIUS
+
+## Check grid-based terrain collision at bullet center position
+func _check_terrain_collision() -> bool:
+	var terrain = _get_terrain_manager()
+	if not terrain:
+		return false
+	
+	# Get tile coordinate at bullet center (grid-based, not sub-pixel)
+	var tile_x = int(floor(global_position.x / TILE_SIZE))
+	var tile_y = int(floor(global_position.y / TILE_SIZE))
+	var tile_type = terrain.get_tile_at_coords(tile_x, tile_y)
+	
+	# Check if tile is solid
+	if tile_type == TerrainManager.TileType.BRICK:
+		# Destructible - damage it
+		terrain.damage_tile(global_position, can_destroy_steel)
+		return true
+	elif tile_type == TerrainManager.TileType.STEEL:
+		if can_destroy_steel:
+			# Can destroy steel
+			terrain.damage_tile(global_position, true)
+			return true
+		else:
+			# Bounce off steel
+			terrain.damage_tile(global_position, false)
+			return true
+	elif tile_type == TerrainManager.TileType.WATER:
+		# Water blocks bullets
+		return true
+	
+	return false
+
+## Get terrain manager from scene tree
+func _get_terrain_manager() -> TerrainManager:
+	if not has_meta("cached_terrain"):
+		var root = get_tree().root if get_tree() else null
+		if root:
+			for child in root.get_children():
+				var terrain = _find_terrain_recursive(child)
+				if terrain:
+					set_meta("cached_terrain", terrain)
+					return terrain
+		return null
+	else:
+		return get_meta("cached_terrain")
+
+func _find_terrain_recursive(node: Node) -> TerrainManager:
+	if node is TerrainManager:
+		return node
+	for child in node.get_children():
+		var terrain = _find_terrain_recursive(child)
+		if terrain:
+			return terrain
+	return null

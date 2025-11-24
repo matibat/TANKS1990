@@ -100,6 +100,132 @@ A faithful remake of Tank 1990 in Godot with modernized features:
 - **Forest:** Provides camouflage (tanks hidden while inside)
 - **Ice:** Tanks slide with momentum
 
+#### Tile Geometry & Positioning System
+
+**Grid Structure:**
+
+- **Grid Size:** 26x26 tiles
+- **Tile Dimensions:** 16x16 pixels per tile
+- **Total Playfield:** 416x416 pixels
+- **Coordinate System:** Origin (0,0) at top-left corner
+
+**Tank Positioning:**
+
+- **Tank Size:** 32x32 pixels (2x2 tiles)
+- **Sub-Tile Movement:** Tanks can move through half-tile increments (8-pixel precision)
+- **Tank Center:** Position calculated from tank center point, not top-left
+- **Movement Grid:** Tanks align to 8-pixel sub-grid (0, 8, 16, 24, 32...)
+- **Collision Detection:** Tank occupies 2x2 tile space, checks all 4 corner tiles
+- **Example:** Tank at position (100, 100) occupies tiles (6,6), (6,7), (7,6), (7,7)
+
+**Bullet Positioning:**
+
+- **Bullet Size:** 8x8 pixels (0.5x0.5 tiles)
+- **Spawn Position:** Bullets spawn from tank center, offset by facing direction
+- **Spawn Offset:** 20 pixels from tank center in facing direction
+- **Movement Precision:** Bullets move in continuous pixel coordinates (no grid snapping)
+- **Collision Position:** Bullets check collision at their center point
+- **Bullet-to-Bullet Collision:** Bullets can collide with each other mid-flight
+  - When two bullets collide, both are destroyed
+  - Collision detection uses circular hitboxes (4-pixel radius)
+  - Prevents bullet "phasing" through each other at high speeds
+- **Tank Position Limit:** Bullets cannot spawn if tank is at edge of playfield
+  - Minimum tank position: (16, 16) pixels from edge
+  - Maximum tank position: (400, 400) pixels (416 - 16)
+  - Prevents bullets spawning out of bounds
+
+**Sub-Tile Movement Benefits:**
+
+- Smoother tank navigation through narrow passages
+- Precise positioning for defensive play
+- Enables partial cover behind destructible terrain
+- Allows tanks to "thread" between obstacles
+
+**Collision Grid Alignment:**
+
+- **Brick/Steel Tiles:** Aligned to 16-pixel grid (full tiles)
+- **Terrain Destruction:** Removes entire 16x16 tile on hit
+- **Tank-Terrain Collision:** Checks if tank's 2x2 footprint overlaps solid tiles
+- **Bullet-Terrain Collision:** Checks if bullet center intersects tile boundaries
+
+#### Terrain Modification System
+
+**Destructible Terrain (Brick):**
+
+- **Hit Detection:** Bullet center must be within tile boundaries
+- **Destruction Method:** Entire tile removed instantly (no partial damage)
+- **Visual Feedback:** Explosion sprite (16x16) plays at tile position for 0.2 seconds
+- **Collision Update:** TileMap collision shape updated immediately
+- **Event Emission:** CollisionEvent fired with tile coordinates
+- **Reconstruction:** Destroyed tiles remain destroyed for entire stage duration
+
+**Steel Terrain:**
+
+- **Default Behavior:** Bullets bounce/despawn on impact (no damage)
+- **Level 3 Tank:** Can destroy steel tiles with bullets
+- **Destruction Requirement:** Only Level 3 (3-star) player tank bullets
+- **Destruction Method:** Same as brick (full tile removal)
+- **Visual Distinction:** Different explosion effect (sparks)
+
+**Terrain Types Detail:**
+
+1. **Brick (Tile ID: 0)**
+
+   - Atlas Coordinates: (0, 0)
+   - Collision Layer: 2 (Terrain)
+   - Destructible: Always
+   - Passable: No
+   - Speed Modifier: N/A (blocks movement)
+
+2. **Steel (Tile ID: 1)**
+
+   - Atlas Coordinates: (1, 0)
+   - Collision Layer: 2 (Terrain)
+   - Destructible: Only by Level 3 bullets
+   - Passable: No
+   - Speed Modifier: N/A (blocks movement)
+
+3. **Water (Tile ID: 2)**
+
+   - Atlas Coordinates: (2, 0)
+   - Collision Layer: 2 (Terrain)
+   - Destructible: No
+   - Passable: No
+   - Speed Modifier: N/A (blocks movement)
+   - Visual: Animated sprite (4 frames, 0.2s per frame)
+
+4. **Forest (Tile ID: 3)**
+
+   - Atlas Coordinates: (3, 0)
+   - Collision Layer: None (no collision shape)
+   - Destructible: No
+   - Passable: Yes
+   - Speed Modifier: 1.0x (normal speed)
+   - Visual Effect: Tanks rendered below forest layer (Z-index: -1)
+
+5. **Ice (Tile ID: 4)**
+   - Atlas Coordinates: (4, 0)
+   - Collision Layer: None (no collision shape)
+   - Destructible: No
+   - Passable: Yes
+   - Speed Modifier: 1.5x acceleration, 0.8x friction
+   - Momentum Effect: Tanks slide 2-3 tiles after input stops
+
+**Terrain Loading Process:**
+
+1. **Stage Data:** Read 26x26 integer array from JSON
+2. **TileMap Population:** Set each tile using `set_cell(Vector2i(x, y), 0, atlas_coords)`
+3. **Collision Baking:** Force collision shape update with `force_update()`
+4. **Validation:** Ensure steel boundary tiles present at edges
+5. **Event Emission:** StageLoadedEvent with terrain checksum
+
+**Boundary Enforcement:**
+
+- **Outer Border:** All edge tiles (x=0, x=25, y=0, y=25) must be steel
+- **Enforcement:** TerrainManager validates and auto-corrects on load
+- **Purpose:** Prevents tanks/bullets from leaving playfield
+- **Exception:** Does not apply to small test arrays (<26x26)
+
 #### Stage Design
 
 - 35 pre-designed stages with increasing difficulty
@@ -217,7 +343,9 @@ Power-ups appear when destroying special red enemy tanks:
 - **Given** the game is running, **when** I press directional input, **then** tank moves in that direction at consistent speed
 - **Given** tank is moving, **when** I release input, **then** tank stops immediately
 - **Given** tank faces a direction, **when** I press fire, **then** bullet shoots in that direction
-- **Edge cases:** Tank cannot move through solid obstacles; inputs are buffered for smooth diagonal prevention
+- **Given** tank approaches narrow passage, **when** moving, **then** tank can position at 8-pixel sub-tile increments
+- **Given** tank moves through forest, **when** in forest tile, **then** tank rendered behind forest layer (partially hidden)
+- **Edge cases:** Tank cannot move through solid obstacles; inputs are buffered for smooth diagonal prevention; tank occupies 2x2 tile footprint for collision
 
 **US1.2:** As a player, I want to destroy enemy tanks so I can progress through stages.
 
@@ -226,7 +354,9 @@ Power-ups appear when destroying special red enemy tanks:
 - **Given** bullet hits basic enemy, **when** collision occurs, **then** enemy explodes and is removed
 - **Given** bullet hits power tank, **when** collision occurs, **then** hit counter decrements (4 hits total)
 - **Given** all stage enemies defeated, **when** last enemy destroyed, **then** stage complete screen appears
-- **Edge cases:** Bullets despawn after hitting targets or screen edges; multiple simultaneous hits register correctly
+- **Given** two bullets collide mid-flight, **when** collision detected, **then** both bullets destroyed
+- **Given** tank at playfield edge, **when** fire pressed, **then** bullet spawns only if tank 16+ pixels from boundary
+- **Edge cases:** Bullets despawn after hitting targets or screen edges; multiple simultaneous hits register correctly; bullet-bullet collision uses 4-pixel radius detection
 
 ### Epic 2: Base Defense
 
@@ -254,10 +384,11 @@ Power-ups appear when destroying special red enemy tanks:
 
 **Acceptance Criteria:**
 
-- **Given** bullet hits brick, **when** collision occurs, **then** brick tile disappears
-- **Given** tank fires at brick cluster, **when** multiple bricks hit, **then** each brick destroyed individually
-- **Given** steel wall hit, **when** player lacks power-up, **then** bullet bounces/disappears
-- **Edge cases:** Partial brick destruction creates new paths; destruction animation plays
+- **Given** bullet hits brick, **when** collision occurs, **then** entire 16x16 tile disappears instantly
+- **Given** tank fires at brick cluster, **when** multiple bricks hit, **then** each brick destroyed individually (no partial damage)
+- **Given** steel wall hit, **when** player lacks Level 3 upgrade, **then** bullet despawns without damage
+- **Given** Level 3 tank bullet hits steel, **when** collision occurs, **then** steel tile destroyed like brick
+- **Edge cases:** Terrain destruction updates collision immediately; sub-tile tank positioning allows partial cover behind remaining bricks
 
 **US3.2:** As a player, I want terrain variety so gameplay remains engaging.
 

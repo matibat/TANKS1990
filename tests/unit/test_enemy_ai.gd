@@ -75,7 +75,7 @@ func test_ai_stores_base_position() -> void:
 
 func test_patrol_moves_in_cardinal_direction() -> void:
 	ai_controller.change_state(EnemyAIController.AIState.PATROL)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	
 	# Tank should be moving (velocity non-zero) in patrol state
 	var has_velocity = enemy_tank.velocity.length() > 0
@@ -83,13 +83,13 @@ func test_patrol_moves_in_cardinal_direction() -> void:
 
 func test_patrol_changes_direction_periodically() -> void:
 	ai_controller.change_state(EnemyAIController.AIState.PATROL)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	
 	var initial_direction = ai_controller.patrol_direction
 	
 	# Fast-forward patrol timer
 	ai_controller.patrol_timer = ai_controller.patrol_change_interval + 0.1
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	
 	var new_direction = ai_controller.patrol_direction
 	# Direction may or may not change (random), but timer should reset
@@ -113,7 +113,7 @@ func test_patrol_occasionally_shoots() -> void:
 
 func test_chase_moves_toward_player() -> void:
 	ai_controller.change_state(EnemyAIController.AIState.CHASE)
-	await wait_frames(3)
+	await wait_physics_frames(3)
 	
 	# Tank should be moving when chasing
 	var has_velocity = enemy_tank.velocity.length() > 0
@@ -138,7 +138,7 @@ func test_chase_transitions_to_patrol_when_player_far() -> void:
 	
 	# Trigger state evaluation
 	ai_controller.decision_timer = ai_controller.decision_interval + 0.1
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	
 	var distance = enemy_tank.global_position.distance_to(player_tank.global_position)
 	if distance > ai_controller.lose_chase_range:
@@ -153,7 +153,7 @@ func test_chase_transitions_to_patrol_when_player_far() -> void:
 
 func test_attack_base_moves_toward_base() -> void:
 	ai_controller.change_state(EnemyAIController.AIState.ATTACK_BASE)
-	await wait_frames(3)
+	await wait_physics_frames(3)
 	
 	# Tank should be moving toward base
 	var has_velocity = enemy_tank.velocity.length() > 0
@@ -174,7 +174,7 @@ func test_attack_base_transitions_to_chase_when_player_close() -> void:
 	
 	# Trigger state evaluation
 	ai_controller.decision_timer = ai_controller.decision_interval + 0.1
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	
 	var distance = enemy_tank.global_position.distance_to(player_tank.global_position)
 	if distance < ai_controller.chase_range * 0.5:
@@ -195,7 +195,7 @@ func test_patrol_transitions_to_chase_when_player_nearby() -> void:
 	
 	# Trigger state evaluation
 	ai_controller.decision_timer = ai_controller.decision_interval + 0.1
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	
 	var distance = enemy_tank.global_position.distance_to(player_tank.global_position)
 	if distance < ai_controller.chase_range:
@@ -215,7 +215,7 @@ func test_state_change_triggers_state_entry() -> void:
 func test_state_evaluates_periodically() -> void:
 	var initial_decision_timer = ai_controller.decision_timer
 	
-	await wait_frames(5)
+	await wait_physics_frames(5)
 	
 	# Timer should have progressed
 	assert_true(true, "State evaluation executed without errors")
@@ -230,7 +230,7 @@ func test_ai_handles_null_player() -> void:
 	
 	# Trigger state evaluation
 	ai_controller.decision_timer = ai_controller.decision_interval + 0.1
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	
 	assert_eq(ai_controller.current_state, EnemyAIController.AIState.PATROL,
 		"AI should transition to PATROL when player is null")
@@ -239,7 +239,7 @@ func test_ai_stops_when_tank_is_dying() -> void:
 	enemy_tank.current_state = Tank.State.DYING
 	
 	ai_controller.change_state(EnemyAIController.AIState.PATROL)
-	await wait_frames(3)
+	await wait_physics_frames(3)
 	
 	# AI should not crash or cause errors
 	assert_true(true, "AI handles dying tank without errors")

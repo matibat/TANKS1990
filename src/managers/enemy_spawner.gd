@@ -120,6 +120,18 @@ func _try_spawn_enemy() -> void:
 	enemy.add_to_group("tanks")
 	enemy.add_to_group("enemies")
 	
+	# Add AI controller to enemy tank
+	var ai_controller = EnemyAIController.new()
+	ai_controller.tank = enemy
+	# Get player reference and base position from scene
+	var players = get_tree().get_nodes_in_group("player")
+	if players.size() > 0:
+		ai_controller.player = players[0]
+	var bases = get_tree().get_nodes_in_group("base")
+	if bases.size() > 0:
+		ai_controller.base_position = bases[0].global_position
+	enemy.add_child(ai_controller)
+	
 	# Reduce spawn time for enemies
 	enemy.spawn_timer = 0.5  # Faster spawn for enemies
 	

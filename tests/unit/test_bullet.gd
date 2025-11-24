@@ -170,7 +170,7 @@ class TestBulletManager:
 	func before_each():
 		manager = BulletManagerScript.new()
 		add_child(manager)  # Don't use autofree - prevents callback issues
-		await wait_frames(1)  # Let _ready() execute
+		await wait_physics_frames(1)  # Let _ready() execute
 	
 	func after_each():
 		if is_instance_valid(manager):
@@ -195,7 +195,7 @@ class TestBulletManager:
 		event.direction = Vector2.UP
 		event.bullet_level = 1
 		EventBus.emit_game_event(event)
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		
 		# Then: Bullet taken from pool
 		assert_lt(manager.bullet_pool.size(), initial_pool_size, "Bullet taken from pool")
@@ -210,7 +210,7 @@ class TestBulletManager:
 			event.direction = Vector2.UP
 			event.bullet_level = 1
 			EventBus.emit_game_event(event)
-			await wait_frames(1)
+			await wait_physics_frames(1)
 		
 		var bullet_count = manager.get_bullet_count_for_tank(1)
 		
@@ -221,7 +221,7 @@ class TestBulletManager:
 		event.direction = Vector2.UP
 		event.bullet_level = 1
 		EventBus.emit_game_event(event)
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		
 		# Then: No new bullet spawned
 		assert_eq(manager.get_bullet_count_for_tank(1), bullet_count, "Bullet count should not increase")
@@ -234,7 +234,7 @@ class TestBulletManager:
 		event.direction = Vector2.UP
 		event.bullet_level = 1
 		EventBus.emit_game_event(event)
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		
 		# Check if bullet was actually spawned
 		assert_true(manager.active_bullets.has(1), "Tank should have entry in active_bullets")
@@ -245,7 +245,7 @@ class TestBulletManager:
 		
 		# When: Bullet destroyed
 		bullet._destroy()
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		
 		# Then: Returned to pool
 		assert_gt(manager.bullet_pool.size(), initial_pool_size, "Bullet returned to pool")

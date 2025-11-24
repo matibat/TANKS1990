@@ -40,11 +40,11 @@ func after_each() -> void:
 func test_given_enemy_spawned_when_spawn_completes_then_tank_moves_to_idle() -> void:
 	# Given: Start wave to spawn enemies
 	enemy_spawner.start_wave(1)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	
 	# Force spawn immediately
 	enemy_spawner.spawn_timer = enemy_spawner.SPAWN_INTERVAL + 1.0
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	
 	# When: Get spawned enemy
 	var enemies = get_tree().get_nodes_in_group("enemies")
@@ -68,11 +68,11 @@ func test_given_enemy_spawned_when_spawn_completes_then_tank_moves_to_idle() -> 
 func test_given_enemy_with_ai_when_spawned_then_eventually_moves() -> void:
 	# Given: Spawn enemy with AI
 	enemy_spawner.start_wave(1)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	
 	# Force spawn
 	enemy_spawner.spawn_timer = enemy_spawner.SPAWN_INTERVAL + 1.0
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	if enemies.size() == 0:
@@ -104,12 +104,12 @@ func test_given_enemy_with_ai_when_spawned_then_eventually_moves() -> void:
 func test_given_multiple_enemies_when_spawned_then_respects_concurrent_limit() -> void:
 	# Given: Start wave
 	enemy_spawner.start_wave(1)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	
 	# When: Force multiple spawns
 	for i in range(10):
 		enemy_spawner.spawn_timer = enemy_spawner.SPAWN_INTERVAL + 1.0
-		await wait_frames(1)
+		await wait_physics_frames(1)
 	
 	# Then: Should respect MAX_CONCURRENT_ENEMIES
 	var enemies = get_tree().get_nodes_in_group("enemies")
@@ -227,7 +227,7 @@ func test_given_enemy_far_from_player_when_processing_then_stays_in_patrol() -> 
 	ai.initialize(enemy, player_tank, Vector2(400, 750))
 	
 	# When: AI evaluates state
-	await wait_frames(10)
+	await wait_physics_frames(10)
 	
 	# Then: Should be in patrol or idle (not chase)
 	assert_true(
