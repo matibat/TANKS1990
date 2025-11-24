@@ -111,9 +111,9 @@ func test_given_tank_at_edge_when_moves_beyond_then_clamped_to_grid():
 	for i in range(20):
 		tank._physics_process(1.0/60.0)
 	
-	# Then: Tank clamped at y=0 (still on grid)
-	assert_lte(tank.global_position.y, 0, "Tank clamped at top boundary")
-	var y_mod = int(max(0, tank.global_position.y)) % 8
+	# Then: Tank clamped at y=16 (TILE_SIZE, keeps 2x2 footprint in bounds)
+	assert_lte(tank.global_position.y, 16.0, "Tank clamped at top boundary (min 16px)")
+	var y_mod = int(tank.global_position.y) % 8
 	assert_eq(y_mod, 0, "Tank position still on grid at boundary")
 
 ## Scenario: Tank occupies 2x2 tile footprint (32x32 pixels)

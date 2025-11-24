@@ -216,11 +216,43 @@
 - ✅ Stage progression system
 - ✅ Pause/resume functionality
 
+### Phase 7: Grid-Based Movement System ✅ (Completed Nov 23, 2025)
+
+**Deliverables:**
+
+- ✅ Discrete 8-pixel grid movement (half-tile precision)
+- ✅ 2x2 tile tank footprint (32x32 pixels)
+- ✅ Grid-based terrain collision detection
+- ✅ TerrainManager integration for collision checks
+- ✅ Boundary clamping (tank center 16-400px)
+- ✅ Scene dimensions corrected (832x832 → 416x416)
+- ✅ Fixed spawn positions for 26x26 grid
+- ✅ Removed obsolete TestWalls (using TerrainManager)
+- ✅ Placeholder colored tiles for visual feedback
+- ✅ 17 new BDD tests (100% passing)
+
+**Test Coverage:**
+
+- Grid Movement: 5 tests (discrete steps, half-tile precision, directional movement)
+- Grid Collision: 9 tests (2x2 footprint, boundary conditions, terrain checks)
+- Terrain Collision Integration: 8 tests (brick/steel/water collision, navigation)
+
+**Key Features:**
+
+- Movement: 8-pixel increments on 26x26 tile grid (416x416 total)
+- Collision: Checks all 4 tiles of 2x2 footprint before movement
+- Terrain Types: BRICK (red/brown), STEEL (gray), WATER (blue) block movement
+- Passable Tiles: FOREST (green), ICE (cyan) allow movement
+- Boundaries: Tank position clamped to keep footprint within grid
+- Integration: TerrainManager provides tile data via get_tile_at_coords()
+- Architecture: Grid dimensions match terrain (26x26 tiles, 16px each)
+- Visual: Procedurally generated colored tiles until sprite atlas added
+
 ---
 
 ## Remaining Work
 
-### Phase 7: Power-Up System
+### Phase 8: Power-Up System
 
 - [ ] Power-up entity with 6 types (Tank, Star, Grenade, Helmet, Clock, Shovel)
 - [ ] Power-up drop system (from Armored tanks)

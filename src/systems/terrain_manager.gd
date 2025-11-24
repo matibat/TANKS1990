@@ -32,7 +32,59 @@ signal tile_damaged(tile_pos: Vector2i, tile_type: TileType)
 func _ready() -> void:
 	# TileMapLayer has collision enabled by default
 	# Collision layers are controlled by the TileSet physics layers
-	pass
+	_create_placeholder_tileset()
+
+func _create_placeholder_tileset() -> void:
+	"""Create a simple colored tile set for visual feedback until sprites are added"""
+	# Create TileSet if not already configured
+	if tile_set == null or tile_set.get_source_count() == 0:
+		var new_tileset = TileSet.new()
+		new_tileset.tile_size = Vector2i(16, 16)
+		
+		# Add physics layer FIRST before creating tiles
+		new_tileset.add_physics_layer()
+		new_tileset.set_physics_layer_collision_layer(0, 2)  # Layer 2 for terrain
+		new_tileset.set_physics_layer_collision_mask(0, 0)
+		
+		# Create TileSetAtlasSource
+		var atlas_source = TileSetAtlasSource.new()
+		
+		# Create a simple placeholder texture (5x1 atlas for 5 tile types)
+		var img = Image.create(80, 16, false, Image.FORMAT_RGBA8)
+		
+		# Fill with colors for each tile type
+		# BRICK (0,0) - Red/Brown
+		img.fill_rect(Rect2i(0, 0, 16, 16), Color(0.6, 0.3, 0.2, 1.0))
+		# STEEL (1,0) - Gray
+		img.fill_rect(Rect2i(16, 0, 16, 16), Color(0.5, 0.5, 0.5, 1.0))
+		# WATER (2,0) - Blue
+		img.fill_rect(Rect2i(32, 0, 16, 16), Color(0.2, 0.3, 0.8, 1.0))
+		# FOREST (3,0) - Green
+		img.fill_rect(Rect2i(48, 0, 16, 16), Color(0.2, 0.6, 0.2, 1.0))
+		# ICE (4,0) - Cyan
+		img.fill_rect(Rect2i(64, 0, 16, 16), Color(0.7, 0.9, 1.0, 1.0))
+		
+		var texture = ImageTexture.create_from_image(img)
+		atlas_source.texture = texture
+		atlas_source.texture_region_size = Vector2i(16, 16)
+		
+		# Create tiles for each type
+		for i in range(5):
+			var coords = Vector2i(i, 0)
+			atlas_source.create_tile(coords)
+			# Add physics layer for collision (now layer 0 exists)
+			var tile_data = atlas_source.get_tile_data(coords, 0)
+			if tile_data:
+				tile_data.set_collision_polygons_count(0, 1)
+				var polygon = PackedVector2Array([
+					Vector2(0, 0), Vector2(16, 0), Vector2(16, 16), Vector2(0, 16)
+				])
+				tile_data.set_collision_polygon_points(0, 0, polygon)
+		
+		new_tileset.add_source(atlas_source, 0)
+		
+		tile_set = new_tileset
+		print("Created placeholder tileset with colored tiles")
 
 ## Get tile type at world position
 func get_tile_at_position(world_pos: Vector2) -> TileType:

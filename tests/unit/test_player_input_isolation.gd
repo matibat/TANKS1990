@@ -53,15 +53,16 @@ func test_given_player_and_enemy_when_player_input_then_only_player_moves():
 	
 	# When: Simulate player pressing UP key (grid movement requires continuous commands)
 	Input.action_press("move_up")
-	for i in range(15):  # More frames needed for grid-based movement
+	for i in range(30):  # More frames needed for grid-based movement (8px per step)
 		player_controller._physics_process(0.016)
 		player_tank._physics_process(0.016)
 		enemy_tank._physics_process(0.016)
+		await get_tree().physics_frame
 	Input.action_release("move_up")
 	
 	# Then: Player tank should have moved (at least one 8-pixel grid step)
-	assert_ne(player_tank.global_position, Vector2(100, 100), "Player tank should move")
-	assert_lt(player_tank.global_position.y, 100, "Player tank should move up")
+	assert_ne(player_tank.global_position, Vector2(100.0, 100.0), "Player tank should move")
+	assert_lt(player_tank.global_position.y, 100.0, "Player tank should move up")
 	
 	# And: Enemy tank should NOT have moved
 	assert_eq(enemy_tank.global_position, enemy_start_pos, "Enemy tank should not move from player input")
