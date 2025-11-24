@@ -102,15 +102,19 @@ func _try_spawn_enemy() -> void:
 		Tank.TankType.BASIC:
 			enemy.base_speed = 50.0
 			enemy.max_health = 1
+			enemy.modulate = Color(0.8, 0.6, 0.4)  # Brown - basic enemy
 		Tank.TankType.FAST:
 			enemy.base_speed = 100.0
 			enemy.max_health = 1
+			enemy.modulate = Color(0.4, 0.8, 0.4)  # Green - fast enemy
 		Tank.TankType.POWER:
 			enemy.base_speed = 50.0
 			enemy.max_health = 4
+			enemy.modulate = Color(0.9, 0.9, 0.3)  # Yellow - power enemy
 		Tank.TankType.ARMORED:
 			enemy.base_speed = 50.0
 			enemy.max_health = 2
+			enemy.modulate = Color(0.9, 0.3, 0.3)  # Red - armored enemy (drops power-ups)
 	
 	enemy.position = spawn_point
 	enemy.current_health = enemy.max_health
@@ -200,17 +204,17 @@ func _tank_type_to_string(type: Tank.TankType) -> String:
 	"""Convert TankType enum to string for events"""
 	match type:
 		Tank.TankType.PLAYER:
-			return "player"
+			return "Player"
 		Tank.TankType.BASIC:
-			return "basic"
+			return "Basic"
 		Tank.TankType.FAST:
-			return "fast"
+			return "Fast"
 		Tank.TankType.POWER:
-			return "power"
+			return "Power"
 		Tank.TankType.ARMORED:
-			return "armored"
+			return "Armored"
 		_:
-			return "unknown"
+			return "Unknown"
 
 func _exit_tree() -> void:
 	EventBus.unsubscribe("TankDestroyed", _on_tank_destroyed)

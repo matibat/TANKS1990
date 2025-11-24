@@ -7,6 +7,7 @@ var state_manager: GameStateManager
 var player_tank: Tank
 var base: Base
 var enemy_manager: Node  # Will be EnemyAIController
+var power_up_manager: Node  # PowerUpManager for spawning power-ups
 
 # Player tracking
 var player_spawn_position: Vector2 = Vector2(128, 368)  # Bottom left (8 tiles from left, 23 tiles from top)
@@ -21,6 +22,11 @@ func _ready() -> void:
 	# Initialize state manager
 	state_manager = GameStateManager.new()
 	add_child(state_manager)
+	
+	# Initialize power-up manager
+	var PowerUpManager = load("res://src/managers/power_up_manager.gd")
+	power_up_manager = PowerUpManager.new()
+	add_child(power_up_manager)
 	
 	# Connect state change signals
 	state_manager.state_changed.connect(_on_state_changed)
