@@ -71,7 +71,7 @@ func test_power_up_spawned_event_emitted():
 	var destroy_event = TankDestroyedEvent.new()
 	destroy_event.tank_type = "Armored"
 	destroy_event.position = Vector2(100, 100)
-	EventBus.emit_event(destroy_event)
+	EventBus.emit_game_event(destroy_event)
 	await wait_frames(2)
 	
 	# Then: PowerUpSpawnedEvent emitted
@@ -94,8 +94,8 @@ func test_player_tank_collects_power_up_on_collision():
 	add_child_autofree(power_up)
 	await wait_frames(1)
 	
-	# When: Collision detected (simulated via area_entered)
-	power_up._on_area_entered(player_tank)
+	# When: Collision detected (simulated via body_entered since tank is CharacterBody2D)
+	power_up._on_body_entered(player_tank)
 	await wait_frames(1)
 	
 	# Then: Power-up removed from scene
@@ -118,7 +118,7 @@ func test_power_up_collected_event_emitted():
 	await wait_frames(1)
 	
 	# When: Power-up collected
-	power_up._on_area_entered(player_tank)
+	power_up._on_body_entered(player_tank)
 	await wait_frames(1)
 	
 	# Then: PowerUpCollectedEvent emitted

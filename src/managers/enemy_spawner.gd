@@ -13,6 +13,10 @@ const MAX_CONCURRENT_ENEMIES: int = 4
 const SPAWN_INTERVAL: float = 3.0  # Seconds between spawns
 const SPAWN_Y_POSITION: float = 32.0  # 2 tiles from top
 
+# Testing mode - set to true for infinite spawning
+@export var infinite_spawn_mode: bool = false
+@export var test_armored_only: bool = false  # Spawn only Armored tanks for power-up testing
+
 # Spawn points (26x26 grid, tiles are 16px)
 const SPAWN_POINTS: Array[Vector2] = [
 	Vector2(48, SPAWN_Y_POSITION),   # Left (tile 3)
@@ -82,12 +86,20 @@ func _try_spawn_enemy() -> void:
 	if active_enemies.size() >= MAX_CONCURRENT_ENEMIES:
 		return
 	
-	# Check if wave complete
-	if enemies_spawned >= ENEMIES_PER_STAGE:
+	# Check if wave complete (skip in infinite mode)
+	if not infinite_spawn_mode and enemies_spawned >= ENEMIES_PER_STAGE:
 		return
 	
-	# Get next enemy type from queue
-	var enemy_type: Tank.TankType = enemy_queue[enemies_spawned]
+	# Get next enemy type from queue (or force Armored in test mode)
+	var enemy_type: Tank.TankType
+	if test_armored_only:
+		enemy_type = Tank.TankType.ARMORED
+	elif infinite_spawn_mode:
+		# In infinite mode, cycle through queue and repeat
+		var queue_index = enemies_spawned % enemy_queue.size()
+		enemy_type = enemy_queue[queue_index]
+	else:
+		enemy_type = enemy_queue[enemies_spawned]
 	var spawn_point: Vector2 = _get_spawn_position()
 	
 	# Create enemy tank

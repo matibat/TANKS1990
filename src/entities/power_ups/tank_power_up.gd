@@ -7,13 +7,23 @@ func _ready():
 	super._ready()
 
 func _create_placeholder_visual():
-	var sprite = ColorRect.new()
-	sprite.size = Vector2(32, 32)
-	sprite.position = Vector2(-16, -16)
-	sprite.color = Color.DARK_GREEN  # Green for extra life
-	add_child(sprite)
+	var bg = ColorRect.new()
+	bg.size = Vector2(30, 30)
+	bg.position = Vector2(-15, -15)
+	bg.color = Color.DARK_GREEN
+	add_child(bg)
+	_create_icon()
+
+func _create_icon():
+	# Draw tank icon (simplified)
+	var icon = Label.new()
+	icon.text = "T"
+	icon.position = Vector2(-8, -12)
+	icon.add_theme_font_size_override("font_size", 20)
+	icon.add_theme_color_override("font_color", Color.WHITE)
+	add_child(icon)
 
 func apply_effect(tank):
 	# Grant extra life to player
-	if tank.has("lives"):
+	if "lives" in tank:
 		tank.lives += 1

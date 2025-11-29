@@ -9,15 +9,32 @@ func _ready():
 	super._ready()
 
 func _create_placeholder_visual():
-	var sprite = ColorRect.new()
-	sprite.size = Vector2(32, 32)
-	sprite.position = Vector2(-16, -16)
-	sprite.color = Color.GRAY  # Gray for steel walls
-	add_child(sprite)
+	var bg = ColorRect.new()
+	bg.size = Vector2(30, 30)
+	bg.position = Vector2(-15, -15)
+	bg.color = Color.GRAY
+	add_child(bg)
+	_create_icon()
 
-func apply_effect(tank):
+func _create_icon():
+	var icon = Label.new()
+	icon.text = "S"
+	icon.position = Vector2(-8, -12)
+	icon.add_theme_font_size_override("font_size", 20)
+	icon.add_theme_color_override("font_color", Color.WHITE)
+	add_child(icon)
+
+func apply_effect(_tank):
 	# Fortify base walls with steel
 	var terrain_manager = get_tree().get_first_node_in_group("terrain_manager")
+	
+	# Fallback: search by class type
+	if not terrain_manager:
+		for node in get_tree().root.get_children():
+			terrain_manager = _find_terrain_manager(node)
+			if terrain_manager:
+				break
+	
 	if not terrain_manager:
 		push_warning("TerrainManager not found for shovel power-up")
 		return
@@ -31,7 +48,7 @@ func apply_effect(tank):
 	for x in range(base_tile_x - 1, base_tile_x + 2):
 		for y in range(base_tile_y - 1, base_tile_y + 2):
 			if x >= 0 and x < 26 and y >= 0 and y < 26:
-				var current_type = terrain_manager.get_tile_type_at_coords(x, y)
+				var current_type = terrain_manager.get_tile_at_coords(x, y)
 				tiles_to_fortify.append({"x": x, "y": y, "original": current_type})
 				terrain_manager.set_tile_at_coords(x, y, terrain_manager.TileType.STEEL)
 	
@@ -43,3 +60,12 @@ func apply_effect(tank):
 		if terrain_manager and is_instance_valid(terrain_manager):
 			var revert_type = terrain_manager.TileType.BRICK  # Default to brick
 			terrain_manager.set_tile_at_coords(tile_data.x, tile_data.y, revert_type)
+
+func _find_terrain_manager(node: Node) -> TerrainManager:
+	if node is TerrainManager:
+		return node as TerrainManager
+	for child in node.get_children():
+		var result = _find_terrain_manager(child)
+		if result:
+			return result
+	return null

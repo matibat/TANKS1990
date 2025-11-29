@@ -101,32 +101,32 @@ func _setup_test_terrain() -> void:
 		push_warning("TerrainManager not found in scene")
 		return
 	
-	const TerrainManager = preload("res://src/systems/terrain_manager.gd")
+	const TerrainManagerClass = preload("res://src/systems/terrain_manager.gd")
 	
 	# Create empty 26x26 terrain
 	var terrain_data = []
 	for y in range(26):
 		for x in range(26):
-			terrain_data.append(TerrainManager.TileType.EMPTY)
+			terrain_data.append(TerrainManagerClass.TileType.EMPTY)
 	
 	# Add boundary walls (steel)
 	# Top wall (y=0)
 	for x in range(26):
-		terrain_data[x] = TerrainManager.TileType.STEEL
+		terrain_data[x] = TerrainManagerClass.TileType.STEEL
 	# Bottom wall (y=25)
 	for x in range(26):
-		terrain_data[25 * 26 + x] = TerrainManager.TileType.STEEL
+		terrain_data[25 * 26 + x] = TerrainManagerClass.TileType.STEEL
 	# Left wall (x=0)
 	for y in range(26):
-		terrain_data[y * 26] = TerrainManager.TileType.STEEL
+		terrain_data[y * 26] = TerrainManagerClass.TileType.STEEL
 	# Right wall (x=25)
 	for y in range(26):
-		terrain_data[y * 26 + 25] = TerrainManager.TileType.STEEL
+		terrain_data[y * 26 + 25] = TerrainManagerClass.TileType.STEEL
 	
 	# Add center obstacle (4x4 brick cluster at tiles 12-15, 12-15)
 	for y in range(12, 16):
 		for x in range(12, 16):
-			terrain_data[y * 26 + x] = TerrainManager.TileType.BRICK
+			terrain_data[y * 26 + x] = TerrainManagerClass.TileType.BRICK
 	
 	terrain.load_terrain(terrain_data)
 	print("Terrain initialized: 26x26 with walls and center obstacle")

@@ -23,6 +23,8 @@ var bullet_id: int = 0
 var bullet_level: int = 1  # 1-3, matches tank level for steel destruction
 var targets_hit: int = 0
 var is_active: bool = true
+var grace_timer: float = 0.0  # Prevent hitting owner immediately
+const GRACE_PERIOD: float = 0.1  # 100ms grace period
 
 # Visual
 @onready var sprite: Sprite2D = $Sprite2D if has_node("Sprite2D") else null
@@ -58,6 +60,10 @@ func _physics_process(delta: float) -> void:
 	if not is_active:
 		return
 	
+	# Update grace timer
+	if grace_timer > 0:
+		grace_timer -= delta
+	
 	# Move bullet
 	global_position += direction * speed * delta
 	
@@ -70,12 +76,13 @@ func _physics_process(delta: float) -> void:
 	if _is_out_of_bounds():
 		_destroy()
 
-func initialize(start_pos: Vector2, dir: Vector2, tank_id: int, bullet_level: BulletLevel = BulletLevel.NORMAL, is_player: bool = false) -> void:
+func initialize(start_pos: Vector2, dir: Vector2, tank_id: int, bullet_lvl: BulletLevel = BulletLevel.NORMAL, is_player: bool = false) -> void:
 	global_position = start_pos
 	direction = dir.normalized()
 	owner_tank_id = tank_id
-	level = bullet_level
+	level = bullet_lvl
 	owner_type = OwnerType.PLAYER if is_player else OwnerType.ENEMY
+	grace_timer = GRACE_PERIOD  # Reset grace period
 	
 	# Apply level bonuses
 	match level:
@@ -107,6 +114,9 @@ func _on_body_entered(body: Node2D) -> void:
 	# Hit tank
 	if body is Tank:
 		var tank = body as Tank
+		# Ignore owner tank during grace period
+		if tank.tank_id == owner_tank_id and grace_timer > 0:
+			return
 		if tank.tank_id != owner_tank_id:
 			hit_target.emit(tank)
 			tank.take_damage(1)
@@ -169,6 +179,12 @@ func check_bullet_collision(other: Bullet) -> bool:
 ## Check grid-based terrain collision at bullet center position
 func _check_terrain_collision() -> bool:
 	var terrain = _get_terrain_manager()
+	if not terrain:
+		# Try to find it by group
+		terrain = get_tree().get_first_node_in_group("terrain_manager") as TerrainManager
+		if terrain:
+			set_meta("cached_terrain", terrain)
+	
 	if not terrain:
 		return false
 	

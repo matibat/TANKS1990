@@ -30,6 +30,7 @@ signal tile_destroyed(tile_pos: Vector2i, tile_type: TileType)
 signal tile_damaged(tile_pos: Vector2i, tile_type: TileType)
 
 func _ready() -> void:
+	add_to_group("terrain_manager")
 	# TileMapLayer has collision enabled by default
 	# Collision layers are controlled by the TileSet physics layers
 	_create_placeholder_tileset()
@@ -68,20 +69,23 @@ func _create_placeholder_tileset() -> void:
 		atlas_source.texture = texture
 		atlas_source.texture_region_size = Vector2i(16, 16)
 		
+		# Add source to tileset FIRST so tiles can access physics layers
+		new_tileset.add_source(atlas_source, 0)
+		
 		# Create tiles for each type
 		for i in range(5):
 			var coords = Vector2i(i, 0)
 			atlas_source.create_tile(coords)
-			# Add physics layer for collision (now layer 0 exists)
+			# Add physics layer for collision
 			var tile_data = atlas_source.get_tile_data(coords, 0)
 			if tile_data:
-				tile_data.set_collision_polygons_count(0, 1)
-				var polygon = PackedVector2Array([
-					Vector2(0, 0), Vector2(16, 0), Vector2(16, 16), Vector2(0, 16)
-				])
-				tile_data.set_collision_polygon_points(0, 0, polygon)
-		
-		new_tileset.add_source(atlas_source, 0)
+				# Only add collision for solid tiles (brick, steel, water)
+				if i < 3:  # BRICK, STEEL, WATER
+					tile_data.set_collision_polygons_count(0, 1)
+					var polygon = PackedVector2Array([
+						Vector2(0, 0), Vector2(16, 0), Vector2(16, 16), Vector2(0, 16)
+					])
+					tile_data.set_collision_polygon_points(0, 0, polygon)
 		
 		tile_set = new_tileset
 		print("Created placeholder tileset with colored tiles")

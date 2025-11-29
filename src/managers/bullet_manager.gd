@@ -73,6 +73,10 @@ func _on_bullet_fired(event: GameEvent) -> void:
 	bullet.visible = true
 	bullet.is_active = true
 	
+	# Re-enable collision detection
+	bullet.monitoring = true
+	bullet.monitorable = true
+	
 	# Track active bullet
 	active_bullets[tank_id].append(bullet)
 
@@ -93,11 +97,15 @@ func _on_bullet_destroyed(bullet: Bullet) -> void:
 	if active_bullets.has(bullet.owner_tank_id):
 		active_bullets[bullet.owner_tank_id].erase(bullet)
 	
-	# Return to pool
+	# Return to pool - use call_deferred to avoid physics callback errors
 	bullet.is_active = false
-	bullet.process_mode = Node.PROCESS_MODE_DISABLED
+	bullet.call_deferred("set_process_mode", Node.PROCESS_MODE_DISABLED)
 	bullet.visible = false
 	bullet.global_position = Vector2(-1000, -1000)  # Move off screen
+	
+	# Disable monitoring with call_deferred
+	bullet.call_deferred("set_monitoring", false)
+	bullet.call_deferred("set_monitorable", false)
 	
 	# Only return to pool if not already there
 	if not bullet_pool.has(bullet):

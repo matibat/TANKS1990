@@ -12,13 +12,13 @@ const POWER_UP_PATHS = [
 ]
 
 func _ready():
-	# Subscribe to TankDestroyedEvent
-	EventBus.subscribe("TankDestroyedEvent", _on_tank_destroyed)
+	# Subscribe to TankDestroyed event
+	EventBus.subscribe("TankDestroyed", _on_tank_destroyed)
 
 func _exit_tree():
 	# Cleanup subscription
 	if EventBus.has_method("unsubscribe"):
-		EventBus.unsubscribe("TankDestroyedEvent", _on_tank_destroyed)
+		EventBus.unsubscribe("TankDestroyed", _on_tank_destroyed)
 
 func _on_tank_destroyed(event):
 	# Only spawn power-up from Armored tanks
@@ -38,15 +38,44 @@ func spawn_power_up(position: Vector2):
 	var power_up = PowerUpClass.new()
 	power_up.global_position = position
 	
-	# Add to scene tree
-	get_tree().current_scene.add_child(power_up)
+	# Add to scene tree - try multiple parent options
+	var parent_node = null
+	if get_tree():
+		# Try current scene first
+		if get_tree().current_scene:
+			parent_node = get_tree().current_scene
+		# Try root if no current scene
+		elif get_tree().root:
+			parent_node = get_tree().root
+		# Try self's parent as fallback
+		elif get_parent():
+			parent_node = get_parent()
+	
+	if parent_node:
+		parent_node.add_child(power_up)
+	else:
+		push_warning("PowerUpManager: No valid parent for power-up spawn")
+		return
 	
 	# Emit PowerUpSpawnedEvent
 	_emit_spawned_event(power_up)
 
 func _emit_spawned_event(power_up):
 	var event = load("res://src/events/powerup_spawned_event.gd").new()
-	event.power_up_type = power_up.power_up_type
+	# Map string power_up_type to enum PowerUpType
+	var type_name = power_up.power_up_type
+	var PowerUpEventClass = load("res://src/events/powerup_spawned_event.gd")
+	var powerup_enum = PowerUpEventClass.PowerUpType.STAR  # Default
+	match type_name:
+		"Star": powerup_enum = PowerUpEventClass.PowerUpType.STAR
+		"Grenade": powerup_enum = PowerUpEventClass.PowerUpType.GRENADE
+		"Helmet": powerup_enum = PowerUpEventClass.PowerUpType.HELMET
+		"Shovel": powerup_enum = PowerUpEventClass.PowerUpType.SHOVEL
+		"Tank": powerup_enum = PowerUpEventClass.PowerUpType.TANK
+		"Clock": powerup_enum = PowerUpEventClass.PowerUpType.TIMER
+	
+	event.powerup_type = powerup_enum
+	event.powerup_id = power_up.get_instance_id()
 	event.position = power_up.global_position
 	event.frame = EventBus.current_frame
 	EventBus.emit_game_event(event)

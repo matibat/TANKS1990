@@ -24,8 +24,8 @@ func _ready() -> void:
 	add_child(state_manager)
 	
 	# Initialize power-up manager
-	var PowerUpManager = load("res://src/managers/power_up_manager.gd")
-	power_up_manager = PowerUpManager.new()
+	var PowerUpManagerClass = load("res://src/managers/power_up_manager.gd")
+	power_up_manager = PowerUpManagerClass.new()
 	add_child(power_up_manager)
 	
 	# Connect state change signals
