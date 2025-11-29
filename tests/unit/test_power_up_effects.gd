@@ -81,11 +81,13 @@ func test_shovel_power_up_handles_missing_terrain_manager_gracefully():
 	await wait_physics_frames(1)
 	
 	# When applying shovel effect
-	# Then should not crash (warning is expected)
-	gut.ignore_method_when_doubling("*", "push_warning")  # Ignore warnings in this test
 	shovel_power_up.apply_effect(tank)
+	await wait_physics_frames(1)
 	
-	# Should complete without error
+	# Then should expect a warning (not an error)
+	assert_engine_error("TerrainManager not found", "Should warn when TerrainManager is missing")
+	
+	# Should complete without crashing
 	assert_true(true, "Should handle missing TerrainManager gracefully")
 
 func test_star_power_up_checks_level_property_correctly():

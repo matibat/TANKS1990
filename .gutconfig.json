@@ -15,16 +15,6 @@
     "panel_opacity": 100,
     "font_name": "",
     "font_size": 16,
-    "background_color": {
-        "r": 0,
-        "g": 0,
-        "b": 0,
-        "a": 1
-    },
-    "font_color": {
-        "r": 1,
-        "g": 1,
-        "b": 1,
-        "a": 1
-    }
+    "background_color": "#000000",
+    "font_color": "#ffffff"
 }

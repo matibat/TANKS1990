@@ -294,7 +294,7 @@ func test_spawner_emits_tank_spawned_event():
 	var event: TankSpawnedEvent = events[0]
 	assert_false(event.is_player, "Should not be player tank")
 	# Enemy type is randomized, so just check it's valid
-	var valid_types = ["basic", "fast", "power", "armored"]
+	var valid_types = ["Basic", "Fast", "Power", "Armored"]
 	assert_true(event.tank_type in valid_types, "Should spawn valid enemy type")
 	
 	EventBus.stop_recording()
