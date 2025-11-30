@@ -48,10 +48,10 @@ const SUB_GRID_SIZE: int = 8  # Movement precision (half-tile)
 const BULLET_SPAWN_OFFSET: int = 20  # Distance from center
 const EDGE_FIRE_MARGIN: int = 16  # Min distance from edge to fire
 
-# Grid movement state
-var target_position: Vector2 = Vector2.ZERO  # Target grid cell
-var is_moving_to_target: bool = false
-var movement_progress: float = 0.0
+# Grid movement state (removed for discrete movement)
+# var target_position: Vector2 = Vector2.ZERO  # Target grid cell
+# var is_moving_to_target: bool = false
+# var movement_progress: float = 0.0
 
 # Visual
 @onready var sprite: Sprite2D = $Sprite2D if has_node("Sprite2D") else null
@@ -67,7 +67,6 @@ func _ready() -> void:
 	global_position = _snap_to_grid_position(global_position)
 	global_position.x = clampf(global_position.x, TILE_SIZE, MAP_WIDTH - TILE_SIZE)
 	global_position.y = clampf(global_position.y, TILE_SIZE, MAP_HEIGHT - TILE_SIZE)
-	target_position = global_position
 	# Skip spawn animation for testing - go straight to idle
 	_change_state(State.IDLE)
 	
@@ -227,122 +226,51 @@ func _physics_process(delta: float) -> void:
 		_process_movement(delta)
 
 func _process_movement(delta: float) -> void:
-	# Grid-based discrete movement: move from grid cell to grid cell
-	if not is_moving_to_target:
-		return
-	
-	var old_pos = global_position
-	
-	# Calculate step size based on speed and delta
-	var step_distance = _get_current_speed() * delta
-	var remaining_distance = global_position.distance_to(target_position)
-	
-	if remaining_distance <= step_distance:
-		# Reached target - snap to exact grid position
-		global_position = target_position
-		movement_progress = 0.0
-		
-		# Emit movement event
-		if old_pos != global_position:
-			_emit_tank_moved_event()
-		
-		# For continuous movement, set next grid target in same direction
-		var direction_vec = _direction_to_vector(facing_direction)
-		var next_target = global_position + (direction_vec * SUB_GRID_SIZE)
-		
-		# Clamp to map boundaries (keep tank center 16px from edges so 2x2 footprint stays in grid)
-		next_target.x = clampf(next_target.x, TILE_SIZE, MAP_WIDTH - TILE_SIZE)
-		next_target.y = clampf(next_target.y, TILE_SIZE, MAP_HEIGHT - TILE_SIZE)
-		next_target = _snap_to_grid_position(next_target)
-		
-		# Check if we can move to next target (grid-based terrain collision)
-		var test_movement = next_target - global_position
-		if test_movement.length() > 0:
-			# Check terrain collision at target position using 2x2 footprint
-			if _would_collide_with_terrain(next_target):
-				# Blocked by terrain - stop here
-				is_moving_to_target = false
-				velocity = Vector2.ZERO
-			else:
-				# Continue to next grid cell
-				target_position = next_target
-				is_moving_to_target = true
-		else:
-			# At boundary, stop
-			is_moving_to_target = false
-			velocity = Vector2.ZERO
-	else:
-		# Move toward target (grid-based, no physics collision)
-		var direction = (target_position - global_position).normalized()
-		var movement = direction * step_distance
-		
-		# Move directly - collision already checked when setting target
-		global_position += movement
-		movement_progress += step_distance
-		
-		# Emit movement event
-		if old_pos.distance_to(global_position) > 0.1:
-			_emit_tank_moved_event()
+	# For discrete movement, all movement logic is handled in move_in_direction()
+	# No continuous movement processing needed
+	pass
 
 ## Set movement direction and velocity
 func move_in_direction(direction: Direction) -> void:
 	if current_state == State.DYING or current_state == State.SPAWNING:
 		return
 	
-	# If changing direction, complete current movement first
-	if is_moving_to_target and direction != facing_direction:
-		# Snap to current grid position when changing direction
-		global_position = _snap_to_grid_position(global_position)
-		is_moving_to_target = false
-	
+	# For discrete movement: always move in the specified direction
+	# Update facing direction and move to next tile instantly
 	facing_direction = direction
+	
+	var current_pos = global_position
+	var target_pos = _get_next_tile_center(direction)
+	
+	# Check if target position would collide with terrain
+	if _would_collide_with_terrain(target_pos):
+		# Blocked - don't move, but still update facing direction
+		_update_sprite_rotation()
+		return
+	
+	# Clear to move - instantly jump to next tile center
+	global_position = target_pos
 	_update_sprite_rotation()
 	
-	# Only set new target if not already moving in this direction
-	# This allows continuous grid-to-grid movement
-	if not is_moving_to_target:
-		# Calculate next grid cell in the movement direction
-		var direction_vec = _direction_to_vector(direction)
-		var proposed_target = global_position + (direction_vec * SUB_GRID_SIZE)
-		
-		# Clamp target to map boundaries (keep tank center 16px from edges)
-		proposed_target.x = clampf(proposed_target.x, TILE_SIZE, MAP_WIDTH - TILE_SIZE)
-		proposed_target.y = clampf(proposed_target.y, TILE_SIZE, MAP_HEIGHT - TILE_SIZE)
-		proposed_target = _snap_to_grid_position(proposed_target)
-		
-		# Check terrain collision before setting target
-		var would_collide = _would_collide_with_terrain(proposed_target)
-		if would_collide:
-			# Blocked by terrain - don't move
-			is_moving_to_target = false
-			velocity = Vector2.ZERO
-			return
-		
-		# All clear - start moving to target
-		target_position = proposed_target
-		is_moving_to_target = true
-		velocity = direction_vec * _get_current_speed()  # For visual/physics info
+	# Emit movement event
+	_emit_tank_moved_event()
 	
 	if current_state != State.MOVING:
 		_change_state(State.MOVING)
 
 ## Stop tank movement
 func stop_movement() -> void:
-	# Complete movement to current grid cell
-	if is_moving_to_target:
-		global_position = _snap_to_grid_position(global_position)
-		target_position = global_position
-		is_moving_to_target = false
-	
+	# For discrete movement, tanks are always "stopped" at tile centers
+	# Just ensure we're in idle state
 	velocity = Vector2.ZERO
 	if current_state == State.MOVING:
 		_change_state(State.IDLE)
 
 func _snap_to_grid_position(pos: Vector2) -> Vector2:
-	"""Snap position to nearest 8-pixel grid cell"""
+	"""Snap position to nearest 16-pixel tile center"""
 	return Vector2(
-		round(pos.x / SUB_GRID_SIZE) * SUB_GRID_SIZE,
-		round(pos.y / SUB_GRID_SIZE) * SUB_GRID_SIZE
+		round(pos.x / TILE_SIZE) * TILE_SIZE,
+		round(pos.y / TILE_SIZE) * TILE_SIZE
 	)
 
 ## Attempt to fire bullet
@@ -465,7 +393,6 @@ func freeze(duration: float) -> void:
 	is_frozen = true
 	freeze_time = duration
 	velocity = Vector2.ZERO
-	is_moving_to_target = false
 	modulate = Color.LIGHT_BLUE  # Visual feedback
 
 func _change_state(new_state: State) -> void:
@@ -485,17 +412,17 @@ func _change_state(new_state: State) -> void:
 		State.DYING:
 			set_physics_process(false)
 
-func _direction_to_vector(direction: Direction) -> Vector2:
-	match direction:
-		Direction.UP:
-			return Vector2.UP
-		Direction.DOWN:
-			return Vector2.DOWN
-		Direction.LEFT:
-			return Vector2.LEFT
-		Direction.RIGHT:
-			return Vector2.RIGHT
-	return Vector2.ZERO
+func _get_next_tile_center(direction: Direction) -> Vector2:
+	"""Calculate the next tile center position in the given direction"""
+	var current_pos = global_position
+	var direction_vec = _direction_to_vector(direction)
+	var next_pos = current_pos + (direction_vec * TILE_SIZE)
+	
+	# Clamp to map boundaries (keep tank center 16px from edges so 2x2 footprint stays in grid)
+	next_pos.x = clampf(next_pos.x, TILE_SIZE, MAP_WIDTH - TILE_SIZE)
+	next_pos.y = clampf(next_pos.y, TILE_SIZE, MAP_HEIGHT - TILE_SIZE)
+	
+	return next_pos
 
 func _get_current_speed() -> float:
 	var speed = base_speed
@@ -685,3 +612,17 @@ func can_fire_bullet() -> bool:
 		   position.x <= MAP_WIDTH - EDGE_FIRE_MARGIN and \
 		   position.y >= EDGE_FIRE_MARGIN and \
 		   position.y <= MAP_HEIGHT - EDGE_FIRE_MARGIN
+
+## Convert direction enum to vector
+func _direction_to_vector(direction: Direction) -> Vector2:
+	match direction:
+		Direction.UP:
+			return Vector2.UP
+		Direction.DOWN:
+			return Vector2.DOWN
+		Direction.LEFT:
+			return Vector2.LEFT
+		Direction.RIGHT:
+			return Vector2.RIGHT
+		_:
+			return Vector2.ZERO

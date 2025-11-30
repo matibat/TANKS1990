@@ -74,12 +74,16 @@ func test_ai_stores_base_position() -> void:
 # ============================================================
 
 func test_patrol_moves_in_cardinal_direction() -> void:
+	var initial_position = enemy_tank.global_position
 	ai_controller.change_state(EnemyAIController.AIState.PATROL)
+	
+	# Force a decision to trigger movement
+	ai_controller.decision_timer = ai_controller.decision_interval
 	await wait_physics_frames(2)
 	
-	# Tank should be moving (velocity non-zero) in patrol state
-	var has_velocity = enemy_tank.velocity.length() > 0
-	assert_true(has_velocity, "Patrol should make tank move")
+	# Tank should have moved to a new tile position in discrete movement
+	var has_moved = enemy_tank.global_position != initial_position
+	assert_true(has_moved, "Patrol should make tank move to new tile")
 
 func test_patrol_changes_direction_periodically() -> void:
 	ai_controller.change_state(EnemyAIController.AIState.PATROL)
@@ -112,13 +116,16 @@ func test_patrol_occasionally_shoots() -> void:
 # ============================================================
 
 func test_chase_moves_toward_player() -> void:
+	var initial_position = enemy_tank.global_position
 	ai_controller.change_state(EnemyAIController.AIState.CHASE)
+	
+	# Force a decision to trigger movement
+	ai_controller.decision_timer = ai_controller.decision_interval
 	await wait_physics_frames(3)
 	
-	# Tank should be moving when chasing
-	var has_velocity = enemy_tank.velocity.length() > 0
-	# Movement should be in general direction of player (cardinal direction)
-	assert_true(has_velocity, "Chase should make tank move")
+	# Tank should have moved toward player in discrete movement
+	var has_moved = enemy_tank.global_position != initial_position
+	assert_true(has_moved, "Chase should make tank move toward player")
 
 func test_chase_shoots_when_in_range() -> void:
 	# Place player close to enemy
@@ -152,12 +159,16 @@ func test_chase_transitions_to_patrol_when_player_far() -> void:
 # ============================================================
 
 func test_attack_base_moves_toward_base() -> void:
+	var initial_position = enemy_tank.global_position
 	ai_controller.change_state(EnemyAIController.AIState.ATTACK_BASE)
+	
+	# Force a decision to trigger movement
+	ai_controller.decision_timer = ai_controller.decision_interval
 	await wait_physics_frames(3)
 	
-	# Tank should be moving toward base
-	var has_velocity = enemy_tank.velocity.length() > 0
-	assert_true(has_velocity, "AttackBase should make tank move")
+	# Tank should have moved toward base in discrete movement
+	var has_moved = enemy_tank.global_position != initial_position
+	assert_true(has_moved, "AttackBase should make tank move toward base")
 
 func test_attack_base_shoots_continuously() -> void:
 	ai_controller.change_state(EnemyAIController.AIState.ATTACK_BASE)

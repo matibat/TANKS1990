@@ -37,18 +37,18 @@ func test_given_tank_at_tile_boundary_when_moves_then_checks_2x2_footprint():
 	# Given: Tank at (128, 128) = tiles (7,7)-(8,8)
 	assert_eq(tank.global_position, Vector2(128, 128))
 	
-	# Place wall at tile (9, 7) - should block movement beyond (136, 128)
+	# Place wall at tile (9, 7) - blocks movement to (144, 128) which would occupy (9,7)
 	terrain.set_tile_at_coord(Vector2i(9, 7), TerrainManager.TileType.STEEL)
 	
-	# When: Try to move right - can reach (136, 128) but not (144, 128)
-	for i in range(20):
-		tank.move_in_direction(Tank.Direction.RIGHT)
-		tank._physics_process(1.0/60.0)
+	var start_pos = tank.global_position
 	
-	# Then: Tank can move one grid cell but blocked before second
-	# At (136, 128) occupies (7,7)-(8,8), at (144, 128) would occupy (8,7)-(9,8) hitting wall
-	assert_eq(tank.global_position, Vector2(136, 128), 
-		"Tank should move one cell then be blocked by wall at (9,7)")
+	# When: Try to move right - blocked by wall at (9,7)
+	tank.move_in_direction(Tank.Direction.RIGHT)
+	tank._physics_process(1.0/60.0)
+	
+	# Then: Tank stays at start position, blocked by wall
+	assert_eq(tank.global_position, start_pos, 
+		"Tank should be blocked by wall at (9,7) and not move")
 
 ## Scenario: Tank at half-tile position has different collision footprint
 ## Given tank at (132, 128) - half-tile right of boundary

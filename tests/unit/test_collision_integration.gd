@@ -81,12 +81,9 @@ func test_tank_collides_with_terrain():
 		tank.move_in_direction(Tank.Direction.RIGHT)
 		tank._physics_process(1.0/60.0)
 	
-	# Then: Tank should be blocked before reaching the wall
-	# Tank at (128, 128) occupies tiles (7,7)-(8,8)
-	# Moving right, it can reach (136, 128) and (144, 128)
-	# At (152, 128) it would occupy tiles (9,7)-(10,8), hitting wall at (9,8)
-	assert_lt(tank.global_position.x, 152.0, "Tank should be blocked by wall")
-	assert_gt(tank.global_position.x, 128.0, "Tank should have moved before hitting wall")
+	# Then: Tank should be blocked immediately by wall at (9,8)
+	# Moving right from (128, 128) would go to (144, 128), which occupies tile (9,8) with wall
+	assert_eq(tank.global_position.x, 128.0, "Tank should be blocked by wall and not move")
 
 ## Terrain Destruction Tests
 

@@ -61,19 +61,46 @@ func _physics_process(delta: float) -> void:
 	shoot_timer += delta
 	patrol_timer += delta
 	
+	# Handle patrol direction changes independently of decision timer
+	if current_state == AIState.PATROL and patrol_timer >= patrol_change_interval:
+		_change_patrol_direction()
+		patrol_timer = 0.0
+	
 	if decision_timer >= decision_interval:
 		decision_timer = 0.0
 		_evaluate_state()
+		_execute_current_state()
 	
+	# Handle continuous actions (shooting) separately if needed
+	_handle_continuous_actions(delta)
+
+func _handle_continuous_actions(delta: float) -> void:
+	# Handle shooting based on current state
+	match current_state:
+		AIState.PATROL:
+			if shoot_timer >= shoot_interval and randf() < 0.3:
+				tank.try_fire()
+				shoot_timer = 0.0
+		AIState.CHASE:
+			var distance = tank.global_position.distance_to(player_tank.global_position)
+			if distance < attack_range and shoot_timer >= shoot_interval:
+				tank.try_fire()
+				shoot_timer = 0.0
+		AIState.ATTACK_BASE:
+			if shoot_timer >= shoot_interval:
+				tank.try_fire()
+				shoot_timer = 0.0
+
+func _execute_current_state() -> void:
 	match current_state:
 		AIState.IDLE:
-			_execute_idle(delta)
+			_execute_idle()
 		AIState.PATROL:
-			_execute_patrol(delta)
+			_execute_patrol()
 		AIState.CHASE:
-			_execute_chase(delta)
+			_execute_chase()
 		AIState.ATTACK_BASE:
-			_execute_attack_base(delta)
+			_execute_attack_base()
 
 func initialize(controlled_tank: Tank, player: Tank, base_pos: Vector2) -> void:
 	tank = controlled_tank
@@ -130,43 +157,29 @@ func _on_state_entered() -> void:
 		AIState.ATTACK_BASE:
 			pass
 
-func _execute_idle(_delta: float) -> void:
+func _execute_idle() -> void:
 	tank.stop_movement()
 
-func _execute_patrol(_delta: float) -> void:
-	if patrol_timer >= patrol_change_interval:
-		_change_patrol_direction()
-		patrol_timer = 0.0
-	
+func _execute_patrol() -> void:
+	# Move in current patrol direction
 	var direction = _vector_to_direction(patrol_direction)
 	tank.move_in_direction(direction)
-	
-	if shoot_timer >= shoot_interval and randf() < 0.3:
-		tank.try_fire()
-		shoot_timer = 0.0
 
-func _execute_chase(_delta: float) -> void:
+func _execute_chase() -> void:
 	if not player_tank or not is_instance_valid(player_tank):
 		change_state(AIState.PATROL)
 		return
 	
+	# Move toward player
 	var direction_vec = (player_tank.global_position - tank.global_position).normalized()
 	var direction = _vector_to_direction(_snap_to_4_directions(direction_vec))
 	tank.move_in_direction(direction)
-	
-	var distance = tank.global_position.distance_to(player_tank.global_position)
-	if distance < attack_range and shoot_timer >= shoot_interval:
-		tank.try_fire()
-		shoot_timer = 0.0
 
-func _execute_attack_base(_delta: float) -> void:
+func _execute_attack_base() -> void:
+	# Move toward base
 	var direction_vec = (base_position - tank.global_position).normalized()
 	var direction = _vector_to_direction(_snap_to_4_directions(direction_vec))
 	tank.move_in_direction(direction)
-	
-	if shoot_timer >= shoot_interval:
-		tank.try_fire()
-		shoot_timer = 0.0
 
 func _initialize_patrol() -> void:
 	_change_patrol_direction()

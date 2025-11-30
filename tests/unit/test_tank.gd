@@ -43,39 +43,38 @@ class TestTankMovement:
 		tank.invulnerability_timer = 0
 		tank._end_invulnerability()
 	
-	func test_given_idle_tank_when_move_up_then_moves_upward():
-		# Given: Tank is idle at position
+	func test_given_idle_tank_when_move_up_then_moves_to_next_tile_up():
+		# Given: Tank is idle at tile center (208, 208)
 		assert_eq(tank.current_state, Tank.State.IDLE, "Tank should be idle")
 		var start_pos = tank.global_position
 		
-		# When: Command tank to move up and simulate physics
+		# When: Command tank to move up (instant discrete movement)
 		tank.move_in_direction(Tank.Direction.UP)
-		for i in range(5):
-			tank._physics_process(1.0/60.0)
+		tank._physics_process(1.0/60.0)
 		
-		# Then: Tank moves upward
-		assert_lt(tank.global_position.y, start_pos.y, "Tank Y should decrease (move up)")
+		# Then: Tank moves exactly 16px up to next tile center
+		var expected_pos = Vector2(208, 192)  # 208 - 16
+		assert_eq(tank.global_position, expected_pos, "Tank should move to next tile center up")
 		assert_eq(tank.facing_direction, Tank.Direction.UP, "Tank should face up")
 		assert_eq(tank.current_state, Tank.State.MOVING, "Tank should be moving")
 	
-	func test_given_idle_tank_when_move_right_then_moves_rightward():
-		# Given: Tank is idle
+	func test_given_idle_tank_when_move_right_then_moves_to_next_tile_right():
+		# Given: Tank is idle at tile center
 		var start_pos = tank.global_position
 		
-		# When: Command tank to move right and simulate physics
+		# When: Command tank to move right (instant discrete movement)
 		tank.move_in_direction(Tank.Direction.RIGHT)
-		for i in range(5):
-			tank._physics_process(1.0/60.0)
+		tank._physics_process(1.0/60.0)
 		
-		# Then: Tank moves right
-		assert_gt(tank.global_position.x, start_pos.x, "Tank X should increase (move right)")
+		# Then: Tank moves exactly 16px right to next tile center
+		var expected_pos = Vector2(224, 208)  # 208 + 16
+		assert_eq(tank.global_position, expected_pos, "Tank should move to next tile center right")
 		assert_eq(tank.facing_direction, Tank.Direction.RIGHT, "Tank should face right")
 	
-	func test_given_moving_tank_when_stop_then_velocity_zero():
-		# Given: Tank is moving
+	func test_given_moving_tank_when_stop_then_velocity_zero_and_idle():
+		# Given: Tank is moving (just moved)
 		tank.move_in_direction(Tank.Direction.UP)
-		for i in range(2):
-			tank._physics_process(1.0/60.0)
+		tank._physics_process(1.0/60.0)
 		assert_eq(tank.current_state, Tank.State.MOVING, "Tank should be moving")
 		
 		# When: Stop movement
@@ -90,11 +89,9 @@ class TestTankMovement:
 		EventBus.start_recording()
 		var initial_pos = tank.global_position
 		
-		# When: Tank moves
+		# When: Tank moves left (instant discrete movement)
 		tank.move_in_direction(Tank.Direction.LEFT)
-		# Manually move tank to simulate physics
-		tank.global_position.x -= 10
-		tank._emit_tank_moved_event()
+		tank._physics_process(1.0/60.0)
 		
 		# Then: TankMoved event was emitted
 		var replay = EventBus.stop_recording()
@@ -106,6 +103,9 @@ class TestTankMovement:
 				moved_events.append(event)
 		
 		assert_gt(moved_events.size(), 0, "At least one TankMoved event should be emitted")
+		if moved_events.size() > 0:
+			var event_pos = moved_events[0].get("position", {})
+			assert_eq(Vector2(event_pos.x, event_pos.y), tank.global_position, "Event position matches tank position")
 
 ## Feature: Tank Combat
 class TestTankCombat:
