@@ -34,8 +34,8 @@ script = ExtResource("2_bullet_manager")
 
 [node name="EnemySpawner" type="Node2D" parent="."]
 script = ExtResource("3_enemy_spawner")
-infinite_spawn_mode = true
-test_armored_only = true
+infinite_spawn_mode = false
+test_armored_only = false
 
 [node name="PlayerTank" parent="." instance=ExtResource("1_player_tank")]
 position = Vector2(208, 384)
@@ -47,10 +47,9 @@ offset_left = 10.0
 offset_top = 10.0
 offset_right = 400.0
 offset_bottom = 100.0
-text = "Tank 1990 - POWER-UP TEST MODE
+text = "Tank 1990 - REGULAR SPAWNING TEST
 WASD/Arrows: Move | Space: Fire
-Infinite Armored Tanks Spawning!
-Kill red tanks to get power-ups
+Regular enemy waves spawning
 ESC: Quit"
 theme_override_colors/font_color = Color(0, 1, 0, 1)
 theme_override_font_sizes/font_size = 16
