@@ -24,10 +24,11 @@ func _init() -> void:
 func _ready() -> void:
 	health = max_health
 	
-	# Position at bottom center of viewport
-	var viewport_size = get_viewport().get_visible_rect().size
-	position.x = viewport_size.x / 2.0
-	position.y = viewport_size.y - (TILE_SIZE * 2)  # 2 tiles from bottom
+	# Position at bottom center of tile map (13, 25)
+	var tile_center_x = 13 * TILE_SIZE + TILE_SIZE / 2.0
+	var tile_center_y = 25 * TILE_SIZE + TILE_SIZE / 2.0
+	position.x = tile_center_x
+	position.y = tile_center_y
 	
 	# Set up collision detection
 	collision_layer = 8  # Base on layer 4 (2^3)

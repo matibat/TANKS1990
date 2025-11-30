@@ -205,3 +205,50 @@ func test_given_ice_when_checked_then_not_solid():
 	
 	# When/Then: Check solidity
 	assert_false(terrain.is_tile_solid(tile_pos), "Ice is not solid (slippery)")
+
+## Feature: Base Protection Terrain Setup
+
+func test_given_terrain_loaded_with_base_protection_when_checked_then_bricks_around_base():
+	# Given: Terrain loaded with base protection (simulating main.gd setup)
+	var terrain_data = []
+	for i in range(26 * 26):
+		terrain_data.append(TerrainManager.TileType.EMPTY)
+	
+	# Add boundary walls (steel)
+	for x in range(26):
+		terrain_data[x] = TerrainManager.TileType.STEEL  # Top
+		terrain_data[25 * 26 + x] = TerrainManager.TileType.STEEL  # Bottom
+	for y in range(26):
+		terrain_data[y * 26] = TerrainManager.TileType.STEEL  # Left
+		terrain_data[y * 26 + 25] = TerrainManager.TileType.STEEL  # Right
+	
+	# Clear base position (13, 25)
+	terrain_data[25 * 26 + 13] = TerrainManager.TileType.EMPTY
+	
+	# Add center obstacle
+	for y in range(12, 16):
+		for x in range(12, 16):
+			terrain_data[y * 26 + x] = TerrainManager.TileType.BRICK
+	
+	# Add base protection around (13, 25)
+	var base_x = 13
+	var base_y = 25
+	# Top row
+	for x in range(base_x - 1, base_x + 2):
+		terrain_data[(base_y - 1) * 26 + x] = TerrainManager.TileType.BRICK
+	# Left and right sides
+	terrain_data[base_y * 26 + (base_x - 1)] = TerrainManager.TileType.BRICK
+	terrain_data[base_y * 26 + (base_x + 1)] = TerrainManager.TileType.BRICK
+	
+	# When: Load terrain
+	terrain.load_terrain(terrain_data)
+	
+	# Then: Protective bricks exist around base position (13, 25)
+	assert_eq(terrain.get_tile_at_coords(12, 24), TerrainManager.TileType.BRICK, "Brick at (12,24)")
+	assert_eq(terrain.get_tile_at_coords(13, 24), TerrainManager.TileType.BRICK, "Brick at (13,24)")
+	assert_eq(terrain.get_tile_at_coords(14, 24), TerrainManager.TileType.BRICK, "Brick at (14,24)")
+	assert_eq(terrain.get_tile_at_coords(12, 25), TerrainManager.TileType.BRICK, "Brick at (12,25)")
+	assert_eq(terrain.get_tile_at_coords(14, 25), TerrainManager.TileType.BRICK, "Brick at (14,25)")
+	
+	# And: Base position itself should be empty (not obstructed)
+	assert_eq(terrain.get_tile_at_coords(13, 25), TerrainManager.TileType.EMPTY, "Base position (13,25) should be empty")

@@ -184,7 +184,7 @@ func _spawn_base() -> void:
 		base.queue_free()
 	
 	base = Base.new()
-	# Position set in base._ready() - bottom center at (208, 384)
+	# Position set in base._ready() - tile (13, 25) center at (216, 408)
 	
 	# Add to game root
 	var game_root = get_parent()

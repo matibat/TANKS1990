@@ -27,11 +27,10 @@ func test_given_base_created_when_initialized_then_has_default_health():
 func test_given_base_created_when_initialized_then_positioned_correctly():
 	# Given: Base entity
 	# When: Positioned at map bottom
-	# Then: Position is at bottom center of viewport
-	var viewport_size = get_viewport().get_visible_rect().size
-	var expected_x = viewport_size.x / 2.0
-	var expected_y = viewport_size.y - (16 * 2) # 2 tiles from bottom
-	assert_eq(base.position, Vector2(expected_x, expected_y), "Base should be at bottom center")
+	# Then: Position is at bottom center of tile map (13, 25)
+	var expected_x = 13 * 16 + 8  # Tile center
+	var expected_y = 25 * 16 + 8  # Tile center
+	assert_eq(base.position, Vector2(expected_x, expected_y), "Base should be at tile (13, 25) center")
 
 func test_given_base_created_when_initialized_then_has_collision_shape():
 	# Given: Base entity created

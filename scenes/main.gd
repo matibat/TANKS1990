@@ -130,10 +130,25 @@ func _setup_test_terrain() -> void:
 	for y in range(26):
 		terrain_data[y * 26 + 25] = TerrainManagerClass.TileType.STEEL
 	
+	# Clear base position (13, 25) - base is an entity, tile should be empty
+	terrain_data[25 * 26 + 13] = TerrainManagerClass.TileType.EMPTY
+	
 	# Add center obstacle (4x4 brick cluster at tiles 12-15, 12-15)
 	for y in range(12, 16):
 		for x in range(12, 16):
 			terrain_data[y * 26 + x] = TerrainManagerClass.TileType.BRICK
+	
+	# Add base protection (bricks around base at 13,25)
+	# Create a protective square around the base
+	var base_x = 13
+	var base_y = 25
+	# Top row
+	for x in range(base_x - 1, base_x + 2):
+		terrain_data[(base_y - 1) * 26 + x] = TerrainManagerClass.TileType.BRICK
+	# Bottom row - removed since y=25 is bottom edge
+	# Left and right sides
+	terrain_data[base_y * 26 + (base_x - 1)] = TerrainManagerClass.TileType.BRICK
+	terrain_data[base_y * 26 + (base_x + 1)] = TerrainManagerClass.TileType.BRICK
 	
 	terrain.load_terrain(terrain_data)
 	print("Terrain initialized: 26x26 with walls and center obstacle")
