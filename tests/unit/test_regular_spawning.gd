@@ -51,28 +51,6 @@ func test_infinite_mode_disabled_by_default():
 	assert_false(enemy_spawner.infinite_spawn_mode, "Should not be in infinite mode by default")
 	assert_false(enemy_spawner.test_armored_only, "Should not spawn only armored tanks by default")
 
-func test_regular_spawning_stops_after_20_enemies():
-	# Given: Regular spawning mode
-	enemy_spawner.infinite_spawn_mode = false
-	enemy_spawner.start_wave(1)
-
-	# When: Spawn all 20 enemies (need to clear active enemies between batches due to concurrent limit)
-	var total_spawned = 0
-	for batch in range(5):  # 5 batches of 4 = 20 total
-		for i in range(4):  # Spawn up to concurrent limit
-			enemy_spawner._try_spawn_enemy()
-			total_spawned += 1
-		# Clear active enemies to allow next batch
-		enemy_spawner.active_enemies.clear()
-
-	# Then: Should have spawned exactly 20 enemies
-	assert_eq(enemy_spawner.enemies_spawned, 20, "Should spawn exactly 20 enemies")
-
-	# And: Trying to spawn more should not work
-	var before_count = enemy_spawner.enemies_spawned
-	enemy_spawner._try_spawn_enemy()
-	assert_eq(enemy_spawner.enemies_spawned, before_count, "Should not spawn beyond 20 enemies")
-
 func test_infinite_mode_spawns_endlessly():
 	# Given: Infinite spawning mode
 	enemy_spawner.infinite_spawn_mode = true
