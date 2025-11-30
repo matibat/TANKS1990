@@ -272,6 +272,9 @@ class TestTankStates:
 		tank.tank_type = Tank.TankType.PLAYER
 		add_child_autofree(tank)
 		tank.state_changed.connect(_on_state_changed)
+		# Set tank to spawning state for testing
+		tank.current_state = Tank.State.SPAWNING
+		tank.spawn_timer = Tank.SPAWN_DURATION
 	
 	func _on_state_changed(new_state: Tank.State):
 		state_changes.append(new_state)

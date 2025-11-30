@@ -218,14 +218,14 @@ func test_given_base_created_when_initialized_then_has_surrounding_walls():
 	# When: Checking wall reference
 	# Then: Has wall reference for protection
 	# Note: Wall management handled by TerrainManager in integration
-	pass # Placeholder - walls tested in integration tests
+	pending("Walls tested in integration tests")
 
 func test_given_shovel_active_when_base_protected_then_walls_are_steel():
 	# Given: Base with shovel power-up active
 	# When: Walls upgraded to steel
 	# Then: Walls block all bullets
 	# Note: Shovel power-up tested separately
-	pass # Placeholder - power-up system tested separately
+	pending("Power-up system tested separately")
 
 ## ============================================================================
 ## Epic: Base Visual Feedback
@@ -242,11 +242,11 @@ func test_given_base_destroyed_when_explosion_triggered_then_plays_animation():
 		
 		# Then: Explosion animation plays
 		# Note: Visual feedback tested in integration
-		pass
+		pending("Visual feedback tested in integration")
 
 func test_given_base_damaged_when_visual_feedback_shown_then_sprite_changes():
 	# Given: Base with damage states
 	# When: Takes damage but not destroyed
 	# Then: Sprite shows damage
 	# Note: Visual states tested in integration
-	pass
+	pending("Visual states tested in integration")
