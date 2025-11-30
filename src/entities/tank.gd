@@ -248,6 +248,12 @@ func move_in_direction(direction: Direction) -> void:
 		_update_sprite_rotation()
 		return
 	
+	# Check if target position would collide with another tank
+	if _would_collide_with_tank(target_pos):
+		# Blocked - don't move, but still update facing direction
+		_update_sprite_rotation()
+		return
+	
 	# Clear to move - instantly jump to next tile center
 	global_position = target_pos
 	_update_sprite_rotation()
@@ -556,6 +562,36 @@ func _would_collide_with_terrain(target_pos: Vector2) -> bool:
 							TerrainManager.TileType.STEEL, 
 							TerrainManager.TileType.WATER]:
 				return true
+	
+	return false
+
+## Check if tank would collide with another tank at given position
+func _would_collide_with_tank(target_pos: Vector2) -> bool:
+	# Calculate 2x2 tile footprint at target position
+	var top_left = target_pos - Vector2(TANK_SIZE / 2, TANK_SIZE / 2)
+	var tile_x_start = int(floor(top_left.x / TILE_SIZE))
+	var tile_y_start = int(floor(top_left.y / TILE_SIZE))
+	
+	# Get target tiles
+	var target_tiles: Array[Vector2i] = []
+	for dy in range(2):
+		for dx in range(2):
+			target_tiles.append(Vector2i(tile_x_start + dx, tile_y_start + dy))
+	
+	# Find all other tanks in the scene
+	var all_tanks = get_tree().get_nodes_in_group("tanks")
+	
+	for tank in all_tanks:
+		if tank == self:
+			continue  # Skip self
+		
+		# Get tiles occupied by this tank
+		var tank_tiles = tank.get_occupied_tiles()
+		
+		# Check for overlap
+		for target_tile in target_tiles:
+			if target_tile in tank_tiles:
+				return true  # Collision detected
 	
 	return false
 

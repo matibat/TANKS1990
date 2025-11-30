@@ -333,3 +333,31 @@ func test_given_player_tank_when_dies_then_respawns_after_delay() -> void:
 	assert_eq(new_player.lives, 1, "Should have one less life")
 	assert_eq(new_player.current_state, Tank.State.INVULNERABLE, "Should spawn invulnerable")
 	assert_gt(new_player.invulnerability_timer, 0, "Should have invulnerability timer active")
+
+## Feature: Tank Collision Blocking
+
+func test_given_two_tanks_when_one_blocks_path_then_movement_blocked() -> void:
+	# Given: Two tanks positioned with one blocking the other's path
+	var tank1 = Tank.new()
+	tank1.tank_type = Tank.TankType.PLAYER
+	tank1.position = Vector2(200, 200)  # Starting position
+	tank1.current_state = Tank.State.IDLE
+	test_scene.add_child(tank1)
+	tank1.add_to_group("tanks")
+	
+	var tank2 = Tank.new()
+	tank2.tank_type = Tank.TankType.BASIC
+	tank2.position = Vector2(200, 184)  # Directly above tank1 (blocking upward movement)
+	tank2.current_state = Tank.State.IDLE
+	test_scene.add_child(tank2)
+	tank2.add_to_group("tanks")
+	
+	# Ensure both tanks are in the scene
+	await wait_physics_frames(1)
+	
+	# When: Tank1 tries to move up (towards tank2)
+	var initial_position = tank1.position
+	tank1.move_in_direction(Tank.Direction.UP)
+	
+	# Then: Tank1 should not move (blocked by tank2)
+	assert_eq(tank1.position, initial_position, "Tank should not move when blocked by another tank")
