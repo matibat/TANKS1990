@@ -77,7 +77,8 @@ func test_bullet_damages_other_tanks_during_grace_period():
 	bullet.grace_timer = 0.05  # In grace period
 	
 	# And an enemy tank
-	var enemy_tank = tank_scene.instantiate()
+	var enemy_tank_scene = load("res://scenes/enemy_tank.tscn")
+	var enemy_tank = enemy_tank_scene.instantiate()
 	add_child_autofree(enemy_tank)
 	enemy_tank.tank_id = 2  # Different ID
 	await get_tree().process_frame  # Let it initialize

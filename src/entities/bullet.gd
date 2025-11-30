@@ -117,7 +117,14 @@ func _on_body_entered(body: Node2D) -> void:
 		# Ignore owner tank during grace period
 		if tank.tank_id == owner_tank_id and grace_timer > 0:
 			return
-		if tank.tank_id != owner_tank_id:
+		# Only damage opposing team
+		var should_damage = false
+		if owner_type == OwnerType.PLAYER and not tank.is_player:
+			should_damage = true
+		elif owner_type == OwnerType.ENEMY and tank.is_player:
+			should_damage = true
+		
+		if should_damage:
 			hit_target.emit(tank)
 			tank.take_damage(1)
 			_register_hit()

@@ -209,7 +209,63 @@ func test_given_enemy_bullet_when_hits_player_then_player_takes_damage() -> void
 	# Then: Player should take damage
 	assert_lt(player_tank.current_health, initial_health, "Player should take damage")
 
-## Feature: AI State Transitions in Game Context
+func test_given_enemy_bullet_when_hits_enemy_tank_then_no_damage() -> void:
+	# Given: Two enemy tanks
+	var enemy1 = Tank.new()
+	enemy1.tank_type = Tank.TankType.BASIC
+	enemy1.position = Vector2(100, 100)
+	enemy1.current_health = 1
+	enemy1.tank_id = 1
+	test_scene.add_child(enemy1)
+	
+	var enemy2 = Tank.new()
+	enemy2.tank_type = Tank.TankType.BASIC
+	enemy2.position = Vector2(116, 100)  # Adjacent
+	enemy2.current_health = 1
+	enemy2.tank_id = 2
+	test_scene.add_child(enemy2)
+	
+	# Create enemy bullet from enemy1
+	var bullet = Bullet.new()
+	bullet.owner_type = Bullet.OwnerType.ENEMY
+	bullet.owner_tank_id = 1
+	bullet.position = enemy1.position
+	bullet.direction = Vector2.RIGHT  # Towards enemy2
+	test_scene.add_child(bullet)
+	
+	var initial_health = enemy2.current_health
+	
+	# When: Bullet hits enemy2
+	await wait_physics_frames(5)  # Let bullet move and collide
+	
+	# Then: Enemy2 should not take damage from enemy bullet
+	assert_eq(enemy2.current_health, initial_health, "Enemy tank should not take damage from enemy bullet")
+
+func test_given_player_bullet_when_hits_player_tank_then_no_damage() -> void:
+	# Given: Player tank and a bullet from another player (simulating multiplayer)
+	var player2 = Tank.new()
+	player2.tank_type = Tank.TankType.PLAYER
+	player2.is_player = true
+	player2.position = Vector2(116, 100)  # Adjacent to player_tank
+	player2.current_health = 1
+	player2.tank_id = 2
+	test_scene.add_child(player2)
+	
+	# Create player bullet from player_tank
+	var bullet = Bullet.new()
+	bullet.owner_type = Bullet.OwnerType.PLAYER
+	bullet.owner_tank_id = player_tank.tank_id
+	bullet.position = player_tank.position
+	bullet.direction = Vector2.RIGHT  # Towards player2
+	test_scene.add_child(bullet)
+	
+	var initial_health = player2.current_health
+	
+	# When: Bullet hits player2
+	await wait_physics_frames(5)  # Let bullet move and collide
+	
+	# Then: Player2 should not take damage from player bullet
+	assert_eq(player2.current_health, initial_health, "Player tank should not take damage from player bullet")
 
 func test_given_enemy_far_from_player_when_processing_then_stays_in_patrol() -> void:
 	# Given: Enemy far from player

@@ -129,6 +129,10 @@ A faithful remake of Tank 1990 in Godot with modernized features:
   - When two bullets collide, both are destroyed
   - Collision detection uses circular hitboxes (4-pixel radius)
   - Prevents bullet "phasing" through each other at high speeds
+- **Team-Based Damage:** Bullets only damage opposing team tanks
+  - Player bullets damage enemy tanks (BASIC, FAST, POWER, ARMORED)
+  - Enemy bullets damage player tanks
+  - Bullets do not damage same-team tanks (prevents self/team damage)
 - **Tank Position Limit:** Bullets cannot spawn if tank is at edge of playfield
   - Minimum tank position: (16, 16) pixels from edge
   - Maximum tank position: (400, 400) pixels (416 - 16)

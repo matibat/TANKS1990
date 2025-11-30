@@ -128,7 +128,7 @@ class TestBulletCollision:
 	
 	func test_given_bullet_hits_tank_when_colliding_then_tank_takes_damage():
 		# Given: Bullet and tank from different owners
-		bullet.initialize(tank.global_position, Vector2.UP, 1)
+		bullet.initialize(tank.global_position, Vector2.UP, 1, Bullet.BulletLevel.NORMAL, true)  # Player bullet
 		var initial_health = tank.current_health
 		
 		# When: Bullet collides with tank
@@ -151,7 +151,7 @@ class TestBulletCollision:
 	
 	func test_given_bullet_hits_tank_when_penetration_limit_then_destroys():
 		# Given: Bullet with penetration 1
-		bullet.initialize(tank.global_position, Vector2.UP, 1)
+		bullet.initialize(tank.global_position, Vector2.UP, 1, Bullet.BulletLevel.NORMAL, true)  # Player bullet
 		bullet.penetration = 1
 		
 		# When: Bullet hits one target
