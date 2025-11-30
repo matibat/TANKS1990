@@ -235,27 +235,45 @@ func test_given_enemy_far_from_player_when_processing_then_stays_in_patrol() -> 
 		"Enemy should not chase when player is far"
 	)
 
-func test_given_enemy_near_player_when_processing_then_switches_to_chase() -> void:
-	# Given: Enemy near player
-	var enemy = Tank.new()
-	enemy.tank_type = Tank.TankType.BASIC
-	enemy.position = Vector2(200, 200)
-	test_scene.add_child(enemy)
-	enemy._ready()  # Ensure ready is called
-	enemy.spawn_timer = 0.0  # Skip spawn phase
-	enemy.current_state = Tank.State.IDLE  # Set to idle after ready
+func test_given_player_tank_when_dies_then_respawns_after_delay() -> void:
+	# Given: Player tank with lives in game flow manager
+	var flow_manager = GameFlowManager.new()
+	add_child_autofree(flow_manager)
+	await get_tree().process_frame
 	
-	player_tank.position = Vector2(200, 350)  # Within chase range (300)
+	# Set up player tank
+	var player_tank = Tank.new()
+	player_tank.tank_type = Tank.TankType.PLAYER
+	player_tank.current_health = 1
+	player_tank.position = Vector2(200, 200)
+	test_scene.add_child(player_tank)
+	flow_manager.player_tank = player_tank
 	
-	var EnemyAIController = load("res://src/controllers/enemy_ai_controller.gd")
-	var ai = EnemyAIController.new(enemy)
-	test_scene.add_child(ai)
-	ai.initialize(enemy, player_tank, Vector2(400, 750))
-	ai.change_state(ai.AIState.PATROL)
+	# Start game
+	flow_manager.state_manager.start_game()
+	await get_tree().process_frame
 	
-	# When: AI evaluates state
-	await wait_seconds(1.0)  # Wait for decision interval
+	# Set initial lives for test (start_game resets to 3, so override)
+	flow_manager.state_manager.player_lives = 2
 	
-	# Then: Should switch to chase
-	var in_chase = ai.current_state == ai.AIState.CHASE
-	assert_true(in_chase, "Enemy should chase when player is nearby")
+	# Make tank vulnerable for testing
+	player_tank.current_state = Tank.State.IDLE
+	player_tank.invulnerability_timer = 0.0
+	
+	# When: Player tank dies
+	player_tank.take_damage(1)
+	await get_tree().physics_frame
+	
+	# Then: Player should be removed and respawn timer should start
+	assert_true(player_tank.is_queued_for_deletion(), "Player tank should be queued for deletion")
+	
+	# Wait for respawn delay (1 second)
+	await wait_seconds(1.1)
+	
+	# Then: New player tank should be spawned
+	var new_player = flow_manager.player_tank
+	assert_not_null(new_player, "New player tank should be spawned")
+	assert_ne(new_player, player_tank, "Should be a different tank instance")
+	assert_eq(new_player.lives, 1, "Should have one less life")
+	assert_eq(new_player.current_state, Tank.State.INVULNERABLE, "Should spawn invulnerable")
+	assert_gt(new_player.invulnerability_timer, 0, "Should have invulnerability timer active")

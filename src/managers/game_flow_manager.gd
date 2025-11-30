@@ -39,8 +39,9 @@ func _ready() -> void:
 	state_manager.stage_completed.connect(_on_stage_completed)
 	state_manager.stage_restarted.connect(_on_stage_restarted)
 	
-	# Subscribe to EventBus for base destruction
+	# Subscribe to EventBus for base destruction and tank destruction
 	EventBus.subscribe("BaseDestroyed", _on_event_emitted)
+	EventBus.subscribe("TankDestroyed", _on_event_emitted)
 
 func _on_state_changed(_from_state: GameStateManager.State, to_state: GameStateManager.State) -> void:
 	match to_state:
