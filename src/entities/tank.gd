@@ -504,7 +504,7 @@ func _emit_bullet_fired_event() -> void:
 	var event = BulletFiredEvent.new()
 	event.tank_id = tank_id
 	event.bullet_id = 0  # Will be set by BulletManager
-	event.position = global_position
+	event.position = get_bullet_spawn_position()  # Spawn at correct position, not tank center
 	event.direction = _direction_to_vector(facing_direction)
 	event.bullet_level = level
 	event.is_player_bullet = is_player  # Set owner type based on tank type

@@ -97,17 +97,15 @@ func _on_bullet_destroyed(bullet: Bullet) -> void:
 	if active_bullets.has(bullet.owner_tank_id):
 		active_bullets[bullet.owner_tank_id].erase(bullet)
 	
-	# Return to pool - use call_deferred to avoid physics callback errors
+	# Immediately disable the bullet to prevent floating
 	bullet.is_active = false
-	bullet.call_deferred("set_process_mode", Node.PROCESS_MODE_DISABLED)
+	bullet.process_mode = Node.PROCESS_MODE_DISABLED
 	bullet.visible = false
+	bullet.monitoring = false
+	bullet.monitorable = false
 	bullet.global_position = Vector2(-1000, -1000)  # Move off screen
 	
-	# Disable monitoring with call_deferred
-	bullet.call_deferred("set_monitoring", false)
-	bullet.call_deferred("set_monitorable", false)
-	
-	# Only return to pool if not already there
+	# Return to pool
 	if not bullet_pool.has(bullet):
 		bullet_pool.append(bullet)
 

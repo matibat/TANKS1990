@@ -154,7 +154,31 @@ func _destroy() -> void:
 	
 	is_active = false
 	destroyed.emit()
-	# Don't queue_free - let BulletManager handle recycling
+	
+	# If not managed by BulletManager, disable completely but don't free
+	# (let test framework handle cleanup to avoid physics callback issues)
+	if not (get_parent() is BulletManager):
+		# Disconnect signals to prevent callbacks on disabled object
+		if area_entered.is_connected(_on_area_entered):
+			area_entered.disconnect(_on_area_entered)
+		if body_entered.is_connected(_on_body_entered):
+			body_entered.disconnect(_on_body_entered)
+		
+		# Disable collision and physics
+		set_deferred("monitoring", false)
+		set_deferred("monitorable", false)
+		process_mode = Node.PROCESS_MODE_DISABLED
+		visible = false
+		global_position = Vector2(-1000, -1000)  # Move off-screen
+		
+		# Don't free - let test framework clean up naturally
+	else:
+		# Managed bullets return to pool
+		pass
+
+func _deferred_free() -> void:
+	# Now safe to free after physics callbacks have completed
+	queue_free()
 
 func _is_out_of_bounds() -> bool:
 	# Check against game bounds
