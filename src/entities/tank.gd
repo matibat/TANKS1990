@@ -347,7 +347,7 @@ func _snap_to_grid_position(pos: Vector2) -> Vector2:
 
 ## Attempt to fire bullet
 func try_fire() -> bool:
-	if fire_cooldown > 0:
+	if fire_cooldown > 0.0:
 		return false
 	
 	if current_state == State.DYING or current_state == State.SPAWNING:

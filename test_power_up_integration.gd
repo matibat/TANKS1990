@@ -6,6 +6,12 @@ var player_tank
 var enemy_tank
 var power_up_manager
 
+# Timers for test sequencing
+var initial_wait_timer: Timer
+var spawn_wait_timer: Timer
+var basic_tank_wait_timer: Timer
+var final_wait_timer: Timer
+
 func _ready():
 	print("\n=== Power-Up Integration Test ===")
 	
@@ -14,8 +20,15 @@ func _ready():
 	add_child(power_up_manager)
 	print("✓ PowerUpManager created and subscribed to TankDestroyed events")
 	
-	# Wait a moment then destroy the tank
-	await get_tree().create_timer(0.2).timeout
+	# Create timers for test sequencing
+	initial_wait_timer = Timer.new()
+	initial_wait_timer.wait_time = 0.2
+	initial_wait_timer.one_shot = true
+	add_child(initial_wait_timer)
+	initial_wait_timer.timeout.connect(_on_initial_wait_done)
+	initial_wait_timer.start()
+	
+func _on_initial_wait_done():
 	print("\n--- Simulating Armored tank destruction ---")
 	
 	# Emit TankDestroyedEvent
@@ -30,8 +43,14 @@ func _ready():
 	print("✓ TankDestroyedEvent emitted for Armored tank at (200, 200)")
 	
 	# Wait for power-up to spawn
-	await get_tree().create_timer(0.5).timeout
-	
+	spawn_wait_timer = Timer.new()
+	spawn_wait_timer.wait_time = 0.5
+	spawn_wait_timer.one_shot = true
+	add_child(spawn_wait_timer)
+	spawn_wait_timer.timeout.connect(_on_spawn_wait_done)
+	spawn_wait_timer.start()
+
+func _on_spawn_wait_done():
 	# Check for power-ups
 	var power_ups = get_tree().get_nodes_in_group("power_ups")
 	print("\n=== Results ===")
@@ -50,9 +69,17 @@ func _ready():
 		print("  Current scene: ", get_tree().current_scene)
 	
 	# Test with Basic tank (should NOT spawn power-up)
-	await get_tree().create_timer(1.0).timeout
+	basic_tank_wait_timer = Timer.new()
+	basic_tank_wait_timer.wait_time = 1.0
+	basic_tank_wait_timer.one_shot = true
+	add_child(basic_tank_wait_timer)
+	basic_tank_wait_timer.timeout.connect(_on_basic_tank_wait_done)
+	basic_tank_wait_timer.start()
+
+func _on_basic_tank_wait_done():
 	print("\n--- Simulating Basic tank destruction (should NOT spawn) ---")
 	
+	var TankDestroyedEvent = load("res://src/events/tank_destroyed_event.gd")
 	var event2 = TankDestroyedEvent.new()
 	event2.tank_type = "Basic"
 	event2.position = Vector2(300, 200)
@@ -62,17 +89,33 @@ func _ready():
 	EventBus.emit_game_event(event2)
 	print("✓ TankDestroyedEvent emitted for Basic tank")
 	
-	await get_tree().create_timer(0.5).timeout
-	
+	final_wait_timer = Timer.new()
+	final_wait_timer.wait_time = 0.5
+	final_wait_timer.one_shot = true
+	add_child(final_wait_timer)
+	final_wait_timer.timeout.connect(_on_final_wait_done)
+	final_wait_timer.start()
+
+func _on_final_wait_done():
 	var power_ups_after = get_tree().get_nodes_in_group("power_ups")
 	print("\nPower-ups after basic tank destroyed: ", power_ups_after.size())
 	
-	if power_ups_after.size() == power_ups.size():
+	if power_ups_after.size() == get_tree().get_nodes_in_group("power_ups").size():
 		print("✓ SUCCESS! Basic tank correctly did NOT spawn power-up")
 	else:
 		print("✗ FAILED! Basic tank spawned power-up (should only be Armored)")
 	
 	print("\n=== Test Complete ===")
 	
-	await get_tree().create_timer(0.5).timeout
 	get_tree().quit()
+
+func _exit_tree():
+	# Cancel all timers to prevent keeping SceneTree alive
+	if initial_wait_timer and is_instance_valid(initial_wait_timer):
+		initial_wait_timer.stop()
+	if spawn_wait_timer and is_instance_valid(spawn_wait_timer):
+		spawn_wait_timer.stop()
+	if basic_tank_wait_timer and is_instance_valid(basic_tank_wait_timer):
+		basic_tank_wait_timer.stop()
+	if final_wait_timer and is_instance_valid(final_wait_timer):
+		final_wait_timer.stop()

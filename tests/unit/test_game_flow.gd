@@ -90,7 +90,7 @@ func test_given_player_immune_when_5_seconds_pass_then_immunity_ends():
 	player_tank.activate_invulnerability(0.1) # Short duration for testing
 	
 	# When: Immunity duration elapses
-	await wait_seconds(0.2)
+	await wait_physics_frames(10)  # Allow timer to process
 	
 	# Then: Immunity ends
 	assert_ne(player_tank.current_state, Tank.State.INVULNERABLE,

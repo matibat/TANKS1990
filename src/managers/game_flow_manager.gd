@@ -18,6 +18,10 @@ var main_menu: Control
 var game_over_ui: Control
 var hud: Control
 
+# Timers
+var stage_complete_timer: Timer
+var player_respawn_timer: Timer
+
 func _ready() -> void:
 	# Initialize state manager
 	state_manager = GameStateManager.new()
@@ -76,7 +80,18 @@ func _on_game_over(reason: String) -> void:
 
 func _on_stage_completed() -> void:
 	"""Handle stage completion"""
-	await get_tree().create_timer(2.0).timeout
+	# Cancel any existing timer
+	if stage_complete_timer and is_instance_valid(stage_complete_timer):
+		stage_complete_timer.stop()
+	
+	stage_complete_timer = Timer.new()
+	stage_complete_timer.wait_time = 2.0
+	stage_complete_timer.one_shot = true
+	stage_complete_timer.timeout.connect(_on_stage_complete_timeout)
+	add_child(stage_complete_timer)
+	stage_complete_timer.start()
+
+func _on_stage_complete_timeout() -> void:
 	state_manager.load_next_stage()
 
 func _on_stage_restarted() -> void:
@@ -141,11 +156,22 @@ func _on_player_died() -> void:
 	
 	if state_manager.player_lives > 0:
 		# Respawn after delay
-		await get_tree().create_timer(1.0).timeout
-		_spawn_player()
+		# Cancel any existing timer
+		if player_respawn_timer and is_instance_valid(player_respawn_timer):
+			player_respawn_timer.stop()
+		
+		player_respawn_timer = Timer.new()
+		player_respawn_timer.wait_time = 1.0
+		player_respawn_timer.one_shot = true
+		player_respawn_timer.timeout.connect(_on_player_respawn_timeout)
+		add_child(player_respawn_timer)
+		player_respawn_timer.start()
 	else:
 		# Game over
 		state_manager.trigger_game_over("No lives remaining")
+
+func _on_player_respawn_timeout() -> void:
+	_spawn_player()
 
 ## ============================================================================
 ## Base Management
@@ -249,3 +275,12 @@ func return_to_main_menu() -> void:
 func toggle_pause() -> void:
 	"""Toggle pause state"""
 	state_manager.toggle_pause()
+
+func _exit_tree() -> void:
+	# Cancel timers when node is freed
+	if stage_complete_timer and is_instance_valid(stage_complete_timer):
+		stage_complete_timer.stop()
+		stage_complete_timer.queue_free()
+	if player_respawn_timer and is_instance_valid(player_respawn_timer):
+		player_respawn_timer.stop()
+		player_respawn_timer.queue_free()

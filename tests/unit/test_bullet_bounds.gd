@@ -10,6 +10,9 @@ const WINDOW_SIZE = 832  # Actual window/screen size
 const PLAY_AREA_OFFSET = 16  # PlayArea starts at (16, 16)
 const PLAY_AREA_SIZE = 800  # PlayArea is 800x800
 
+# Timer for test sequencing
+var test_timer: Timer
+
 func before_each():
 	bullet = Bullet.new()
 	add_child_autofree(bullet)
@@ -30,8 +33,8 @@ func test_bullet_out_of_bounds_top_left():
 	bullet.direction = Vector2.UP
 	bullet.is_active = true
 	
-	# When: Physics process runs
-	await get_tree().create_timer(0.1).timeout
+	# When: Physics process runs - simulate timer completion instead of waiting
+	_simulate_timer_completion()
 	
 	# Then: Bullet should be marked for destruction
 	assert_false(bullet.is_active, "Bullet should be destroyed outside bounds")
@@ -42,11 +45,17 @@ func test_bullet_out_of_bounds_bottom_right():
 	bullet.direction = Vector2.DOWN
 	bullet.is_active = true
 	
-	# When: Physics process runs
-	await get_tree().create_timer(0.1).timeout
+	# When: Physics process runs - simulate timer completion instead of waiting
+	_simulate_timer_completion()
 	
 	# Then: Bullet should be marked for destruction
 	assert_false(bullet.is_active, "Bullet should be destroyed outside bounds")
+
+func _simulate_timer_completion():
+	# Simulate the timer completion by directly calling the bullet's physics process
+	# This avoids creating pending timers that keep the SceneTree alive
+	for i in range(10):  # Run enough physics frames to ensure bounds checking
+		bullet._physics_process(0.016)  # ~60fps
 
 func test_bullet_in_bounds_center():
 	# Given: Bullet positioned at center of window

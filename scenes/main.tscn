@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://src/managers/bullet_manager.gd" id="2_bullet_manager"]
 [ext_resource type="Script" path="res://src/managers/enemy_spawner.gd" id="3_enemy_spawner"]
 [ext_resource type="Script" path="res://src/systems/terrain_manager.gd" id="4_terrain_manager"]
+[ext_resource type="Script" path="res://src/entities/base.gd" id="5_base"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main_script")

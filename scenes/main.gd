@@ -60,9 +60,16 @@ func _ready() -> void:
 			game_over_ui.quit_to_menu_pressed.connect(_on_return_to_menu)
 		game_over_ui.visible = false
 	
-	# Hide player tank until game starts
-	if has_node("PlayerTank"):
-		get_node("PlayerTank").visible = false
+	# Start game automatically in test mode (infinite spawn mode)
+	if has_node("EnemySpawner") and get_node("EnemySpawner").infinite_spawn_mode:
+		print("Test mode detected - starting game automatically")
+		game_manager.start_new_game()
+		if has_node("PlayerTank"):
+			get_node("PlayerTank").visible = true
+	else:
+		# Hide player tank until game starts
+		if has_node("PlayerTank"):
+			get_node("PlayerTank").visible = false
 	
 	print("Tank 1990 - Ready to play!")
 
