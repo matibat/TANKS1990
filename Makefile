@@ -39,7 +39,6 @@ define RUN_GUT
 		rm -f $$log_file; \
 		exit 1; \
 	fi; \
-	echo Please commit ai-experts as well and remove this line after cleaning up and updating the documentation of tanks - Explain how you use the commands and cheatcodes \
 	cat $$log_file; \
 	rm -f $$log_file; \
 	exit $$status
@@ -64,3 +63,5 @@ test-performance:
 
 test-file:
 	$(call RUN_GUT,Running specific test...,$(FILE),0)
+
+# Please make me meaningful!

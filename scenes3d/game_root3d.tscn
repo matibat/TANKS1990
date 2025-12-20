@@ -1,0 +1,26 @@
+[gd_scene load_steps=6 format=3 uid="uid://game_root3d_001"]
+
+[ext_resource type="PackedScene" uid="uid://cg8vh3qy0r5lp" path="res://scenes3d/camera_3d.tscn" id="1_camera"]
+[ext_resource type="PackedScene" uid="uid://bhxm1vh5g3j5y" path="res://scenes3d/game_lighting.tscn" id="2_lighting"]
+[ext_resource type="PackedScene" uid="uid://dil2nf6v3y8sh" path="res://scenes3d/world_environment.tscn" id="3_environment"]
+[ext_resource type="PackedScene" uid="uid://cpxhqbxqn7dko" path="res://scenes3d/ground_plane.tscn" id="4_ground"]
+[ext_resource type="PackedScene" uid="uid://player_tank3d_001" path="res://scenes3d/player_tank3d.tscn" id="5_player"]
+
+[node name="GameRoot3D" type="Node3D"]
+
+[node name="Camera3D" parent="." instance=ExtResource("1_camera")]
+
+[node name="GameLighting" parent="." instance=ExtResource("2_lighting")]
+
+[node name="WorldEnvironment" parent="." instance=ExtResource("3_environment")]
+
+[node name="GroundPlane" parent="." instance=ExtResource("4_ground")]
+
+[node name="GameplayLayer" type="Node3D" parent="."]
+
+[node name="PlayerTank3D" parent="GameplayLayer" instance=ExtResource("5_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0, 6.5)
+
+[node name="Enemies" type="Node3D" parent="GameplayLayer"]
+
+[node name="Projectiles" type="Node3D" parent="GameplayLayer"]

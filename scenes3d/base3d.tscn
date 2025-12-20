@@ -1,0 +1,27 @@
+[gd_scene load_steps=4 format=3 uid="uid://base3d_001"]
+
+[ext_resource type="Script" path="res://src/entities/base3d.gd" id="1_base3d"]
+[ext_resource type="PackedScene" uid="uid://de3ryhkfq3w27" path="res://resources/meshes3d/models/base_eagle.tscn" id="2_base_mesh"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_base"]
+size = Vector3(1, 1, 1)
+
+[node name="Base3D" type="StaticBody3D"]
+collision_layer = 16
+collision_mask = 6
+script = ExtResource("1_base3d")
+
+[node name="MeshInstance3D" parent="." instance=ExtResource("2_base_mesh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("BoxShape3D_base")
+
+[node name="DetectionArea" type="Area3D" parent="."]
+collision_layer = 16
+collision_mask = 6
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("BoxShape3D_base")

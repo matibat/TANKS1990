@@ -231,7 +231,7 @@ func test_position_quantization_overhead():
 	
 	# Quantize all positions
 	for pos in positions:
-		var _ = Vector3Helpers.quantize_vec3(pos, 0.001)
+		Vector3Helpers.quantize_vec3(pos, 0.001)  # Discard result - just testing performance
 	
 	var elapsed = Time.get_ticks_usec() - start_time
 	var avg_time_us = elapsed / 1000.0
