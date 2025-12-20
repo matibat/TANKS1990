@@ -3,6 +3,11 @@ extends Node
 ## Manages global game state transitions and flow
 ## Handles: MainMenu, Playing, Paused, GameOver, StageComplete states
 
+const ServerAdapterClass = preload("res://src/systems/server_adapter.gd")
+
+@export var session_seed: int = 1337
+var server_adapter: ServerAdapterClass = ServerAdapterClass.new()
+
 enum State {
 	MAIN_MENU,
 	PLAYING,
@@ -36,16 +41,18 @@ signal game_over_triggered(reason: String)
 func _ready() -> void:
 	# Initialize in main menu state
 	current_state = State.MAIN_MENU
+	_sync_seed(session_seed)
 
 ## ============================================================================
 ## State Transitions
 ## ============================================================================
 
-func start_game() -> void:
+func start_game(seed: int = session_seed) -> void:
 	"""Start new game from main menu"""
 	if current_state != State.MAIN_MENU:
 		return
 	
+	_sync_seed(seed)
 	_transition_to(State.PLAYING)
 	game_started.emit()
 	
@@ -53,6 +60,7 @@ func start_game() -> void:
 	current_stage = 1
 	total_score = 0
 	player_lives = 3
+	server_adapter.on_session_start(session_seed, current_stage)
 
 func toggle_pause() -> void:
 	"""Toggle between playing and paused states"""
@@ -140,6 +148,7 @@ func _transition_to(new_state: State) -> void:
 	previous_state = current_state
 	current_state = new_state
 	state_changed.emit(previous_state, current_state)
+	server_adapter.on_state_changed(previous_state, current_state)
 
 ## ============================================================================
 ## Stage Completion Checking
@@ -160,3 +169,12 @@ func check_game_over_conditions(base_destroyed: bool, player_dead: bool) -> void
 		trigger_game_over("Base destroyed")
 	elif player_dead and player_lives <= 0:
 		trigger_game_over("No lives remaining")
+
+func set_server_adapter(adapter: ServerAdapterClass) -> void:
+	"""Swap the gameplay orchestrator (local vs remote)."""
+	if adapter:
+		server_adapter = adapter
+
+func _sync_seed(seed: int) -> void:
+	session_seed = seed
+	EventBus.set_game_seed(seed)
