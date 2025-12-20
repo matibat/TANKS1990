@@ -30,7 +30,7 @@ define RUN_GUT
 		sleep 0.2; \
 	done; \
 	wait $$pid; status=$$?; \
-	if [ "$(3)" = "1" ] && (grep -q "$$parse_pat" $$log_file || grep -q "$$compile_pat" $$log_file || grep -q "$$load_pat" $$log_file); then \
+	if [ "$(3)" = "check-only" ] && (grep -q "$$parse_pat" $$log_file || grep -q "$$compile_pat" $$log_file || grep -q "$$load_pat" $$log_file); then \
 		echo ""; \
 		echo "=============================================="; \
 		echo "Compile errors detected. Fix errors before running tests."; \
@@ -44,29 +44,33 @@ define RUN_GUT
 	exit $$status
 endef
 
-.PHONY: test test-unit test-integration test-performance check-compile
+.PHONY: test test-unit test-integration test-performance check-compile check-only
+
+check-only:
+	@echo "Note: Only checking for compile errors, not running tests."
+	$(call RUN_GUT,Checking for compile errors...,res://tests,check-only)
 
 check-compile:
-	$(call RUN_GUT,Checking for compile errors...,res://tests,1)
+	$(call RUN_GUT,Checking for compile errors...,res://tests,check-only)
 
 test: check-compile
-	$(call RUN_GUT,Running full test suite...,res://tests,0)
+	$(call RUN_GUT,Running full test suite...,res://tests,run)
 
 test-unit: check-compile
-	$(call RUN_GUT,Running unit tests...,res://tests/unit,0)
+	$(call RUN_GUT,Running unit tests...,res://tests/unit,run)
 
 test-integration: check-compile
-	$(call RUN_GUT,Running integration tests...,res://tests/integration,0)
+	$(call RUN_GUT,Running integration tests...,res://tests/integration,run)
 
 test-performance: check-compile
-	$(call RUN_GUT,Running performance tests...,res://tests/performance,0)
+	$(call RUN_GUT,Running performance tests...,res://tests/performance,run)
 
 test-file:
 	@if [ -z "$(FILE)" ]; then \
 		echo "Usage: make test-file FILE=res://tests/unit/test_example.gd"; \
 		exit 1; \
 	fi
-	$(call RUN_GUT,Running specific test...,$(FILE),0)
+	$(call RUN_GUT,Running specific test...,$(FILE),run)
 
 # Development helpers
 .PHONY: help clean demo3d edit validate
