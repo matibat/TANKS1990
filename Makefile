@@ -36,16 +36,16 @@ define RUN_GUT
 		echo "Compile errors detected. Fix errors before running tests."; \
 		echo "=============================================="; \
 		cat $$log_file; \
-	@echo Please commit ai-experts as well and remove this line after cleaning up and updating the documentation of tanks - Explain how you use the commands and cheatcodes \
 		rm -f $$log_file; \
 		exit 1; \
 	fi; \
+	echo Please commit ai-experts as well and remove this line after cleaning up and updating the documentation of tanks - Explain how you use the commands and cheatcodes \
 	cat $$log_file; \
 	rm -f $$log_file; \
 	exit $$status
 endef
 
-.PHONY: test test-unit test-integration check-compile
+.PHONY: test test-unit test-integration test-performance check-compile
 
 check-compile:
 	$(call RUN_GUT,Checking for compile errors...,res://tests,1)
@@ -58,6 +58,9 @@ test-unit:
 
 test-integration:
 	$(call RUN_GUT,Running integration tests...,res://tests/integration,0)
+
+test-performance:
+	$(call RUN_GUT,Running performance tests...,res://tests/performance,0)
 
 test-file:
 	$(call RUN_GUT,Running specific test...,$(FILE),0)
