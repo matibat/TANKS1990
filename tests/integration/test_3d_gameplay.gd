@@ -45,7 +45,12 @@ func test_camera_is_configured_correctly():
 	var camera = game_root.get_node("Camera3D") as Camera3D
 	assert_eq(camera.projection, Camera3D.PROJECTION_ORTHOGONAL, "Camera should be orthogonal")
 	assert_true(camera.current, "Camera should be active")
-	assert_eq(camera.size, 20.0, "Camera size should be 20.0")
+	var viewport_size = camera.get_viewport().get_visible_rect().size
+	var aspect = max(viewport_size.aspect(), 0.0001)
+	var playfield_world_size = 416 * (1.0 / 16.0)
+	var padding = 0.5
+	var expected_size = max(playfield_world_size * 0.5 + padding, (playfield_world_size * 0.5 + padding) / aspect)
+	assert_almost_eq(camera.size, expected_size, 0.01, "Camera size should fit full playfield")
 	# Camera should be positioned above the arena at height 10
 	assert_eq(camera.position.y, 10.0, "Camera should be at height 10.0")
 

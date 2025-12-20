@@ -207,6 +207,11 @@ func _start_next_stage() -> void:
 	print("Next stage not yet implemented")
 
 func _cleanup_game() -> void:
+	_disconnect_adapter_signals()
+	if adapter:
+		adapter.set_physics_process(false)
+		adapter.game_state = null
+
 	# Remove all tanks
 	for tank_node in tank_nodes.values():
 		tank_node.queue_free()
@@ -278,6 +283,26 @@ func _connect_adapter_signals() -> void:
 	adapter.bullet_destroyed.connect(_on_bullet_destroyed)
 	adapter.stage_complete.connect(_on_stage_complete)
 	adapter.game_over.connect(_on_game_over)
+
+func _disconnect_adapter_signals() -> void:
+	if adapter == null:
+		return
+
+	var connections = {
+		"tank_spawned": _on_tank_spawned,
+		"tank_moved": _on_tank_moved,
+		"tank_damaged": _on_tank_damaged,
+		"tank_destroyed": _on_tank_destroyed,
+		"bullet_fired": _on_bullet_fired,
+		"bullet_moved": _on_bullet_moved,
+		"bullet_destroyed": _on_bullet_destroyed,
+		"stage_complete": _on_stage_complete,
+		"game_over": _on_game_over,
+	}
+
+	for signal_name in connections.keys():
+		if adapter.is_connected(signal_name, connections[signal_name]):
+			adapter.disconnect(signal_name, connections[signal_name])
 
 ## Create a test game state with player and enemies
 func _create_test_game_state() -> GameState:

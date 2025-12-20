@@ -69,6 +69,21 @@ func test_signal_connections():
 	var bullet_fired_connections = adapter.bullet_fired.get_connections()
 	assert_gt(bullet_fired_connections.size(), 0, "bullet_fired signal should be connected")
 
+func test_restart_does_not_duplicate_tanks_or_connections():
+	# Start game twice to ensure cleanup works
+	scene._state_machine.transition_to(GameStateEnum.State.PLAYING)
+	scene._start_new_game()
+	await wait_physics_frames(5)
+	var initial_tanks = scene.tank_nodes.size()
+	var initial_tank_signal_connections = adapter.tank_spawned.get_connections().size()
+
+	scene._start_new_game()
+	await wait_physics_frames(5)
+	
+	assert_eq(scene.tank_nodes.size(), initial_tanks, "Restart should not create duplicate tank entries")
+	assert_eq(scene.get_node("Tanks").get_child_count(), initial_tanks, "Restart should keep one instance per tank")
+	assert_eq(adapter.tank_spawned.get_connections().size(), initial_tank_signal_connections, "Signal connections should not multiply on restart")
+
 func test_one_frame_of_gameplay():
 	# Start game
 	scene._state_machine.transition_to(GameStateEnum.State.PLAYING)

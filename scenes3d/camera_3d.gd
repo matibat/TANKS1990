@@ -6,20 +6,21 @@ extends Camera3D
 
 const GRID_SIZE := 26
 const CAMERA_HEIGHT := 10.0
-const ORTHO_SIZE := 20.0
 const PLAYFIELD_SIZE_PIXELS := 416 # 26 tiles * 16 pixels
 const TILE_SIZE_WORLD := 1.0 / 16.0 # World units per pixel
+const CAMERA_PADDING := 0.5 # Extra world units to avoid clipping at edges
 
 var player_tank: Node3D = null
+var _playfield_world_size: float = PLAYFIELD_SIZE_PIXELS * TILE_SIZE_WORLD
 
 func _ready() -> void:
 	# Configure camera for top-down orthogonal view
 	projection = PROJECTION_ORTHOGONAL
-	size = ORTHO_SIZE
 	current = true
+	_update_camera_size()
 	
-	# Position centered over 26x26 grid
-	position = Vector3(GRID_SIZE / 2.0, CAMERA_HEIGHT, GRID_SIZE / 2.0)
+	# Position centered over playfield
+	position = Vector3(_playfield_world_size * 0.5, CAMERA_HEIGHT, _playfield_world_size * 0.5)
 	
 	# Rotate to look straight down (-90° on X-axis)
 	rotation_degrees = Vector3(-90.0, 0.0, 0.0)
@@ -27,6 +28,19 @@ func _ready() -> void:
 	# Set reasonable clipping planes
 	near = 0.1
 	far = 50.0
+
+	# Recompute framing when viewport size changes
+	get_viewport().size_changed.connect(_update_camera_size)
+
+## Calculate orthographic size so the full playfield is visible regardless of aspect ratio
+func _update_camera_size() -> void:
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	var aspect: float = max(viewport_size.aspect(), 0.0001)
+	var half_height: float = _playfield_world_size * 0.5 + CAMERA_PADDING
+	var half_width: float = _playfield_world_size * 0.5 + CAMERA_PADDING
+
+	# Size is half of the vertical span; ensure both width and height fit
+	size = max(half_height, half_width / aspect)
 
 ## Set the player tank to follow (optional - for camera tracking)
 func set_player_tank(tank: Node3D) -> void:
@@ -39,21 +53,19 @@ func _process(_delta: float) -> void:
 ## Follow player tank but clamp to playfield bounds
 func _follow_player_clamped() -> void:
 	# Calculate half viewport size in world units
-	var half_view_width := size * get_viewport().get_visible_rect().size.aspect()
-	var half_view_height := size
-	
+	var half_view_width: float = size * get_viewport().get_visible_rect().size.aspect()
+	var half_view_height: float = size
+
 	# Playfield bounds in world units (0 to 26)
 	var playfield_min := 0.0
-	var playfield_max := PLAYFIELD_SIZE_PIXELS * TILE_SIZE_WORLD
-	
-	# Clamp camera position to keep it within playfield
-	var target_x := clampf(player_tank.position.x, 
-		playfield_min + half_view_width, 
-		playfield_max - half_view_width)
-	var target_z := clampf(player_tank.position.z, 
-		playfield_min + half_view_height, 
-		playfield_max - half_view_height)
-	
-	# Update camera position (keep Y fixed)
-	position.x = target_x
-	position.z = target_z
+	var playfield_max := _playfield_world_size
+
+	# Clamp camera position to keep it within playfield while handling oversized views
+	position.x = _clamp_axis(player_tank.position.x, half_view_width, playfield_min, playfield_max)
+	position.z = _clamp_axis(player_tank.position.z, half_view_height, playfield_min, playfield_max)
+
+func _clamp_axis(value: float, half_view: float, min_bound: float, max_bound: float) -> float:
+	# If the view is wider than the playfield, anchor to center to avoid inverted clamps
+	if half_view * 2.0 >= (max_bound - min_bound):
+		return (min_bound + max_bound) * 0.5
+	return clampf(value, min_bound + half_view, max_bound - half_view)
