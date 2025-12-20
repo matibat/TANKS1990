@@ -22,9 +22,10 @@ RandomProvider="*res://src/autoload/random_provider.gd"
 
 [display]
 
-window/size/viewport_width=832
-window/size/viewport_height=832
-window/stretch/mode="canvas_items"
+window/size/viewport_width=1024
+window/size/viewport_height=1024
+window/stretch/mode="viewport"
+window/stretch/aspect="keep"
 
 [editor_plugins]
 
