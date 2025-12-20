@@ -1,0 +1,53 @@
+[gd_scene load_steps=6 format=3 uid="uid://g0cv3d4p7r8s9"]
+
+[ext_resource type="PackedScene" uid="uid://b5xq8y9k2m3n4" path="res://scenes3d/ui/main_menu.tscn" id="1_main"]
+[ext_resource type="PackedScene" uid="uid://c6yr9z0l3n4o5" path="res://scenes3d/ui/hud.tscn" id="2_hud"]
+[ext_resource type="PackedScene" uid="uid://d7zs0a1m4o5p6" path="res://scenes3d/ui/pause_menu.tscn" id="3_pause"]
+[ext_resource type="PackedScene" uid="uid://e8at1b2n5p6q7" path="res://scenes3d/ui/game_over.tscn" id="4_game_over"]
+[ext_resource type="PackedScene" uid="uid://f9bu2c3o6q7r8" path="res://scenes3d/ui/stage_complete.tscn" id="5_stage_complete"]
+
+[node name="UITest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.2, 0.2, 0.2, 1)
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 40.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "UI Test Scene - Toggle visibility in inspector to test each UI"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MainMenu" parent="." instance=ExtResource("1_main")]
+visible = false
+layout_mode = 1
+
+[node name="HUD" parent="." instance=ExtResource("2_hud")]
+visible = false
+layout_mode = 1
+
+[node name="PauseMenu" parent="." instance=ExtResource("3_pause")]
+layout_mode = 1
+
+[node name="GameOver" parent="." instance=ExtResource("4_game_over")]
+layout_mode = 1
+
+[node name="StageComplete" parent="." instance=ExtResource("5_stage_complete")]
+layout_mode = 1
