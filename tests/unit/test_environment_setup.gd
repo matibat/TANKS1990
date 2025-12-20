@@ -87,6 +87,8 @@ func test_tonemap_mode_configured():
 	)
 
 
-func test_environment_visible():
-	# WorldEnvironment should be active in scene
-	assert_true(world_environment.visible, "WorldEnvironment should be visible")
+# TODO Phase 3: WorldEnvironment doesn't have a 'visible' property
+# WorldEnvironment is always active when in scene tree - no need to test visibility
+#func test_environment_visible():
+#	# WorldEnvironment should be active in scene
+#	assert_true(world_environment.visible, "WorldEnvironment should be visible")

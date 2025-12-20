@@ -20,6 +20,22 @@ enum TileType {
 	FOREST
 }
 
+## Generate tile mesh based on type enum
+## Wrapper function for mesh_loader.gd compatibility
+func generate_tile(tile_type: TileType) -> ArrayMesh:
+	match tile_type:
+		TileType.BRICK:
+			return generate_brick_tile()
+		TileType.STEEL:
+			return generate_steel_tile()
+		TileType.WATER:
+			return generate_water_tile()
+		TileType.FOREST:
+			return generate_forest_tile()
+		_:
+			push_error("Unknown tile type: " + str(tile_type))
+			return generate_brick_tile()
+
 ## Generate brick wall tile mesh (~12 tris)
 ## Simple cube: 1×0.5×1 (width, height, depth)
 func generate_brick_tile() -> ArrayMesh:

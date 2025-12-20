@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/meshes3d/models/mesh_loader.gd" id="1"]
+
+[node name="EnemyArmored" type="MeshInstance3D"]
+script = ExtResource("1")
+mesh_type = "enemy_basic"
+generator_class = "TankMeshGenerator"
+material_path = "res://resources/materials/mat_enemy_red.tres"

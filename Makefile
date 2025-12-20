@@ -57,3 +57,7 @@ test-unit:
 
 test-integration:
 	$(call RUN_GUT,Running integration tests...,res://tests/integration,0)
+
+# Run specific test file: make test-file FILE=res://tests/unit/test_tank_meshes.gd
+test-file:
+	$(call RUN_GUT,Running specific test...,$(FILE),0)

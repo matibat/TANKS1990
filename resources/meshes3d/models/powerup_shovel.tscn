@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/meshes3d/models/powerup_mesh_gen.gd" id="1"]
+
+[node name="PowerUpShovel" type="MeshInstance3D"]
+script = ExtResource("1")
+powerup_type = "shovel"
+material_path = "res://resources/materials/mat_powerup_shovel.tres"
