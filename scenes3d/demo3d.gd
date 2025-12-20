@@ -1,23 +1,29 @@
 extends Node3D
 ## Demo scene script for testing 3D gameplay
 
+# Preload the classes we need
+const GameController3D = preload("res://scenes3d/game_controller_3d.gd")
+const BulletManager3D = preload("res://src/managers/bullet_manager_3d.gd")
+
+@onready var game_controller: Node3D = $GameController3D if has_node("GameController3D") else null
+@onready var bullet_manager: Node3D = $BulletManager3D if has_node("BulletManager3D") else null
+
 func _ready() -> void:
 	print("=== 3D DEMO SCENE LOADED ===")
-	print("Camera: ", $Camera3D.global_position)
-	print("Player Tank: ", $GameplayLayer/PlayerTank3D.global_position)
-	print("Base: ", $GameplayLayer/Base3D.global_position)
-	print("Enemy Tanks: ", $GameplayLayer.get_child_count())
-	print("Press F5 to play this scene in Godot editor")
-	print("WASD should control player tank (if controller is attached)")
-	print("=============================")
-
-func _process(_delta: float) -> void:
-	# Simple camera controls for demo
-	if Input.is_action_pressed("ui_up"):
-		$Camera3D.position.z -= 10 * _delta
-	if Input.is_action_pressed("ui_down"):
-		$Camera3D.position.z += 10 * _delta
-	if Input.is_action_pressed("ui_left"):
-		$Camera3D.position.x -= 10 * _delta
-	if Input.is_action_pressed("ui_right"):
-		$Camera3D.position.x += 10 * _delta
+	
+	# Create game controller if it doesn't exist
+	if not game_controller:
+		game_controller = GameController3D.new()
+		game_controller.name = "GameController3D"
+		add_child(game_controller)
+	
+	# Create bullet manager if it doesn't exist
+	if not bullet_manager:
+		bullet_manager = BulletManager3D.new()
+		bullet_manager.name = "BulletManager3D"
+		add_child(bullet_manager)
+	
+	print("✓ Game Controller: ", game_controller != null)
+	print("✓ Bullet Manager: ", bullet_manager != null)
+	print("Press Arrow Keys to move, Space to shoot")
+	print("==============================")

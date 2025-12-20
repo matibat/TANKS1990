@@ -5,12 +5,14 @@
 **PROBLEM DISCOVERED:** The game was still showing 2D despite 3D migration because scene files were missing!
 
 ### What Was Wrong:
+
 1. ✅ 3D entity scripts existed (tank3d.gd, bullet3d.gd, base3d.gd)
 2. ❌ 3D scene files did NOT exist (tank3d.tscn, bullet3d.tscn, base3d.tscn)
 3. ❌ No game root scene to load 3D entities
-4. ❌ Compile error in test_physics_performance.gd (`var _` syntax)
+4. ❌ Compile error in test*physics_performance.gd (`var *` syntax)
 
 ### What Was Fixed:
+
 1. **Compile Error:** Fixed invalid `var _` syntax in test_physics_performance.gd line 234
 2. **Created Scene Files:**
    - `scenes3d/player_tank3d.tscn` - Player tank with collision and mesh
@@ -23,6 +25,7 @@
 ### How to Test the 3D Game:
 
 **Option 1: Demo Scene (EASIEST)**
+
 ```bash
 # In Godot Editor:
 1. Open scenes3d/demo3d.tscn
@@ -36,6 +39,7 @@
 ```
 
 **Option 2: Game Root Scene**
+
 ```bash
 # In Godot Editor:
 1. Open scenes3d/game_root3d.tscn
@@ -44,6 +48,7 @@
 ```
 
 **Option 3: Asset Gallery (View Meshes)**
+
 ```bash
 # To verify all 3D meshes load:
 1. Open scenes3d/asset_gallery.tscn
@@ -54,6 +59,7 @@
 ### Scene File Structure:
 
 **scenes3d/player_tank3d.tscn:**
+
 ```
 CharacterBody3D (Tank3D script)
 ├─ MeshInstance3D (tank_base.tscn mesh)
@@ -63,6 +69,7 @@ CharacterBody3D (Tank3D script)
 ```
 
 **scenes3d/demo3d.tscn (Full Demo):**
+
 ```
 Node3D (Demo3D script)
 ├─ Camera3D (orthogonal top-down)
@@ -79,6 +86,7 @@ Node3D (Demo3D script)
 ### What's Still 2D vs What's Now 3D:
 
 **✅ NOW IN 3D:**
+
 - Tank entities (player_tank3d.tscn, enemy_tank3d.tscn)
 - Bullets (bullet3d.tscn)
 - Base (base3d.tscn)
@@ -88,6 +96,7 @@ Node3D (Demo3D script)
 - Demo scene (playable in editor)
 
 **❌ STILL IN 2D:**
+
 - Main menu (scenes/main_menu.tscn)
 - Game over screen (scenes/game_over.tscn)
 - Original game entry point (scenes/main.tscn)

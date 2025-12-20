@@ -49,16 +49,16 @@ endef
 check-compile:
 	$(call RUN_GUT,Checking for compile errors...,res://tests,1)
 
-test:
+test: check-compile
 	$(call RUN_GUT,Running full test suite...,res://tests,0)
 
-test-unit:
+test-unit: check-compile
 	$(call RUN_GUT,Running unit tests...,res://tests/unit,0)
 
-test-integration:
+test-integration: check-compile
 	$(call RUN_GUT,Running integration tests...,res://tests/integration,0)
 
-test-performance:
+test-performance: check-compile
 	$(call RUN_GUT,Running performance tests...,res://tests/performance,0)
 
 test-file:

@@ -88,10 +88,11 @@ func _destroy() -> void:
 	destroyed.emit()
 	
 	# Then emit event (convert Vector3 to Vector2 for legacy events)
-	var event = BaseDestroyedEvent.new()
-	event.position = Vector2(global_position.x, global_position.z)  # X,Z -> X,Y in 2D
-	event.destroyed_by_id = -1
-	EventBus.emit_game_event(event)
+	if EventBus:
+		var event = BaseDestroyedEvent.new()
+		event.position = Vector2(global_position.x, global_position.z)  # X,Z -> X,Y in 2D
+		event.destroyed_by_id = -1
+		EventBus.emit_game_event(event)
 	
 	# Visual feedback - change mesh material color
 	var mesh_instance = get_node_or_null("MeshInstance3D")

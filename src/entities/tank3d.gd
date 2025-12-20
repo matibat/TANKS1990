@@ -51,6 +51,10 @@ const SUB_GRID_SIZE: float = 0.25  # Movement precision
 const BULLET_SPAWN_OFFSET: float = 0.625  # Distance from center (20px / 32 = 0.625)
 const EDGE_FIRE_MARGIN: float = 0.5  # Min distance from edge to fire
 
+# Movement control (for continuous 3D movement)
+var movement_direction: Vector3 = Vector3.ZERO
+var use_continuous_movement: bool = true  # Use smooth movement instead of discrete tiles
+
 # Components
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D if has_node("CollisionShape3D") else null
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D if has_node("MeshInstance3D") else null
@@ -147,8 +151,37 @@ func _physics_process(delta: float) -> void:
 
 func _process_movement(delta: float) -> void:
 	# For discrete movement, all movement logic is handled in move_in_direction()
-	# No continuous movement processing needed
-	pass
+	# For continuous movement, process velocity here
+	if use_continuous_movement and movement_direction.length() > 0:
+		_process_continuous_movement(delta)
+	# No continuous movement processing needed for discrete mode
+
+func _process_continuous_movement(delta: float) -> void:
+	"""Handle smooth continuous movement for 3D demo"""
+	if movement_direction.length() > 0:
+		# Set velocity based on direction
+		velocity = movement_direction * base_speed
+		
+		# Update rotation to face movement direction
+		var angle = atan2(movement_direction.x, -movement_direction.z)
+		rotation.y = angle
+		
+		# Move the tank
+		move_and_slide()
+		
+		# Quantize position for determinism
+		global_position = Vector3Helpers.quantize_vec3(global_position, 0.001)
+		
+		if current_state != State.MOVING:
+			_change_state(State.MOVING)
+	else:
+		velocity = Vector3.ZERO
+		if current_state == State.MOVING:
+			_change_state(State.IDLE)
+
+## Set movement direction for continuous movement (used by 3D controller)
+func set_movement_direction(dir: Vector3) -> void:
+	movement_direction = dir.normalized() if dir.length() > 0 else Vector3.ZERO
 
 ## Set movement direction and perform discrete tile movement
 func move_in_direction(direction: Direction) -> void:
@@ -277,14 +310,15 @@ func die() -> void:
 	velocity = Vector3.ZERO
 	
 	# Emit death event
-	var event = TankDestroyedEvent.new()
-	event.tank_id = tank_id
-	event.tank_type = _get_tank_type_string()
-	event.was_player = is_player
-	event.position = _vec3_to_vec2(global_position)  # Convert 3D -> 2D for event compatibility
-	event.destroyed_by_id = -1
-	event.score_value = _get_score_value()
-	EventBus.emit_game_event(event)
+	if EventBus:
+		var event = TankDestroyedEvent.new()
+		event.tank_id = tank_id
+		event.tank_type = _get_tank_type_string()
+		event.was_player = is_player
+		event.position = _vec3_to_vec2(global_position)  # Convert 3D -> 2D for event compatibility
+		event.destroyed_by_id = -1
+		event.score_value = _get_score_value()
+		EventBus.emit_game_event(event)
 	
 	died.emit()
 	
@@ -390,6 +424,8 @@ func _change_state(new_state: State) -> void:
 			set_physics_process(false)
 
 func _emit_tank_moved_event() -> void:
+	if not EventBus:
+		return
 	var event = TankMovedEvent.new()
 	event.tank_id = tank_id
 	event.position = _vec3_to_vec2(global_position)  # Convert 3D -> 2D for event compatibility
@@ -398,6 +434,8 @@ func _emit_tank_moved_event() -> void:
 	EventBus.emit_game_event(event)
 
 func _emit_bullet_fired_event() -> void:
+	if not EventBus:
+		return
 	var event = BulletFiredEvent.new()
 	event.tank_id = tank_id
 	event.bullet_id = 0  # Will be set by BulletManager

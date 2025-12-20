@@ -7,6 +7,7 @@ The missing 3D scene files have been created! Here's how to see the 3D game.
 ## Quick Start - See 3D Working NOW
 
 ### Option 1: Demo Scene (RECOMMENDED)
+
 **Easiest way to see 3D tanks moving:**
 
 1. Open Godot 4.5 editor
@@ -16,6 +17,7 @@ The missing 3D scene files have been created! Here's how to see the 3D game.
 5. Press **F5** (or click "Run Current Scene" ▶️)
 
 **What you'll see:**
+
 - Top-down 3D view with grid floor (26x26 units)
 - Player tank (yellow/orange) at center
 - Two enemy tanks (green) at corners
@@ -23,10 +25,12 @@ The missing 3D scene files have been created! Here's how to see the 3D game.
 - Camera at 10 units height looking down
 
 **Controls in Demo:**
+
 - Arrow Keys = Move camera
 - ESC = Exit
 
 ### Option 2: Asset Gallery
+
 **View all 3D meshes without gameplay:**
 
 1. Open `scenes3d/asset_gallery.tscn`
@@ -34,6 +38,7 @@ The missing 3D scene files have been created! Here's how to see the 3D game.
 3. See tanks, bullets, base, powerups, terrain tiles
 
 ### Option 3: Game Root
+
 **Empty game scene (for development):**
 
 1. Open `scenes3d/game_root3d.tscn`
@@ -42,14 +47,14 @@ The missing 3D scene files have been created! Here's how to see the 3D game.
 
 ## Scene Files Created
 
-| File | Description | Node Type |
-|------|-------------|-----------|
-| `scenes3d/player_tank3d.tscn` | Player tank | CharacterBody3D |
-| `scenes3d/enemy_tank3d.tscn` | Enemy tank | CharacterBody3D |
-| `scenes3d/bullet3d.tscn` | Bullet projectile | Area3D |
-| `scenes3d/base3d.tscn` | Eagle base | StaticBody3D |
-| `scenes3d/game_root3d.tscn` | Game scene structure | Node3D |
-| `scenes3d/demo3d.tscn` | **Playable demo** ⭐ | Node3D |
+| File                          | Description          | Node Type       |
+| ----------------------------- | -------------------- | --------------- |
+| `scenes3d/player_tank3d.tscn` | Player tank          | CharacterBody3D |
+| `scenes3d/enemy_tank3d.tscn`  | Enemy tank           | CharacterBody3D |
+| `scenes3d/bullet3d.tscn`      | Bullet projectile    | Area3D          |
+| `scenes3d/base3d.tscn`        | Eagle base           | StaticBody3D    |
+| `scenes3d/game_root3d.tscn`   | Game scene structure | Node3D          |
+| `scenes3d/demo3d.tscn`        | **Playable demo** ⭐ | Node3D          |
 
 ## Collision Layers
 
@@ -73,20 +78,24 @@ If meshes fail to load, scenes will use placeholder BoxMesh/SphereMesh.
 ## Troubleshooting
 
 **Q: Scene opens but nothing visible?**
+
 - Check console for mesh loading errors
 - Verify meshes exist: `resources/meshes3d/models/`
 - Camera might need adjustment (should be at Y=10 looking down)
 
 **Q: Tanks don't move?**
+
 - Demo scene doesn't have player controller yet
 - Use asset_gallery.tscn just to verify visuals
 - Movement logic exists in tank3d.gd but needs input wiring
 
 **Q: Compilation errors?**
+
 ```bash
 cd /Users/mati/GamesWorkspace/TANKS1990
 make check-compile
 ```
+
 Should show ~686 passing tests (59 failing tests are from 2D integration tests, not compilation)
 
 ## What's Next
@@ -119,6 +128,7 @@ scenes3d/
 ## Documentation
 
 See full migration details in:
+
 - `docs/3D_MIGRATION.md` - Full migration guide (UPDATED)
 - `PHASE2_3D_CAMERA_COMPLETE.md` - Camera setup
 - `PROGRESS.md` - Overall project status

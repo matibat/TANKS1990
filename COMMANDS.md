@@ -3,6 +3,7 @@
 Quick reference for developers working on the TANKS1990 3D migration.
 
 ## Table of Contents
+
 - [Development Commands](#development-commands)
 - [Testing](#testing)
 - [3D Migration Status](#3d-migration-status)
@@ -78,11 +79,11 @@ tests/
 
 ### Test Categories
 
-| Category | Count | Focus | Target |
-|----------|-------|-------|--------|
-| **Unit** | ~400 | Individual classes | <1ms each |
-| **Integration** | ~100 | Component interaction | <10ms each |
-| **Performance** | ~13 | Frame budgets | <5ms physics |
+| Category        | Count | Focus                 | Target       |
+| --------------- | ----- | --------------------- | ------------ |
+| **Unit**        | ~400  | Individual classes    | <1ms each    |
+| **Integration** | ~100  | Component interaction | <10ms each   |
+| **Performance** | ~13   | Frame budgets         | <5ms physics |
 
 ### Writing Tests
 
@@ -96,10 +97,10 @@ func test_tank_spawns_at_correct_position():
     var tank = preload("res://scenes3d/player_tank3d.tscn").instantiate()
     add_child(tank)
     tank.position = Vector3(5, 0, 5)
-    
+
     # Act
     await get_tree().process_frame
-    
+
     # Assert
     assert_almost_eq(tank.position.x, 5.0, 0.01, "Tank X position")
     assert_almost_eq(tank.position.z, 5.0, 0.01, "Tank Z position")
@@ -132,14 +133,14 @@ make validate
 
 ### ✅ Completed (Phases 1-6)
 
-| Component | Status | Location |
-|-----------|--------|----------|
-| **Foundation** | ✅ Complete | Phase 1 |
-| **Camera & Lighting** | ✅ Complete | Phase 2 |
-| **Visual Assets** | ✅ Complete | Phase 3 |
-| **Tank Entity** | ✅ Complete | Phase 4 |
-| **Bullet & Base** | ✅ Complete | Phase 5 |
-| **Physics & Collision** | ✅ Complete | Phase 6 |
+| Component               | Status      | Location |
+| ----------------------- | ----------- | -------- |
+| **Foundation**          | ✅ Complete | Phase 1  |
+| **Camera & Lighting**   | ✅ Complete | Phase 2  |
+| **Visual Assets**       | ✅ Complete | Phase 3  |
+| **Tank Entity**         | ✅ Complete | Phase 4  |
+| **Bullet & Base**       | ✅ Complete | Phase 5  |
+| **Physics & Collision** | ✅ Complete | Phase 6  |
 
 ### 🔧 What Works Now
 
@@ -154,12 +155,12 @@ make validate
 
 ### 🚧 In Progress (Phases 7-10)
 
-| Phase | Status | Description |
-|-------|--------|-------------|
-| **7: Terrain** | 🚧 Planned | 26×26 grid, destructible walls |
-| **8: Game Systems** | 🚧 Planned | Power-ups, game flow, UI |
-| **9: Test Migration** | 🚧 Planned | Full 2D→3D test coverage |
-| **10: Polish** | 🚧 Planned | Performance, effects, cross-platform |
+| Phase                 | Status     | Description                          |
+| --------------------- | ---------- | ------------------------------------ |
+| **7: Terrain**        | 🚧 Planned | 26×26 grid, destructible walls       |
+| **8: Game Systems**   | 🚧 Planned | Power-ups, game flow, UI             |
+| **9: Test Migration** | 🚧 Planned | Full 2D→3D test coverage             |
+| **10: Polish**        | 🚧 Planned | Performance, effects, cross-platform |
 
 ### Viewing the 3D Game
 
@@ -245,16 +246,16 @@ git tag -l "v1.*-3d-*"
 
 ### Key Commits
 
-| Commit | Description |
-|--------|-------------|
-| `v1.0-2d-stable` | 2D game baseline (before migration) |
-| Phase 1 | Foundation & Vector3 support |
-| Phase 2 | Camera & environment |
-| Phase 3 | Visual assets & meshes |
-| Phase 4 | Tank entity migration |
-| Phase 5 | Bullet & Base migration |
-| Phase 6 | Physics & collision |
-| `cb59b30` | Critical fix: Created missing scene files |
+| Commit           | Description                               |
+| ---------------- | ----------------------------------------- |
+| `v1.0-2d-stable` | 2D game baseline (before migration)       |
+| Phase 1          | Foundation & Vector3 support              |
+| Phase 2          | Camera & environment                      |
+| Phase 3          | Visual assets & meshes                    |
+| Phase 4          | Tank entity migration                     |
+| Phase 5          | Bullet & Base migration                   |
+| Phase 6          | Physics & collision                       |
+| `cb59b30`        | Critical fix: Created missing scene files |
 
 ### Rolling Back
 
@@ -358,7 +359,7 @@ make demo3d
 # Test just tank behavior
 make test-file FILE=res://tests/unit/test_tank3d.gd
 
-# Test just bullet behavior  
+# Test just bullet behavior
 make test-file FILE=res://tests/unit/test_bullet3d.gd
 
 # Test just collisions
@@ -424,14 +425,14 @@ src/entities/*3d.gd (extends CharacterBody3D, Area3D)
 
 ### Collision Layers (Bitmask)
 
-| Layer | Name | Value | Entities |
-|-------|------|-------|----------|
-| 1 | Player | 1 | Player tank |
-| 2 | Enemy | 2 | Enemy tanks |
-| 3 | Projectiles | 4 | Bullets |
-| 4 | Environment | 8 | Walls, terrain |
-| 5 | Base | 16 | Eagle base |
-| 6 | PowerUp | 32 | Power-up items |
+| Layer | Name        | Value | Entities       |
+| ----- | ----------- | ----- | -------------- |
+| 1     | Player      | 1     | Player tank    |
+| 2     | Enemy       | 2     | Enemy tanks    |
+| 3     | Projectiles | 4     | Bullets        |
+| 4     | Environment | 8     | Walls, terrain |
+| 5     | Base        | 16    | Eagle base     |
+| 6     | PowerUp     | 32    | Power-up items |
 
 ---
 

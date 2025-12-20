@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://base3d_001"]
 
 [ext_resource type="Script" path="res://src/entities/base3d.gd" id="1_base3d"]
-[ext_resource type="PackedScene" uid="uid://de3ryhkfq3w27" path="res://resources/meshes3d/models/base_eagle.tscn" id="2_base_mesh"]
+[ext_resource type="PackedScene" path="res://resources/meshes3d/models/base_eagle.tscn" id="2_base_mesh"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_base"]
 size = Vector3(1, 1, 1)
