@@ -280,13 +280,13 @@ func _update_rotation() -> void:
 	"""Update tank rotation based on facing direction (Y-axis rotation)"""
 	match facing_direction:
 		Direction.UP:
-			rotation.y = 0.0  # Facing -Z (forward)
+			rotation.y = 0.0  # Facing -Z (forward) - 0°
 		Direction.RIGHT:
-			rotation.y = PI / 2  # Facing +X (right)
+			rotation.y = PI / 2  # Facing +X (right) - 90°
 		Direction.DOWN:
-			rotation.y = PI  # Facing +Z (backward)
+			rotation.y = PI  # Facing +Z (backward) - 180°
 		Direction.LEFT:
-			rotation.y = -PI / 2  # Facing -X (left)
+			rotation.y = 3 * PI / 2  # Facing -X (left) - 270°
 
 func _snap_to_cardinal(dir: Vector3) -> Vector3:
 	"""Force diagonal input to nearest cardinal direction"""

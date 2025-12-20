@@ -192,10 +192,10 @@ func test_tank_facing_right_means_positive_x():
 
 func test_tank_rotation_matches_facing_direction():
 	var test_cases = [
-		{"dir": Tank3D.Direction.UP, "expected_y": 0.0},      # Facing -Z
-		{"dir": Tank3D.Direction.RIGHT, "expected_y": PI/2},  # Facing +X
-		{"dir": Tank3D.Direction.DOWN, "expected_y": PI},     # Facing +Z
-		{"dir": Tank3D.Direction.LEFT, "expected_y": -PI/2}   # Facing -X
+		{"dir": Tank3D.Direction.UP, "expected_y": 0.0},           # Facing -Z (0°)
+		{"dir": Tank3D.Direction.RIGHT, "expected_y": PI/2},       # Facing +X (90°)
+		{"dir": Tank3D.Direction.DOWN, "expected_y": PI},          # Facing +Z (180°)
+		{"dir": Tank3D.Direction.LEFT, "expected_y": 3*PI/2}       # Facing -X (270°)
 	]
 	
 	for case in test_cases:
@@ -284,3 +284,102 @@ func test_camera_follows_player_position():
 	assert_almost_eq(cam_z, 10.0, 2.0, "Camera Z should follow player")
 	
 	controller.queue_free()
+# ========================================
+# CRITICAL FIX: LEFT/RIGHT CONTROL INVERSION
+# ========================================
+
+func test_left_input_moves_tank_left_and_faces_left():
+	"""Validate that LEFT input moves tank left (-X) and rotates to 270°"""
+	var start_pos = tank.global_position
+	var start_x = start_pos.x
+	
+	# Move left
+	tank.move_in_direction(Tank3D.Direction.LEFT)
+	await get_tree().physics_frame
+	
+	# Assert movement: tank should move in -X direction
+	assert_lt(tank.global_position.x, start_x, "LEFT should move tank in -X direction (left)")
+	assert_eq(tank.global_position.z, start_pos.z, "LEFT should not change Z position")
+	
+	# Assert rotation: tank should face left (270° = 3*PI/2)
+	assert_almost_eq(tank.rotation.y, 3*PI/2, 0.1, "LEFT should rotate to 270° (3*PI/2)")
+	
+	# Assert facing direction enum
+	assert_eq(tank.facing_direction, Tank3D.Direction.LEFT, "Facing direction should be LEFT")
+
+func test_right_input_moves_tank_right_and_faces_right():
+	"""Validate that RIGHT input moves tank right (+X) and rotates to 90°"""
+	var start_pos = tank.global_position
+	var start_x = start_pos.x
+	
+	# Move right
+	tank.move_in_direction(Tank3D.Direction.RIGHT)
+	await get_tree().physics_frame
+	
+	# Assert movement: tank should move in +X direction
+	assert_gt(tank.global_position.x, start_x, "RIGHT should move tank in +X direction (right)")
+	assert_eq(tank.global_position.z, start_pos.z, "RIGHT should not change Z position")
+	
+	# Assert rotation: tank should face right (90° = PI/2)
+	assert_almost_eq(tank.rotation.y, PI/2, 0.1, "RIGHT should rotate to 90° (PI/2)")
+	
+	# Assert facing direction enum
+	assert_eq(tank.facing_direction, Tank3D.Direction.RIGHT, "Facing direction should be RIGHT")
+
+func test_all_four_directions_match_movement_and_rotation():
+	"""Comprehensive test: all four directions move correctly and face correctly"""
+	var test_cases = [
+		{
+			"dir": Tank3D.Direction.UP,
+			"name": "UP",
+			"expected_rotation": 0.0,
+			"check_pos": func(start, end): return end.z < start.z,  # -Z
+			"error_msg": "UP should move in -Z and face 0°"
+		},
+		{
+			"dir": Tank3D.Direction.RIGHT,
+			"name": "RIGHT",
+			"expected_rotation": PI/2,
+			"check_pos": func(start, end): return end.x > start.x,  # +X
+			"error_msg": "RIGHT should move in +X and face 90°"
+		},
+		{
+			"dir": Tank3D.Direction.DOWN,
+			"name": "DOWN",
+			"expected_rotation": PI,
+			"check_pos": func(start, end): return end.z > start.z,  # +Z
+			"error_msg": "DOWN should move in +Z and face 180°"
+		},
+		{
+			"dir": Tank3D.Direction.LEFT,
+			"name": "LEFT",
+			"expected_rotation": 3*PI/2,
+			"check_pos": func(start, end): return end.x < start.x,  # -X
+			"error_msg": "LEFT should move in -X and face 270°"
+		}
+	]
+	
+	for case in test_cases:
+		# Reset tank to center
+		tank.global_position = Vector3(6.5, 0, 6.5)
+		await get_tree().physics_frame
+		
+		var start_pos = tank.global_position
+		
+		# Execute move
+		tank.move_in_direction(case.dir)
+		await get_tree().physics_frame
+		
+		var end_pos = tank.global_position
+		
+		# Check movement direction
+		var moved_correctly = case.check_pos.call(start_pos, end_pos)
+		assert_true(moved_correctly, case.name + " movement incorrect: " + case.error_msg)
+		
+		# Check rotation
+		assert_almost_eq(tank.rotation.y, case.expected_rotation, 0.1, 
+			case.name + " rotation incorrect: expected " + str(case.expected_rotation) + " got " + str(tank.rotation.y))
+		
+		# Check facing direction
+		assert_eq(tank.facing_direction, case.dir, 
+			case.name + " facing_direction should be " + str(case.dir))
