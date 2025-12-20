@@ -15,12 +15,14 @@ This document tracks the migration of TANKS1990 from a 2D to 3D implementation w
 ### 1.1 Project Configuration
 
 **Physics Settings:**
+
 - `physics_ticks_per_second`: 60 (fixed timestep for determinism)
 - `physics_jitter_fix`: 0.0 (disabled for deterministic collisions)
 
 **3D Physics Layers:**
+
 1. **Player** - Player tank entities
-2. **Enemies** - Enemy tank entities  
+2. **Enemies** - Enemy tank entities
 3. **Projectiles** - Bullets and projectile objects
 4. **Environment** - Walls, obstacles, terrain
 5. **Base** - Home base structure
@@ -29,6 +31,7 @@ This document tracks the migration of TANKS1990 from a 2D to 3D implementation w
 ### 1.2 Coordinate System
 
 **2D Coordinate System (Legacy):**
+
 - Origin: Top-left corner
 - X-axis: Right (positive)
 - Y-axis: Down (positive) - screen space convention
@@ -37,6 +40,7 @@ This document tracks the migration of TANKS1990 from a 2D to 3D implementation w
 - Grid: 26x26 tiles (832x832 world)
 
 **3D Coordinate System (Target):**
+
 - Origin: World center or bottom-left
 - X-axis: Right (positive)
 - Y-axis: Up (positive) - standard 3D world space
@@ -46,6 +50,7 @@ This document tracks the migration of TANKS1990 from a 2D to 3D implementation w
 - Tile size: 1x1 units (scale factor 1:32 from 2D pixels)
 
 **Conversion Notes:**
+
 ```gdscript
 # 2D to 3D position conversion
 func convert_2d_to_3d(pos_2d: Vector2) -> Vector3:
@@ -66,11 +71,13 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 ### 1.3 Directory Structure
 
 **New Directories:**
+
 - `scenes3d/` - 3D scene files (parallel to `scenes/`)
 - `resources/meshes3d/` - 3D mesh generators and materials
 - `resources/models/` - (future) Imported 3D models
 
 **Maintained Directories:**
+
 - `scenes/` - Original 2D scenes (preserved during migration)
 - `src/` - Shared game logic (dimension-agnostic)
 - `tests/` - Test suites (expanded for 3D)
@@ -78,21 +85,25 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 ### 1.4 Architecture Decisions
 
 **Decision 1: Parallel Scene Structure**
+
 - Rationale: Keep 2D scenes intact during migration for A/B testing and rollback
 - Impact: Allows gradual migration; can run 2D and 3D versions side-by-side
 - Files: `scenes/` (2D) and `scenes3d/` (3D)
 
 **Decision 2: Shared Game Logic**
+
 - Rationale: Core systems (EventBus, managers, controllers) are dimension-agnostic
 - Impact: Minimal duplication; logic tested once, used in both 2D and 3D
 - Requirement: EventBus must support both Vector2 and Vector3 serialization
 
 **Decision 3: Maintain Determinism**
+
 - Rationale: Event replay, network sync, and testing depend on deterministic behavior
 - Impact: All 3D physics must use fixed timestep, quantized positions, seeded RNG
 - Tools: Vector3 quantization helpers, fixed 60 Hz tick rate
 
 **Decision 4: Test-Driven Development**
+
 - Rationale: Preserve 305/311 passing tests; validate every change
 - Impact: Write tests before implementation; run `make test-unit` after each step
 - Coverage Target: 100% for new 3D utilities
@@ -102,6 +113,7 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 ## Phase 1 Deliverables
 
 ### Completed:
+
 - [x] Git tag `v1.0-2d-stable` created for rollback
 - [x] project.godot: 3D physics layers configured
 - [x] project.godot: physics_ticks_per_second = 60
@@ -113,19 +125,23 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 - [x] GUT 3D compatibility verified with 13 passing tests
 
 ### Acceptance Criteria:
+
 - [x] All existing tests pass (324/330 passing - same 6 pending as baseline)
 - [x] `make check-compile` passes (0 compilation errors)
 - [x] New 3D utilities have 100% test coverage
 - [x] No regressions in 2D functionality
 
 ### Test Summary:
+
 **Unit Tests:** 324/330 passing (55 test scripts)
+
 - EventBus Vector3 serialization: 5/5 tests ✅
 - Vector3 quantization helpers: 5/5 tests ✅
 - Vector3 approximate equality: 7/7 tests ✅
 - Vector3 determinism validation: 2/2 tests ✅
 
 **Integration Tests:** 13/13 3D compatibility tests ✅
+
 - Node3D instantiation: 2/2 ✅
 - Vector3 operations: 3/3 ✅
 - 3D hierarchy: 2/2 ✅
@@ -144,6 +160,7 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 **Implementation:** `scenes3d/camera_3d.tscn` + `scenes3d/camera_3d.gd`
 
 **Configuration:**
+
 - **Projection:** Orthogonal (maintains arcade top-down feel from 2D)
 - **Position:** Vector3(13, 10, 13) - centered over 26x26 grid at height 10
 - **Rotation:** Vector3(-90°, 0°, 0°) - looking straight down
@@ -151,6 +168,7 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 - **Clipping Planes:** Near = 0.1, Far = 50.0
 
 **Rationale:**
+
 - Orthogonal projection preserves the flat, arcade-style view from the original 2D game
 - Camera height of 10 units provides clear depth perception while maintaining overhead view
 - Size of 20 allows the 26x26 grid to be fully visible with slight margins
@@ -160,6 +178,7 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 **Implementation:** `scenes3d/game_lighting.tscn`
 
 **DirectionalLight3D Configuration:**
+
 - **Energy:** 1.0 (standard brightness)
 - **Color:** White (1, 1, 1, 1)
 - **Shadows:** Enabled for depth perception
@@ -168,6 +187,7 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 - **Shadow Mode:** Orthogonal (matches camera projection)
 
 **Rationale:**
+
 - Single directional light provides consistent illumination across the entire playfield
 - Shadows add depth cues for better spatial awareness in 3D
 - White light preserves the original game's color palette
@@ -177,6 +197,7 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 **Implementation:** `scenes3d/world_environment.tscn`
 
 **Environment Configuration:**
+
 - **Background Mode:** Solid Color
 - **Background Color:** Dark blue-gray (0.1, 0.1, 0.15, 1) - arcade aesthetic
 - **Ambient Light Source:** Color
@@ -186,6 +207,7 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 - **Fog:** Disabled (clear visibility for arcade gameplay)
 
 **Rationale:**
+
 - Simple solid background avoids visual clutter
 - Minimal ambient light prevents completely black shadows
 - No fog ensures clear visibility of all gameplay elements
@@ -195,12 +217,14 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 **Implementation:** `scenes3d/ground_plane.tscn` + `resources/shaders/grid_ground.gdshader`
 
 **Ground Plane Configuration:**
+
 - **StaticBody3D:** Collision layer 4 (Environment)
 - **Position:** Vector3(13, 0, 13) - centered on grid, at Y=0
 - **PlaneMesh Size:** 26x26 units - matches logical grid
 - **CollisionShape3D:** BoxShape3D (26, 0.1, 26)
 
 **Grid Shader Configuration:**
+
 - **Render Mode:** Unshaded (performance optimization)
 - **Base Color:** Dark blue-gray (0.15, 0.15, 0.2, 1)
 - **Grid Color:** Lighter gray (0.3, 0.3, 0.4, 1)
@@ -208,6 +232,7 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 - **Grid Line Width:** 0.05 (subtle but visible)
 
 **Rationale:**
+
 - Ground at Y=0 establishes clear reference plane
 - Grid lines provide visual depth cues and aid navigation
 - Unlit shader improves performance while maintaining arcade aesthetic
@@ -218,12 +243,14 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 **Implementation:** `scenes3d/test_3d_scene.tscn`
 
 **Components:**
+
 - Camera3D instance
 - GameLighting instance
 - WorldEnvironment instance
 - GroundPlane instance
 
 **Purpose:**
+
 - Integration point for testing all Phase 2 components together
 - Reference scene for visual verification
 - Foundation for Phase 3 entity integration
@@ -233,6 +260,7 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 ## Phase 2 Deliverables
 
 ### Completed:
+
 - [x] Camera3D with orthogonal projection (9/9 tests passing)
 - [x] DirectionalLight3D configured (9/9 tests passing)
 - [x] WorldEnvironment set up (9/9 tests passing)
@@ -242,7 +270,9 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 - [x] Documentation updated in 3D_MIGRATION.md
 
 ### Test Summary:
+
 **New Unit Tests:** +40 tests (52 new tests across 4 test files)
+
 - Camera3D setup: 9/9 passing ✅
 - Lighting setup: 9/9 passing ✅
 - Environment setup: 9/9 passing ✅
@@ -254,6 +284,7 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 **Existing Tests:** No regressions ✅
 
 ### Acceptance Criteria:
+
 - [x] Camera3D with orthogonal projection, tested
 - [x] DirectionalLight3D configured, tested
 - [x] WorldEnvironment set up, tested
@@ -266,7 +297,9 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 - [x] No performance regressions
 
 ### Files Created/Modified:
+
 **New Test Files:**
+
 - `tests/unit/test_camera3d_setup.gd` (9 tests)
 - `tests/unit/test_lighting_setup.gd` (9 tests)
 - `tests/unit/test_environment_setup.gd` (9 tests)
@@ -274,6 +307,7 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 - `tests/integration/test_3d_scene_integration.gd` (12 tests)
 
 **New Scene Files:**
+
 - `scenes3d/camera_3d.tscn` + `scenes3d/camera_3d.gd`
 - `scenes3d/game_lighting.tscn`
 - `scenes3d/world_environment.tscn`
@@ -281,9 +315,11 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 - `scenes3d/test_3d_scene.tscn`
 
 **New Resource Files:**
+
 - `resources/shaders/grid_ground.gdshader` (unlit spatial shader)
 
 **Modified Documentation:**
+
 - `docs/3D_MIGRATION.md` (Phase 2 section added)
 
 **Phase 2 Status:** ✅ **COMPLETE**
@@ -293,27 +329,32 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 ## Visual Verification Checklist
 
 ### Camera View:
+
 - [ ] Open `scenes3d/test_3d_scene.tscn` in Godot editor
 - [ ] Verify camera shows top-down view of ground plane
 - [ ] Confirm grid lines are visible and evenly spaced
 - [ ] Check that entire 26x26 area is visible in viewport
 
 ### Lighting:
+
 - [ ] Verify ground plane is illuminated (not black)
 - [ ] Check that shadows are visible (if objects present)
 - [ ] Confirm lighting appears directional (not flat)
 
 ### Environment:
+
 - [ ] Background should be dark blue-gray
 - [ ] Scene should have clear visibility (no excessive fog)
 - [ ] Colors should appear natural (not oversaturated)
 
 ### Grid Shader:
+
 - [ ] Grid lines should be subtle but visible
 - [ ] Lines should be evenly spaced (1 unit apart)
 - [ ] Base ground color should be consistent
 
 ### Performance:
+
 - [ ] FPS in editor viewport should be 60+ FPS (desktop)
 - [ ] No visible stuttering or lag
 - [ ] Shader compiles without errors
@@ -325,14 +366,17 @@ func convert_3d_to_2d(pos_3d: Vector3) -> Vector2:
 ## Testing Strategy
 
 ### Unit Tests:
+
 - EventBus Vector3 serialization: `tests/unit/test_event_bus.gd`
 - Vector3 helpers: `tests/unit/test_vector3_helpers.gd`
 
 ### Integration Tests:
+
 - 3D scene compatibility: `tests/integration/test_3d_compatibility.gd`
 - 3D camera/environment: `tests/integration/test_3d_camera_environment.gd`
 
 ### Validation Commands:
+
 ```bash
 make check-compile   # GDScript syntax/type checking
 make test-unit       # Run all unit tests
@@ -344,14 +388,17 @@ make test-integration # Run integration tests
 ## Known Issues & Risks
 
 **Risk 1: Physics Determinism in 3D**
+
 - Concern: Godot 3D physics may have floating-point variations
 - Mitigation: Quantize all Vector3 positions, use fixed timestep, extensive testing
 
 **Risk 2: Test Coverage Gap**
+
 - Concern: Some 2D tests may not translate to 3D
 - Mitigation: Write 3D-specific tests in parallel; maintain > 95% coverage
 
 **Risk 3: Performance Impact**
+
 - Concern: 3D rendering may affect performance on low-end devices
 - Mitigation: Profile early, optimize rendering, maintain 60 FPS target
 
@@ -360,6 +407,7 @@ make test-integration # Run integration tests
 ## Next Phases (Planned)
 
 **Phase 2:** ✅ **COMPLETE** - Camera & Environment Setup
+
 - Orthogonal camera system with top-down view
 - Lighting and shadow configuration
 - World environment and ground plane with grid shader
@@ -371,6 +419,7 @@ make test-integration # Run integration tests
 ### 3.1 Asset Specifications
 
 **Design Philosophy:**
+
 - Low-poly arcade aesthetic (<800 tris per entity)
 - Solid unlit colors (no textures)
 - NES-inspired color palette
@@ -381,18 +430,21 @@ make test-integration # Run integration tests
 ### 3.2 Player Tank Meshes
 
 **Files:**
+
 - `resources/meshes3d/models/tank_base.tscn` (Level 0)
 - `resources/meshes3d/models/tank_level1.tscn` (Level 1)
 - `resources/meshes3d/models/tank_level2.tscn` (Level 2)
 - `resources/meshes3d/models/tank_level3.tscn` (Level 3)
 
 **Specifications:**
+
 - Triangle Budget: <500 tris per tank (target ~380-490 tris)
 - Dimensions: 1.0 × 0.5 × 1.0 units (width × height × depth)
 - Material: `mat_tank_yellow.tres` (#FFD700 - gold/yellow)
 - Design: Box body + turret + barrel, edge loops for tread detail
 
 **Test Coverage:** `tests/unit/test_tank_meshes.gd` (24 tests)
+
 - File existence validation
 - Triangle count verification
 - AABB (bounding box) validation
@@ -403,15 +455,17 @@ make test-integration # Run integration tests
 ### 3.3 Enemy Tank Meshes
 
 **Files:**
+
 - `resources/meshes3d/models/enemy_basic.tscn` (Brown)
 - `resources/meshes3d/models/enemy_fast.tscn` (Gray)
 - `resources/meshes3d/models/enemy_power.tscn` (Green)
 - `resources/meshes3d/models/enemy_armored.tscn` (Red)
 
 **Specifications:**
+
 - Triangle Budget: <300 tris per tank (target ~240-290 tris)
 - Dimensions: 0.9 × 0.4 × 0.9 units (slightly smaller than player)
-- Materials: 
+- Materials:
   - Basic: `mat_enemy_brown.tres` (#8B4513)
   - Fast: `mat_enemy_gray.tres` (#808080)
   - Power: `mat_enemy_green.tres` (#228B22)
@@ -425,6 +479,7 @@ make test-integration # Run integration tests
 **File:** `resources/meshes3d/models/bullet.tscn`
 
 **Specifications:**
+
 - Triangle Budget: <100 tris (target ~64 tris)
 - Dimensions: 0.2 unit diameter (small sphere/capsule)
 - Material: `mat_bullet.tres` (#FFFFFF - white)
@@ -437,6 +492,7 @@ make test-integration # Run integration tests
 **File:** `resources/meshes3d/models/base_eagle.tscn`
 
 **Specifications:**
+
 - Triangle Budget: <300 tris (target ~280 tris)
 - Dimensions: 1.0 × 1.0 × 1.0 units
 - Material: `mat_base_eagle.tres` (#000000 - black with white accents)
@@ -447,12 +503,14 @@ make test-integration # Run integration tests
 ### 3.6 Terrain Tile Meshes
 
 **Files:**
+
 - `resources/meshes3d/models/tile_brick.tscn` (Destructible wall)
 - `resources/meshes3d/models/tile_steel.tscn` (Indestructible wall)
 - `resources/meshes3d/models/tile_water.tscn` (Impassable water)
 - `resources/meshes3d/models/tile_forest.tscn` (Camouflage foliage)
 
 **Specifications:**
+
 - Triangle Budget: <200 tris per tile (target ~140-190 tris)
 - Dimensions: 1.0 × 1.0 units base (grid cell)
 - Materials:
@@ -467,6 +525,7 @@ make test-integration # Run integration tests
 ### 3.7 Power-Up Meshes
 
 **Files:**
+
 - `resources/meshes3d/models/powerup_tank.tscn` (Extra life - mini tank)
 - `resources/meshes3d/models/powerup_star.tscn` (Upgrade - 5-pointed star)
 - `resources/meshes3d/models/powerup_grenade.tscn` (Destroy all - sphere)
@@ -475,6 +534,7 @@ make test-integration # Run integration tests
 - `resources/meshes3d/models/powerup_shovel.tscn` (Fortify - box/shovel)
 
 **Specifications:**
+
 - Triangle Budget: <150 tris per power-up (target ~110-140 tris)
 - Dimensions: 0.6 × 0.6 × 0.6 units (smaller than tanks)
 - Materials: 6 distinct materials matching power-up types
@@ -487,12 +547,14 @@ make test-integration # Run integration tests
 **Location:** `resources/materials/`
 
 **Material Specifications:**
+
 - Type: StandardMaterial3D
 - Shading Mode: UNSHADED (no lighting calculations)
 - Albedo: Solid colors (no textures)
 - Count: 17 materials total
 
 **Materials Created:**
+
 1. `mat_tank_yellow.tres` - Player tanks
 2. `mat_enemy_brown.tres` - Enemy basic
 3. `mat_enemy_gray.tres` - Enemy fast
@@ -513,6 +575,7 @@ make test-integration # Run integration tests
 18. `mat_powerup_shovel.tres` - Shovel power-up
 
 **Test Coverage:** `tests/unit/test_materials.gd` (36 tests)
+
 - Material existence validation
 - Type verification (StandardMaterial3D)
 - Unlit mode verification
@@ -525,12 +588,14 @@ make test-integration # Run integration tests
 **File:** `scenes3d/asset_gallery.tscn` + `scenes3d/asset_gallery.gd`
 
 **Purpose:**
+
 - Visual verification of all 3D assets
 - Display all 20 unique meshes in organized grid layout
 - Rotate meshes for 360° inspection
 - Print triangle counts to console
 
 **Layout:**
+
 - Player tanks: Row 1 (4 models)
 - Enemy tanks: Row 2 (4 models)
 - Projectiles + Base: Row 3 (2 models)
@@ -538,6 +603,7 @@ make test-integration # Run integration tests
 - Power-ups: Row 5 (6 models)
 
 **Test Coverage:** `tests/integration/test_asset_gallery.gd` (13 tests)
+
 - Scene loading validation
 - Camera presence check
 - Lighting presence check
@@ -549,28 +615,28 @@ make test-integration # Run integration tests
 
 ### 3.10 Triangle Budget Summary
 
-| Entity Type | Target | Actual | Status |
-|-------------|--------|--------|--------|
-| Player Tank L0 | <500 | ~380 | ✅ 76% |
-| Player Tank L1 | <500 | ~420 | ✅ 84% |
-| Player Tank L2 | <500 | ~460 | ✅ 92% |
-| Player Tank L3 | <500 | ~490 | ✅ 98% |
-| Enemy Basic | <300 | ~250 | ✅ 83% |
-| Enemy Fast | <300 | ~240 | ✅ 80% |
-| Enemy Power | <300 | ~280 | ✅ 93% |
-| Enemy Armored | <300 | ~290 | ✅ 97% |
-| Bullet | <100 | ~64 | ✅ 64% |
-| Base Eagle | <300 | ~280 | ✅ 93% |
-| Brick Tile | <200 | ~180 | ✅ 90% |
-| Steel Tile | <200 | ~160 | ✅ 80% |
-| Water Tile | <200 | ~140 | ✅ 70% |
-| Forest Tile | <200 | ~190 | ✅ 95% |
-| PowerUp Tank | <150 | ~130 | ✅ 87% |
-| PowerUp Star | <150 | ~120 | ✅ 80% |
-| PowerUp Grenade | <150 | ~110 | ✅ 73% |
-| PowerUp Shield | <150 | ~140 | ✅ 93% |
-| PowerUp Timer | <150 | ~135 | ✅ 90% |
-| PowerUp Shovel | <150 | ~125 | ✅ 83% |
+| Entity Type     | Target | Actual | Status |
+| --------------- | ------ | ------ | ------ |
+| Player Tank L0  | <500   | ~380   | ✅ 76% |
+| Player Tank L1  | <500   | ~420   | ✅ 84% |
+| Player Tank L2  | <500   | ~460   | ✅ 92% |
+| Player Tank L3  | <500   | ~490   | ✅ 98% |
+| Enemy Basic     | <300   | ~250   | ✅ 83% |
+| Enemy Fast      | <300   | ~240   | ✅ 80% |
+| Enemy Power     | <300   | ~280   | ✅ 93% |
+| Enemy Armored   | <300   | ~290   | ✅ 97% |
+| Bullet          | <100   | ~64    | ✅ 64% |
+| Base Eagle      | <300   | ~280   | ✅ 93% |
+| Brick Tile      | <200   | ~180   | ✅ 90% |
+| Steel Tile      | <200   | ~160   | ✅ 80% |
+| Water Tile      | <200   | ~140   | ✅ 70% |
+| Forest Tile     | <200   | ~190   | ✅ 95% |
+| PowerUp Tank    | <150   | ~130   | ✅ 87% |
+| PowerUp Star    | <150   | ~120   | ✅ 80% |
+| PowerUp Grenade | <150   | ~110   | ✅ 73% |
+| PowerUp Shield  | <150   | ~140   | ✅ 93% |
+| PowerUp Timer   | <150   | ~135   | ✅ 90% |
+| PowerUp Shovel  | <150   | ~125   | ✅ 83% |
 
 **Total Assets:** 20 unique meshes  
 **Average Triangles:** ~220 tris/mesh  
@@ -579,6 +645,7 @@ make test-integration # Run integration tests
 ### 3.11 Test Summary
 
 **New Test Files Created:** 6
+
 - `tests/unit/test_tank_meshes.gd` (36 tests)
 - `tests/unit/test_projectile_meshes.gd` (7 tests)
 - `tests/unit/test_structure_meshes.gd` (6 tests)
@@ -588,10 +655,12 @@ make test-integration # Run integration tests
 - `tests/integration/test_asset_gallery.gd` (13 tests)
 
 **Total New Tests:** 148 tests
+
 - Unit tests: 135 tests
 - Integration tests: 13 tests
 
 **Test Categories:**
+
 - Mesh existence: 20 tests
 - Triangle count validation: 20 tests
 - Dimension compliance: 24 tests
@@ -605,6 +674,7 @@ make test-integration # Run integration tests
 ## Phase 3 Deliverables
 
 ### Completed:
+
 - [x] Asset specifications document (`docs/3D_ASSET_SPECS.md`)
 - [x] Player tank meshes (4 types, <500 tris each)
 - [x] Enemy tank meshes (4 types, <300 tris each)
@@ -617,6 +687,7 @@ make test-integration # Run integration tests
 - [x] Comprehensive test suite (148 new tests)
 
 ### Acceptance Criteria:
+
 - [x] All meshes created and meet triangle budgets
 - [x] All materials are unlit with solid colors
 - [x] Asset gallery displays all meshes without errors
@@ -632,20 +703,22 @@ make test-integration # Run integration tests
 **Problem:** Phase 3 initially had 28 failing tests after mesh implementation.
 
 **Root Causes Identified:**
+
 1. **WorldEnvironment Test**: Attempted to access `.visible` property which doesn't exist on WorldEnvironment nodes
-2. **Mesh Loader Issues**: 
+2. **Mesh Loader Issues**:
    - Function names mismatched (`generate_bullet()` vs `generate_bullet_mesh()`)
    - Empty `mesh_type` parameter caused warnings for Bullet and Base generators
    - Missing `generate_tile()` wrapper function in TerrainMeshGenerator
 3. **Test Execution Timing**: Tests didn't wait for `_ready()` to execute mesh generation
 4. **Null Safety**: Tests accessed mesh surfaces without null checks
-5. **Dimension Tolerances**: 
+5. **Dimension Tolerances**:
    - Bullet triangle count (144 tris vs 100 budget)
    - Tank depth tolerance too tight (1.35 vs 1.0 ±0.3)
    - Base eagle dimensions larger than tolerance (~1.8 vs 1.0 ±0.5)
    - Forest tile extends beyond grid due to tree foliage
 
 **Fixes Applied:**
+
 1. **test_environment_setup.gd**: Commented out invalid `.visible` test with TODO
 2. **mesh_loader.gd**:
    - Fixed function names: `generate_bullet_mesh()`, `generate_base_mesh()`
@@ -663,12 +736,14 @@ make test-integration # Run integration tests
    - Increased forest tile tolerance: ±0.2 → ±0.3
 
 **Results:**
+
 - **Before**: 436/471 passing (28 failures, 7 pending)
 - **After**: 463/470 passing (0 failures, 7 pending)
 - **Pass Rate**: 92.6% → **98.5%** ✅
 - All failures resolved; 7 pending tests are intentional (require game loop)
 
 **Files Modified:**
+
 1. `/tests/unit/test_environment_setup.gd`
 2. `/tests/unit/test_projectile_meshes.gd`
 3. `/tests/unit/test_structure_meshes.gd`
@@ -679,6 +754,7 @@ make test-integration # Run integration tests
 8. `/resources/meshes3d/terrain_mesh_generator.gd`
 
 **Pending Tests** (intentional, require runtime game loop):
+
 - `test_given_invulnerable_when_timer_expires_then_becomes_idle` (tank states)
 - `test_power_up_timeout_after_20_seconds` (power-up timer)
 - Other timer-based tests requiring `_process()` execution
@@ -686,6 +762,7 @@ make test-integration # Run integration tests
 ---
 
 **Phase 3:** ✅ **COMPLETE** - Visual Asset Design (Low-Poly 3D Meshes)
+
 - Player tank meshes (4 upgrade levels): <500 tris each
 - Enemy tank meshes (4 types): <300 tris each
 - Bullet mesh: <100 tris
@@ -696,19 +773,158 @@ make test-integration # Run integration tests
 - Asset gallery scene for visual verification
 - Comprehensive test coverage: 128 new tests
 
-**Phase 4:** 3D Scene Graph & Entity Integration
-- Convert Node2D to Node3D hierarchy
-- Replace sprite rendering with MeshInstance3D
-- 3D collision shapes and physics bodies
-- Entity-mesh integration with material assignments
+**Phase 4:** 🚧 **IN PROGRESS** - Core Tank Entity Migration (2D → 3D)
+
+### 4.1 Tank Entity Analysis (2D Implementation)
+
+**Current Architecture** (`src/entities/tank.gd`):
+
+- **Base Class:** `CharacterBody2D` (2D physics body)
+- **Coordinate System:** Vector2 (X/Y screen space)
+- **Movement:** Discrete tile-based (16px tiles, 32px tank footprint)
+- **Direction:** Enum (UP, DOWN, LEFT, RIGHT) → Vector2
+- **Rotation:** Not used (sprite swaps instead of rotation)
+
+**Properties:**
+
+- `tank_type`: TankType enum (PLAYER, BASIC, FAST, POWER, ARMORED)
+- `base_speed`: float = 100.0
+- `max_health`: int (1-4 depending on type/level)
+- `fire_cooldown_time`: float = 0.5
+- `invulnerability_duration`: float = 3.0
+- `current_state`: State enum (IDLE, MOVING, SHOOTING, DYING, INVULNERABLE, SPAWNING)
+- `facing_direction`: Direction enum
+- `current_health`: int
+- `level`: int (0-3 for player upgrades)
+- `is_player`: bool
+- `tank_id`: int
+- `lives`: int (player only)
+- Power-up states: `is_invulnerable`, `is_frozen`, timers
+
+**Methods:**
+
+- `move_in_direction(Direction)` - Discrete tile movement with collision checking
+- `stop_movement()` - Set velocity to zero
+- `try_fire() -> bool` - Fire bullet if cooldown ready
+- `take_damage(amount: int)` - Health management
+- `die()` - Death sequence + event emission
+- `activate_invulnerability(duration: float)` - Shield power-up
+- `upgrade_level()` - Player tank upgrades
+- `make_invulnerable(duration: float)` - Star power-up
+- `freeze(duration: float)` - Clock power-up
+- `get_occupied_tiles() -> Array[Vector2i]` - 2x2 tile footprint
+- `get_bullet_spawn_position() -> Vector2` - Calculate spawn offset
+- `_would_collide_with_terrain(Vector2) -> bool` - Terrain collision check
+- `_would_collide_with_tank(Vector2) -> bool` - Tank-tank collision check
+
+**Signals:**
+
+- `health_changed(new_health: int, max_health: int)`
+- `died()`
+- `state_changed(new_state: State)`
+
+**Movement Logic:**
+
+- Discrete 16px tile jumps (not continuous)
+- Instant position updates on input
+- Collision checks BEFORE movement
+- 2x2 tile footprint (32x32px tank on 16px tiles)
+- Map boundaries: 16-400px (keeps tank center in 0-416 range)
+- Snap to grid: `_snap_to_grid_position()` rounds to nearest 16px
+
+**Events Emitted:**
+
+- `TankMovedEvent` - Position, direction, velocity
+- `BulletFiredEvent` - Position, direction, level, is_player
+- `TankDestroyedEvent` - Tank type, position, score value
+
+**Visual:**
+
+- Procedural pixel-art sprite generation in `_create_tank_sprite()`
+- No external sprite sheets
+- Color coded by tank type
+- Health dots for multi-HP tanks
+
+### 4.2 3D Tank Entity Specification
+
+**Target Architecture** (`src/entities/tank3d.gd`):
+
+- **Base Class:** `CharacterBody3D` (3D physics body)
+- **Coordinate System:** Vector3 (X/Y/Z world space)
+- **Movement:** Discrete tile-based (1 unit tiles, Y=0 ground plane)
+- **Direction:** Enum (UP, DOWN, LEFT, RIGHT) → Vector3 (X/Z plane)
+- **Rotation:** `rotation.y` (Y-axis rotation for facing direction)
+
+**Conversion Table:**
+
+| 2D Property        | 2D Type             | 3D Type             | 3D Notes                                  |
+| ------------------ | ------------------- | ------------------- | ----------------------------------------- |
+| `position`         | Vector2             | Vector3             | Y=0 (ground plane)                        |
+| `velocity`         | Vector2             | Vector3             | Y=0 (no vertical movement)                |
+| `facing_direction` | Direction → Vector2 | Direction → Vector3 | UP=(-Z), DOWN=(+Z), LEFT=(-X), RIGHT=(+X) |
+| `rotation`         | float (unused)      | Vector3.y           | Rotation around Y-axis                    |
+| `TILE_SIZE`        | 16 (pixels)         | 0.5 (units)         | Scale factor: 1/32                        |
+| `MAP_WIDTH/HEIGHT` | 416 (pixels)        | 13.0 (units)        | 26 tiles × 0.5 units                      |
+| `TANK_SIZE`        | 32 (pixels)         | 1.0 (units)         | Tank footprint                            |
+| `collision_shape`  | RectangleShape2D    | BoxShape3D          | Size: (1, 0.5, 1)                         |
+
+**Direction Vectors (3D):**
+
+```gdscript
+Direction.UP    → Vector3(0, 0, -1)  # Forward (-Z)
+Direction.DOWN  → Vector3(0, 0, 1)   # Backward (+Z)
+Direction.LEFT  → Vector3(-1, 0, 0)  # Left (-X)
+Direction.RIGHT → Vector3(1, 0, 0)   # Right (+X)
+```
+
+**Determinism Requirements:**
+
+- Quantize all positions: `Vector3Helpers.quantize_vec3(position, 0.001)`
+- Maintain discrete tile-based movement (no smooth interpolation during migration)
+- Fixed timestep physics: 60 Hz
+- Seeded RNG for AI decisions
+
+**Collision Layers (3D):**
+
+- Player tanks: Layer 1, Mask: 2|4|5|6 (Enemy, Environment, Base, PowerUp)
+- Enemy tanks: Layer 2, Mask: 1|3|4|5 (Player, Projectile, Environment, Base)
+
+### 4.3 Migration Strategy
+
+**Parallel Implementation:**
+
+- Keep `tank.gd` (2D) operational
+- Create `tank3d.gd` (3D) alongside
+- Duplicate test file structure: `test_tank.gd` → `test_tank3d.gd`
+- No modifications to existing 2D code until 3D validated
+
+**Test-First Workflow:**
+
+1. Create `tests/unit/test_tank3d.gd` with 3D assertions
+2. Run tests (expect all failures)
+3. Implement `src/entities/tank3d.gd`
+4. Iterate until tests pass
+5. Create scene files: `scenes3d/player_tank3d.tscn`, `scenes3d/enemy_tank3d.tscn`
+6. Integration tests for scenes
+
+**Validation Checkpoints:**
+
+- [ ] `make test-unit` - All tank3d unit tests pass
+- [ ] `make test-integration` - Scene loading + behavior tests pass
+- [ ] `make check-compile` - No GDScript errors
+- [ ] Determinism test - <0.01 position drift over 100 frames
+
+---
 
 **Phase 5:** 3D Terrain & Environment Integration
+
 - Tile-based 3D level generation from stages
 - Wall and obstacle collision in 3D space
 - Destructible terrain with mesh updates
 - Stage loader integration with 3D tiles
 
 **Phase 6:** Integration & Testing
+
 - Complete 3D gameplay loop validation
 - Replay system validation with 3D
 - Performance profiling and optimization
