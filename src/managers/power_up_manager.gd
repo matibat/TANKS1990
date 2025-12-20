@@ -30,8 +30,7 @@ func _on_tank_destroyed(event):
 
 func spawn_power_up(position: Vector2):
 	# Randomly select power-up type
-	var random_index = randi() % POWER_UP_PATHS.size()
-	var power_up_path = POWER_UP_PATHS[random_index]
+	var power_up_path = RandomProvider.choice(POWER_UP_PATHS)
 	
 	# Load and instantiate power-up
 	var PowerUpClass = load(power_up_path)

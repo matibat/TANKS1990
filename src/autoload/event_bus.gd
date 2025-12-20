@@ -2,6 +2,9 @@ extends Node
 ## EventBus - Central event management system for gameplay events
 ## Supports recording, playback, and network synchronization
 
+# Use a literal to keep the constant expression valid at parse time
+const DEFAULT_SEED: int = 1337
+
 # Event recording state
 var is_recording: bool = false
 var is_replaying: bool = false
@@ -17,7 +20,7 @@ var replay_data: ReplayData = null
 var replay_index: int = 0
 
 # Random seed for determinism
-var game_seed: int = 0
+var game_seed: int = DEFAULT_SEED
 
 # Signals for system events
 signal recording_started()
@@ -29,6 +32,7 @@ signal replay_progress(current_frame: int, total_frames: int)
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	start_time = Time.get_ticks_msec()
+	_set_seed_internal(game_seed)
 
 func _physics_process(_delta: float) -> void:
 	if is_replaying:
@@ -80,12 +84,9 @@ func start_recording(random_seed: int = -1) -> void:
 	is_recording = true
 	
 	# Set deterministic seed
-	if random_seed == -1:
-		game_seed = Time.get_ticks_msec() % 1000000
-	else:
+	if random_seed != -1:
 		game_seed = random_seed
-	
-	seed(game_seed)
+	_set_seed_internal(game_seed)
 	recording_started.emit()
 
 ## Stop recording and return replay data
@@ -113,9 +114,14 @@ func start_replay(data: ReplayData) -> void:
 	
 	# Set deterministic seed
 	game_seed = data.game_seed
-	seed(game_seed)
+	_set_seed_internal(game_seed)
 	
 	replay_started.emit()
+
+func set_game_seed(seed_value: int) -> void:
+	"""Synchronize RNG seed across EventBus and RandomProvider"""
+	game_seed = seed_value
+	_set_seed_internal(game_seed)
 
 ## Stop current replay
 func stop_replay() -> void:
@@ -195,4 +201,9 @@ func _reconstruct_event(data: Dictionary) -> GameEvent:
 ## Debug logging for events
 func _log_event(event: GameEvent) -> void:
 	if OS.is_debug_build() and OS.has_feature("editor"):
-		print("[EventBus] Frame %d: %s" % [event.frame, event.get_event_type()])
+		# Debug noise is useful while authoring; keep disabled by default
+		pass
+
+func _set_seed_internal(seed_value: int) -> void:
+	RandomProvider.set_seed(seed_value)
+	seed(seed_value)

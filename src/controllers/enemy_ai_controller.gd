@@ -78,7 +78,7 @@ func _handle_continuous_actions(delta: float) -> void:
 	# Handle shooting based on current state
 	match current_state:
 		AIState.PATROL:
-			if shoot_timer >= shoot_interval and randf() < 0.3:
+			if shoot_timer >= shoot_interval and RandomProvider.chance(0.3):
 				tank.try_fire()
 				shoot_timer = 0.0
 		AIState.CHASE:
@@ -118,7 +118,7 @@ func _evaluate_state() -> void:
 	
 	match current_state:
 		AIState.IDLE:
-			if randf() < base_attack_chance:
+			if RandomProvider.chance(base_attack_chance):
 				change_state(AIState.ATTACK_BASE)
 			else:
 				change_state(AIState.PATROL)
@@ -126,7 +126,7 @@ func _evaluate_state() -> void:
 		AIState.PATROL:
 			if distance_to_player < chase_range:
 				change_state(AIState.CHASE)
-			elif randf() < 0.1:
+			elif RandomProvider.chance(0.1):
 				change_state(AIState.ATTACK_BASE)
 		
 		AIState.CHASE:
@@ -187,7 +187,8 @@ func _initialize_patrol() -> void:
 
 func _change_patrol_direction() -> void:
 	var directions = [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]
-	patrol_direction = directions[randi() % directions.size()]
+	var index = RandomProvider.randi_range(0, directions.size() - 1)
+	patrol_direction = directions[index]
 
 func _snap_to_4_directions(direction: Vector2) -> Vector2:
 	if abs(direction.x) > abs(direction.y):

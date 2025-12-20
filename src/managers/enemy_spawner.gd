@@ -190,7 +190,7 @@ func _generate_enemy_queue(stage: int) -> void:
 		enemy_queue.append(Tank.TankType.ARMORED)
 	
 	# Shuffle for variety
-	enemy_queue.shuffle()
+	enemy_queue = RandomProvider.shuffle(enemy_queue)
 
 func _on_tank_destroyed(event: TankDestroyedEvent) -> void:
 	"""Handle enemy tank destruction"""
