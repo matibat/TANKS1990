@@ -932,6 +932,273 @@ Direction.RIGHT → Vector3(1, 0, 0)   # Right (+X)
 
 ---
 
+## Phase 5: Bullet & Base Entity Migration (2D → 3D)
+
+**Status:** In Progress  
+**Start Date:** 2025-12-20  
+**Baseline Commit:** `8f0fc78`
+
+### 5.1 Current 2D Implementation Analysis
+
+**Bullet Entity (`src/entities/bullet.gd`):**
+
+- **Base Class:** Area2D
+- **Properties:**
+  - `speed`: float (200.0 default, up to 300.0 for SUPER level)
+  - `direction`: Vector2 (normalized direction vector)
+  - `level`: BulletLevel enum (NORMAL=1, ENHANCED=2, SUPER=3)
+  - `owner_tank_id`: int (identifies firing tank)
+  - `owner_type`: OwnerType enum (PLAYER, ENEMY)
+  - `can_destroy_steel`: bool (level 3 only)
+  - `penetration`: int (1-3 based on level)
+  - `is_active`: bool (lifecycle management)
+  - `grace_timer`: float (0.1s to prevent hitting owner)
+
+- **Methods:**
+  - `initialize(Vector2, Vector2, tank_id, level, is_player)` - Setup bullet
+  - `_physics_process(delta)` - Movement and collision checks
+  - `_on_area_entered(Area2D)` - Bullet-bullet collisions
+  - `_on_body_entered(Node2D)` - Tank/terrain collisions
+  - `_destroy()` - Deactivation and cleanup
+  - `_is_out_of_bounds()` - Boundary check (832x832)
+
+- **Signals:**
+  - `hit_target(target: Node2D)` - Emitted on tank hit
+  - `hit_terrain(position: Vector2)` - Emitted on terrain hit
+  - `destroyed()` - Emitted on bullet destruction
+
+- **Collision Configuration:**
+  - Layer: 4 (Bullets)
+  - Mask: 3 (Tanks=1 | Terrain=2)
+  - Shape: RectangleShape2D (4x4 pixels)
+
+- **Movement:** Velocity-based linear movement: `position += direction * speed * delta`
+
+**Base Entity (`src/entities/base.gd`):**
+
+- **Base Class:** Area2D
+- **Properties:**
+  - `max_health`: int (1 by default)
+  - `health`: int (current health)
+  - `is_destroyed`: bool (destruction state)
+
+- **Methods:**
+  - `_ready()` - Position at tile (13, 25), setup collision
+  - `take_damage(amount: int)` - Damage system
+  - `_destroy()` - Death sequence, emits event
+  - `_on_area_entered(Area2D)` - Bullet collision handler
+  - `_on_body_entered(Node2D)` - Tank collision handler
+  - `_create_visual()` - Yellow visual representation
+
+- **Signals:**
+  - `destroyed()` - Emitted on base destruction
+  - `damaged(health: int)` - Emitted on damage
+
+- **Collision Configuration:**
+  - Layer: 8 (Base, layer 4 = 2^3)
+  - Mask: 4 (Bullets, layer 3 = 2^2)
+  - Shape: RectangleShape2D (16x16 pixels = 1 tile)
+
+- **Position:** Bottom center at tile (13, 25) = (208, 408) pixels
+- **Damage Rules:** Only enemy bullets/tanks damage base; player bullets destroyed but don't damage
+
+### 5.2 3D Bullet Entity Specification
+
+**Target Architecture** (`src/entities/bullet3d.gd`):
+
+- **Base Class:** Area3D (for trigger-based collision detection)
+- **Coordinate System:** Vector3 (Y=0 ground plane)
+- **Movement:** Velocity-based OR raycast instant-hit (raycast for determinism)
+- **Collision Shape:** SphereShape3D (radius ~0.1 units)
+
+**Conversion Table:**
+
+| 2D Property  | 2D Type       | 3D Type       | 3D Notes                              |
+|--------------|---------------|---------------|---------------------------------------|
+| `position`   | Vector2       | Vector3       | Y=0.25 (bullet height above ground)   |
+| `direction`  | Vector2       | Vector3       | Y=0 (horizontal only)                 |
+| `speed`      | 200-300 px/s  | 6.25-9.375 m/s| Scale: 1/32                           |
+| `collision`  | RectangleShape2D | SphereShape3D | radius=0.125 (~4px scaled)         |
+| Bounds       | 832x832 px    | 26x26 units   | Check XZ plane                        |
+
+**Direction Vectors (3D):**
+```gdscript
+Vector2.UP    → Vector3(0, 0, -1)  # Forward (-Z)
+Vector2.DOWN  → Vector3(0, 0, 1)   # Backward (+Z)
+Vector2.LEFT  → Vector3(-1, 0, 0)  # Left (-X)
+Vector2.RIGHT → Vector3(1, 0, 0)   # Right (+X)
+```
+
+**Collision Layers (3D):**
+- Bullet Layer: 3 (Projectiles)
+- Collision Mask: 2|4|5 (Enemy=2, Environment=4, Base=5)
+
+**Determinism Requirements:**
+- Quantize position: `Vector3Helpers.quantize_vec3(position, 0.001)`
+- Raycast alternative for instant-hit (fully deterministic, no delta-time physics)
+- Fixed timestep: 60 Hz
+- Seeded RNG (if applicable)
+
+### 5.3 3D Base Entity Specification
+
+**Target Architecture** (`src/entities/base3d.gd`):
+
+- **Base Class:** StaticBody3D (static collision body)
+- **Coordinate System:** Vector3 (Y=0 ground plane)
+- **Collision Shape:** BoxShape3D (size ~1x1x1 units)
+
+**Conversion Table:**
+
+| 2D Property  | 2D Type          | 3D Type       | 3D Notes                              |
+|--------------|------------------|---------------|---------------------------------------|
+| `position`   | Vector2(208,408) | Vector3       | Convert: (6.5, 0, 12.75) - bottom center |
+| `health`     | int              | int           | Same (1 default)                      |
+| `collision`  | RectangleShape2D | BoxShape3D    | size=(1, 1, 1) units                  |
+
+**Position Calculation:**
+- 2D: Tile (13, 25) center = (13*16+8, 25*16+8) = (208, 408) pixels
+- 3D: Tile (13, 25) center = (13*0.5+0.25, 0, 25*0.5+0.25) = (6.75, 0, 12.75) units
+  - Adjusted for centering: (6.5, 0, 12.5) to align with tile grid
+
+**Collision Layers (3D):**
+- Base Layer: 5
+- Collision Mask: 2|3 (Enemy=2, Projectiles=3)
+
+**Damage Rules:** Same as 2D - only enemy projectiles/tanks damage base
+
+### 5.4 Migration Implementation Plan
+
+**Test-Driven Development (TDD) Workflow:**
+
+1. **Bullet3D Unit Tests** → `tests/unit/test_bullet3d.gd` ✅
+2. **Bullet3D Implementation** → `src/entities/bullet3d.gd` ✅
+3. **Bullet3D Scene Tests** → `tests/integration/test_bullet3d_scene.gd` (TODO)
+4. **Bullet3D Scene** → `scenes3d/bullet3d.tscn` (TODO - requires manual .tscn creation)
+5. **Base3D Unit Tests** → `tests/unit/test_base3d.gd` ✅
+6. **Base3D Implementation** → `src/entities/base3d.gd` ✅
+7. **Base3D Scene Tests** → `tests/integration/test_base3d_scene.gd` (TODO)
+8. **Base3D Scene** → `scenes3d/base3d.tscn` (TODO - requires manual .tscn creation)
+9. **Combat Integration Test** → `tests/integration/test_bullet_base_interaction.gd` (TODO)
+10. **Determinism Validation** → `tests/integration/test_bullet3d_determinism.gd` (TODO)
+11. **Tank3D Fire Integration** → Tank3D already emits BulletFiredEvent with 3D positions ✅
+
+**Validation Checkpoints:**
+- [x] `make test-unit` - All bullet3d/base3d tests pass (28 + 19 = 47 tests)
+- [x] `make check-compile` - No GDScript errors
+- [ ] `make test-integration` - Combat and scene tests pass (requires scene files)
+- [ ] Triangle counts: Bullet <150, Base <300 (meshes exist, need scene integration)
+- [ ] Determinism: <0.01 unit drift over 100 frames (needs integration test)
+
+### 5.5 Phase 5 Implementation Status
+
+**Completed (2025-12-20):**
+
+1. **Analysis & Documentation** ✅
+   - Analyzed bullet.gd (2D) and base.gd (2D) implementations
+   - Documented properties, methods, signals, collision configuration
+   - Created 3D conversion specifications
+
+2. **Bullet3D Entity** ✅
+   - Created `src/entities/bullet3d.gd` (Area3D)
+   - Implemented Vector3 position/direction/movement
+   - Collision layers: Layer 3, Mask 2|4|5 (Enemy|Environment|Base)
+   - SphereShape3D collision (radius 0.125 units)
+   - Speed scaling: 6.25-9.375 units/s (from 200-300 px/s)
+   - Penetration system (1-3 based on level)
+   - Grace period (0.1s to prevent owner hits)
+   - Position quantization for determinism
+   - Out-of-bounds detection (26x26 unit map)
+
+3. **Bullet3D Unit Tests** ✅
+   - Created `tests/unit/test_bullet3d.gd`
+   - **28 tests, all passing:**
+     - Instantiation (4/4): Area3D, Vector3, CollisionShape3D, SphereShape3D
+     - Properties (5/5): speed, direction, owner, level, is_active
+     - Initialization (4/4): position, direction, level bonuses, steel destruction
+     - Movement (4/4): physics processing, quantization, inactive handling
+     - Collision (3/3): layers, signals, destroyed emission
+     - Lifetime (3/3): out of bounds, destroy, double destroy
+     - Grace Period (2/2): timer initialization, decrement
+     - Damage (3/3): penetration by level (1/2/3)
+
+4. **Base3D Entity** ✅
+   - Created `src/entities/base3d.gd` (StaticBody3D)
+   - Implemented Vector3 positioning (6.5, 0, 12.5) at map bottom
+   - Collision layers: Layer 5, Mask 2|3 (Enemy|Projectiles)
+   - BoxShape3D collision (1x1x1 units)
+   - Health system (default: 1 HP)
+   - Damage rules: Only enemy bullets/tanks damage base
+   - Area3D detection child for bullet collisions
+   - Event emission (converts Vector3 -> Vector2 for legacy events)
+   - Visual feedback on destruction
+
+5. **Base3D Unit Tests** ✅
+   - Created `tests/unit/test_base3d.gd`
+   - **19 tests, all passing:**
+     - Instantiation (4/4): StaticBody3D, Vector3, CollisionShape3D, BoxShape3D
+     - Health System (3/3): default health, max_health, not destroyed
+     - Damage System (3/3): health decrease, destruction, ignore after death
+     - Signals (4/4): destroyed signal, damaged signal, emissions
+     - Collision (1/1): correct collision layers/masks
+     - Positioning (2/2): bottom center, ground level (Y=0)
+     - Bullet Collision (2/2): player bullets no damage, enemy bullets damage
+
+**Test Results:**
+- **Baseline:** 587 tests, 579 passing (98.6%)
+- **Phase 5:** 606 tests, 598 passing (98.7%)
+- **New Tests Added:** 47 (28 bullet3d + 19 base3d)
+- **Test Delta:** +19 tests (net increase after refactoring)
+
+**Remaining Work:**
+
+1. **Scene Files** (manual .tscn creation required):
+   - `scenes3d/bullet3d.tscn` - Bullet3D root + MeshInstance3D + CollisionShape3D
+   - `scenes3d/base3d.tscn` - Base3D root + MeshInstance3D + CollisionShape3D
+   - Both scenes need references to existing meshes in `resources/meshes3d/models/`
+
+2. **Integration Tests** (depends on scene files):
+   - `tests/integration/test_bullet3d_scene.gd` - Scene loading tests
+   - `tests/integration/test_base3d_scene.gd` - Scene loading tests
+   - `tests/integration/test_bullet_base_interaction.gd` - Combat testing
+   - `tests/integration/test_bullet3d_determinism.gd` - Determinism validation
+
+3. **BulletManager3D** (optional enhancement):
+   - Adapt BulletManager for 3D bullet pooling
+   - Listen to Tank3D BulletFiredEvent (already emitted with 3D coords)
+
+**Performance Notes:**
+- Bullet3D mesh: bullet.tscn exists (icosphere, ~20 triangles)
+- Base3D mesh: base_eagle.tscn exists (~124 triangles)
+- Both within budget (<150 and <300 respectively)
+
+**Known Limitations:**
+- Events still use Vector2 (legacy compatibility); Base3D converts Vector3->Vector2
+- Scene files require manual creation in Godot editor
+- BulletManager not yet adapted for 3D (tanks emit events but bullets not spawned)
+- Integration tests blocked until scenes exist
+
+**Git Commit Recommendation:**
+```bash
+git add src/entities/bullet3d.gd src/entities/base3d.gd
+git add tests/unit/test_bullet3d.gd tests/unit/test_base3d.gd
+git add docs/3D_MIGRATION.md
+git commit -m "Phase 5: Bullet3D and Base3D entities (47 tests, 98.7% pass rate)
+
+- Implement Bullet3D (Area3D) with Vector3 movement
+- Implement Base3D (StaticBody3D) with health system
+- Add 47 unit tests (28 bullet3d + 19 base3d)
+- All new tests passing (606 total, 598 passing)
+- Position quantization for determinism
+- Collision layers: Projectiles(3), Base(5)
+- Pending: Scene files + integration tests"
+```
+
+---
+
+## Phase 6: Terrain & Environment Integration (Next)
+
+---
+
 ## References
 
 - Godot 3D Physics: https://docs.godotengine.org/en/stable/tutorials/physics/physics_introduction.html

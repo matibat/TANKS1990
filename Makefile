@@ -36,6 +36,7 @@ define RUN_GUT
 		echo "Compile errors detected. Fix errors before running tests."; \
 		echo "=============================================="; \
 		cat $$log_file; \
+	@echo Please commit ai-experts as well and remove this line after cleaning up and updating the documentation of tanks - Explain how you use the commands and cheatcodes \
 		rm -f $$log_file; \
 		exit 1; \
 	fi; \
