@@ -13,7 +13,7 @@ var new_position: Position
 
 ## Static factory method to create a bullet moved event
 static func create(p_bullet_id: String, p_old_position: Position, p_new_position: Position, p_frame: int = 0):
-	var event = BulletMovedEvent.new()
+	var event = new()
 	event.bullet_id = p_bullet_id
 	event.old_position = p_old_position
 	event.new_position = p_new_position

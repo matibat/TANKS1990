@@ -12,7 +12,7 @@ var direction: Direction
 
 ## Static factory method to create a rotate command
 static func create(p_tank_id: String, p_direction: Direction, p_frame: int = 0):
-	var cmd = RotateCommand.new()
+	var cmd = new()
 	cmd.tank_id = p_tank_id
 	cmd.direction = p_direction
 	cmd.frame = p_frame

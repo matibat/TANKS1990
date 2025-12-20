@@ -15,7 +15,7 @@ var direction: Direction
 
 ## Static factory method to create a tank spawned event
 static func create(p_tank_id: String, p_tank_type: int, p_position: Position, p_direction: Direction, p_frame: int = 0):
-	var event = TankSpawnedEvent.new()
+	var event = new()
 	event.tank_id = p_tank_id
 	event.tank_type = p_tank_type
 	event.position = p_position

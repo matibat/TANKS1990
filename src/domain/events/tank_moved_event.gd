@@ -15,7 +15,7 @@ var direction: Direction
 
 ## Static factory method to create a tank moved event
 static func create(p_tank_id: String, p_old_position: Position, p_new_position: Position, p_direction: Direction, p_frame: int = 0):
-	var event = TankMovedEvent.new()
+	var event = new()
 	event.tank_id = p_tank_id
 	event.old_position = p_old_position
 	event.new_position = p_new_position

@@ -12,7 +12,7 @@ var new_health: int
 
 ## Static factory method to create a tank damaged event
 static func create(p_tank_id: String, p_damage: int, p_old_health: int, p_new_health: int, p_frame: int = 0):
-	var event = TankDamagedEvent.new()
+	var event = new()
 	event.tank_id = p_tank_id
 	event.damage = p_damage
 	event.old_health = p_old_health

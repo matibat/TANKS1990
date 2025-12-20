@@ -13,7 +13,7 @@ var reason: String # Reason for destruction (e.g., "hit_wall", "hit_tank", "hit_
 
 ## Static factory method to create a bullet destroyed event
 static func create(p_bullet_id: String, p_position: Position, p_reason: String = "", p_frame: int = 0):
-	var event = BulletDestroyedEvent.new()
+	var event = new()
 	event.bullet_id = p_bullet_id
 	event.position = p_position
 	event.reason = p_reason

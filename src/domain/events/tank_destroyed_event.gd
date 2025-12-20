@@ -13,7 +13,7 @@ var killer_id: String # ID of tank that destroyed this tank (empty if not by tan
 
 ## Static factory method to create a tank destroyed event
 static func create(p_tank_id: String, p_position: Position, p_killer_id: String = "", p_frame: int = 0):
-	var event = TankDestroyedEvent.new()
+	var event = new()
 	event.tank_id = p_tank_id
 	event.position = p_position
 	event.killer_id = p_killer_id

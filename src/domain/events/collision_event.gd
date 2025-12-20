@@ -14,7 +14,7 @@ var collision_type: String # Type of collision (e.g., "bullet_tank", "tank_tank"
 
 ## Static factory method to create a collision event
 static func create(p_entity1_id: String, p_entity2_id: String, p_position: Position, p_collision_type: String, p_frame: int = 0):
-	var event = CollisionEvent.new()
+	var event = new()
 	event.entity1_id = p_entity1_id
 	event.entity2_id = p_entity2_id
 	event.position = p_position

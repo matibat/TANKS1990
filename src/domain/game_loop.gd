@@ -41,7 +41,7 @@ func process_frame(game_state: GameState, commands: Array, delta: float) -> Arra
 		return []  # No events, tick not ready
 	
 	# Tick is ready - execute game logic using static method
-	return GameLoop.process_frame_static(game_state, commands)
+	return process_frame_static(game_state, commands)
 
 ## Static method: Process one game frame (legacy/direct call)
 ## Returns array of events that occurred this frame

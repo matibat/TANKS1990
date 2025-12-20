@@ -15,7 +15,7 @@ var direction: Direction
 
 ## Static factory method to create a bullet fired event
 static func create(p_bullet_id: String, p_tank_id: String, p_position: Position, p_direction: Direction, p_frame: int = 0):
-	var event = BulletFiredEvent.new()
+	var event = new()
 	event.bullet_id = p_bullet_id
 	event.tank_id = p_tank_id
 	event.position = p_position

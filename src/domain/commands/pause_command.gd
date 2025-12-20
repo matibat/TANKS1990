@@ -9,7 +9,7 @@ var should_pause: bool
 
 ## Static factory method to create a pause command
 static func create(p_should_pause: bool, p_frame: int = 0):
-	var cmd = PauseCommand.new()
+	var cmd = new()
 	cmd.should_pause = p_should_pause
 	cmd.frame = p_frame
 	return cmd

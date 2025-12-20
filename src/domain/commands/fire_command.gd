@@ -9,7 +9,7 @@ var tank_id: String
 
 ## Static factory method to create a fire command
 static func create(p_tank_id: String, p_frame: int = 0):
-	var cmd = FireCommand.new()
+	var cmd = new()
 	cmd.tank_id = p_tank_id
 	cmd.frame = p_frame
 	return cmd
