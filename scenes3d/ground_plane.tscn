@@ -1,0 +1,29 @@
+[gd_scene load_steps=4 format=3 uid="uid://cpxhqbxqn7dko"]
+
+[ext_resource type="Shader" path="res://resources/shaders/grid_ground.gdshader" id="1_shader"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_1"]
+size = Vector2(26, 26)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_1"]
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/base_color = Color(0.15, 0.15, 0.2, 1)
+shader_parameter/grid_color = Color(0.3, 0.3, 0.4, 1)
+shader_parameter/grid_scale = 1.0
+shader_parameter/grid_line_width = 0.05
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(26, 0.1, 26)
+
+[node name="GroundPlane" type="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0, 13)
+collision_layer = 8
+collision_mask = 0
+
+[node name="GroundMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_1")
+surface_material_override/0 = SubResource("ShaderMaterial_1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_1")

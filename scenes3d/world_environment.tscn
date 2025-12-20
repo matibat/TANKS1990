@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://dil2nf6v3y8sh"]
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 1
+background_color = Color(0.1, 0.1, 0.15, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.3, 0.3, 0.3, 1)
+ambient_light_energy = 0.5
+tonemap_mode = 2
+fog_enabled = false
+
+[node name="WorldEnvironment" type="WorldEnvironment"]
+environment = SubResource("Environment_1")
