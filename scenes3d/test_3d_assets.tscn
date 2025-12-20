@@ -1,0 +1,47 @@
+[gd_scene load_steps=6 format=3 uid="uid://d8e9f0g1h2i3j4k5"]
+
+[ext_resource type="Script" path="res://scenes3d/test_3d_assets.gd" id="1_assets"]
+[ext_resource type="Script" path="res://resources/meshes3d/tank_mesh_generator.gd" id="2_tank_gen"]
+[ext_resource type="Script" path="res://resources/meshes3d/base_mesh_generator.gd" id="3_base_gen"]
+[ext_resource type="Script" path="res://resources/meshes3d/bullet_mesh_generator.gd" id="4_bullet_gen"]
+[ext_resource type="Script" path="res://resources/meshes3d/terrain_mesh_generator.gd" id="5_terrain_gen"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+size = Vector2(40, 40)
+
+[sub_resource type="StandardMaterial3D" id="Material_ground"]
+albedo_color = Color(0.15, 0.2, 0.15, 1)
+metallic = 0.0
+roughness = 1.0
+
+[sub_resource type="Environment" id="Environment_world"]
+background_mode = 1
+background_color = Color(0.1, 0.1, 0.15, 1)
+ambient_light_source = 1
+ambient_light_color = Color(0.4, 0.4, 0.4, 1)
+fog_enabled = true
+fog_light_color = Color(0.5, 0.5, 0.6, 1)
+fog_density = 0.008
+
+[node name="Test3DAssets" type="Node3D"]
+script = ExtResource("1_assets")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 15, 5)
+projection = 1
+size = 25.0
+near = 0.1
+far = 100.0
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.408248, 0.57735, 0, 0.816497, 0.57735, -0.707107, -0.408248, 0.57735, 0, 8, 0)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="GroundPlane" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
+mesh = SubResource("PlaneMesh_ground")
+surface_material_override/0 = SubResource("Material_ground")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_world")

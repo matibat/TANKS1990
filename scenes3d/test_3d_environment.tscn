@@ -1,0 +1,43 @@
+[gd_scene load_steps=5 format=3 uid="uid://c7v8b9m0n1p2q3r4"]
+
+[ext_resource type="Script" path="res://scenes3d/test_3d_environment.gd" id="1_test_env"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+size = Vector2(30, 30)
+
+[sub_resource type="StandardMaterial3D" id="Material_ground"]
+albedo_color = Color(0.2, 0.3, 0.2, 1)
+metallic = 0.0
+roughness = 1.0
+
+[sub_resource type="Environment" id="Environment_world"]
+background_mode = 1
+background_color = Color(0.1, 0.1, 0.15, 1)
+ambient_light_source = 1
+ambient_light_color = Color(0.3, 0.3, 0.3, 1)
+fog_enabled = true
+fog_light_color = Color(0.5, 0.5, 0.6, 1)
+fog_density = 0.01
+
+[node name="Test3DEnvironment" type="Node3D"]
+script = ExtResource("1_test_env")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 13, 10, 13)
+projection = 1
+size = 20.0
+near = 0.1
+far = 100.0
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.408248, 0.57735, 0, 0.816497, 0.57735, -0.707107, -0.408248, 0.57735, 0, 5, 0)
+light_energy = 1.0
+shadow_enabled = true
+
+[node name="GroundPlane" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0, 13)
+mesh = SubResource("PlaneMesh_ground")
+surface_material_override/0 = SubResource("Material_ground")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_world")

@@ -207,3 +207,17 @@ func _log_event(event: GameEvent) -> void:
 func _set_seed_internal(seed_value: int) -> void:
 	RandomProvider.set_seed(seed_value)
 	seed(seed_value)
+
+## Serialize Vector3 to dictionary for event storage/replay
+func serialize_vector3(vec: Vector3) -> Dictionary:
+	return {
+		"x": vec.x,
+		"y": vec.y,
+		"z": vec.z
+	}
+
+## Deserialize Vector3 from dictionary
+func deserialize_vector3(data: Dictionary) -> Vector3:
+	if data.has("x") and data.has("y") and data.has("z"):
+		return Vector3(data.x, data.y, data.z)
+	return Vector3.ZERO

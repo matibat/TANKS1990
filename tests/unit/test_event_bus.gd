@@ -253,3 +253,76 @@ class TestStopRecording:
 		
 		# Then
 		assert_false(event_bus.is_recording, "Should not be recording after stop")
+
+
+# Scenario: Vector3 serialization for 3D support
+class TestVector3Serialization:
+	extends GutTest
+	
+	var event_bus: Node
+	
+	func before_each():
+		event_bus = EventBus
+	
+	func test_given_vector3_when_serialized_then_returns_dictionary():
+		# Given
+		var vec3 = Vector3(10.5, 20.3, 30.7)
+		
+		# When
+		var result = event_bus.serialize_vector3(vec3)
+		
+		# Then
+		assert_true(result is Dictionary, "Should return dictionary")
+		assert_has(result, "x", "Should have x key")
+		assert_has(result, "y", "Should have y key")
+		assert_has(result, "z", "Should have z key")
+		assert_almost_eq(result.x, 10.5, 0.0001, "X should match")
+		assert_almost_eq(result.y, 20.3, 0.0001, "Y should match")
+		assert_almost_eq(result.z, 30.7, 0.0001, "Z should match")
+	
+	func test_given_vector3_dict_when_deserialized_then_returns_vector3():
+		# Given
+		var vec_dict = {"x": 15.2, "y": 25.8, "z": 35.1}
+		
+		# When
+		var result = event_bus.deserialize_vector3(vec_dict)
+		
+		# Then
+		assert_true(typeof(result) == TYPE_VECTOR3, "Should return Vector3")
+		assert_almost_eq(result.x, 15.2, 0.0001, "X should match")
+		assert_almost_eq(result.y, 25.8, 0.0001, "Y should match")
+		assert_almost_eq(result.z, 35.1, 0.0001, "Z should match")
+	
+	func test_given_invalid_dict_when_deserialize_vector3_then_returns_zero():
+		# Given
+		var invalid_dict = {"a": 1, "b": 2}
+		
+		# When
+		var result = event_bus.deserialize_vector3(invalid_dict)
+		
+		# Then
+		assert_eq(result, Vector3.ZERO, "Should return Vector3.ZERO for invalid input")
+	
+	func test_given_zero_vector3_when_serialized_then_all_zeros():
+		# Given
+		var vec3 = Vector3.ZERO
+		
+		# When
+		var result = event_bus.serialize_vector3(vec3)
+		
+		# Then
+		assert_eq(result.x, 0.0, "X should be 0")
+		assert_eq(result.y, 0.0, "Y should be 0")
+		assert_eq(result.z, 0.0, "Z should be 0")
+	
+	func test_given_negative_vector3_when_serialized_then_preserves_negatives():
+		# Given
+		var vec3 = Vector3(-5.5, -10.2, -15.8)
+		
+		# When
+		var result = event_bus.serialize_vector3(vec3)
+		
+		# Then
+		assert_almost_eq(result.x, -5.5, 0.0001, "X should be negative")
+		assert_almost_eq(result.y, -10.2, 0.0001, "Y should be negative")
+		assert_almost_eq(result.z, -15.8, 0.0001, "Z should be negative")

@@ -74,6 +74,16 @@ pause={
 [physics]
 
 common/physics_jitter_fix=0.0
+common/physics_ticks_per_second=60
+
+[layer_names]
+
+3d_physics/layer_1="Player"
+3d_physics/layer_2="Enemies"
+3d_physics/layer_3="Projectiles"
+3d_physics/layer_4="Environment"
+3d_physics/layer_5="Base"
+3d_physics/layer_6="PowerUps"
 
 [rendering]
 
