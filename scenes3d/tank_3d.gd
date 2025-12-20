@@ -16,11 +16,14 @@ var tank_type: int = TankEntity.Type.PLAYER
 ## Movement interpolation (optional)
 var target_position: Vector3
 var target_rotation: float
+var last_position: Vector3 # Position at last logic tick
 var movement_speed: float = 5.0
+var use_interpolation: bool = true # Enable smooth interpolation
 
 func _ready() -> void:
 	target_position = position
 	target_rotation = rotation.y
+	last_position = position
 	
 	# Set color based on tank type
 	_setup_visual()
@@ -50,8 +53,17 @@ func _setup_visual() -> void:
 
 ## Called when tank should move to new position
 func move_to(new_position: Vector3, new_rotation: float) -> void:
+	# Store previous position for interpolation
+	if use_interpolation:
+		last_position = target_position
+	
 	target_position = new_position
 	target_rotation = new_rotation
+	
+	# If not using interpolation, snap immediately
+	if not use_interpolation:
+		position = new_position
+		rotation.y = new_rotation
 
 ## Called when tank takes damage
 func take_damage(damage: int, new_health: int) -> void:
@@ -80,11 +92,19 @@ func play_destroy_effect() -> void:
 
 ## Optional: Smooth interpolation in physics process
 func _physics_process(delta: float) -> void:
-	# Interpolate position
+	if not use_interpolation:
+		return
+	
+	# Interpolate position with smooth lerp
+	# Using higher lerp factor for responsive feel at 60 FPS
 	if position.distance_to(target_position) > 0.01:
-		position = position.lerp(target_position, movement_speed * delta)
+		position = position.lerp(target_position, min(movement_speed * delta, 1.0))
+	else:
+		position = target_position
 	
 	# Interpolate rotation
 	var rotation_diff = target_rotation - rotation.y
 	if abs(rotation_diff) > 0.01:
-		rotation.y = lerp_angle(rotation.y, target_rotation, movement_speed * delta)
+		rotation.y = lerp_angle(rotation.y, target_rotation, min(movement_speed * delta, 1.0))
+	else:
+		rotation.y = target_rotation

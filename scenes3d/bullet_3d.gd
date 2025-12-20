@@ -11,10 +11,13 @@ var bullet_id: String = ""
 
 ## Movement interpolation
 var target_position: Vector3
-var movement_speed: float = 10.0
+var last_position: Vector3 # Position at last logic tick
+var movement_speed: float = 15.0 # Faster than tanks for bullets
+var use_interpolation: bool = true
 
 func _ready() -> void:
 	target_position = position
+	last_position = position
 	
 	# Set bullet appearance
 	var material = StandardMaterial3D.new()
@@ -26,7 +29,15 @@ func _ready() -> void:
 
 ## Called when bullet should move to new position
 func move_to(new_position: Vector3) -> void:
+	# Store previous position for interpolation
+	if use_interpolation:
+		last_position = target_position
+	
 	target_position = new_position
+	
+	# If not using interpolation, snap immediately
+	if not use_interpolation:
+		position = new_position
 
 ## Called when bullet is destroyed
 func play_destroy_effect() -> void:
@@ -42,5 +53,11 @@ func play_destroy_effect() -> void:
 
 ## Smooth interpolation in physics process
 func _physics_process(delta: float) -> void:
+	if not use_interpolation:
+		return
+	
+	# Interpolate position with higher speed for bullets
 	if position.distance_to(target_position) > 0.01:
-		position = position.lerp(target_position, movement_speed * delta)
+		position = position.lerp(target_position, min(movement_speed * delta, 1.0))
+	else:
+		position = target_position

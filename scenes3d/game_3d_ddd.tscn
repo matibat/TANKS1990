@@ -1,7 +1,14 @@
-[gd_scene load_steps=3 format=3 uid="uid://dxm7jw8kqp2n1"]
+[gd_scene load_steps=10 format=3 uid="uid://dxm7jw8kqp2n1"]
 
 [ext_resource type="Script" path="res://scenes3d/game_root_3d.gd" id="1_gameroot"]
 [ext_resource type="Script" path="res://src/adapters/godot_game_adapter.gd" id="2_adapter"]
+[ext_resource type="PackedScene" uid="uid://cg8vh3qy0r5lp" path="res://scenes3d/camera_3d.tscn" id="3_camera"]
+[ext_resource type="PackedScene" uid="uid://cnf8y7q0uw83g" path="res://scenes3d/grid_overlay.tscn" id="4_grid"]
+[ext_resource type="PackedScene" path="res://scenes3d/ui/main_menu.tscn" id="5_mainmenu"]
+[ext_resource type="PackedScene" path="res://scenes3d/ui/hud.tscn" id="6_hud"]
+[ext_resource type="PackedScene" path="res://scenes3d/ui/pause_menu.tscn" id="7_pause"]
+[ext_resource type="PackedScene" path="res://scenes3d/ui/game_over.tscn" id="8_gameover"]
+[ext_resource type="PackedScene" path="res://scenes3d/ui/stage_complete.tscn" id="9_stagecomplete"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_arena"]
 size = Vector2(26, 26)
@@ -15,13 +22,7 @@ script = ExtResource("1_gameroot")
 [node name="GodotGameAdapter" type="Node" parent="."]
 script = ExtResource("2_adapter")
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 13, 30, 13)
-projection = 1
-size = 28.0
-current = true
-near = 0.1
-far = 100.0
+[node name="Camera3D" parent="." instance=ExtResource("3_camera")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 10, 0)
@@ -35,3 +36,17 @@ surface_material_override/0 = SubResource("StandardMaterial3D_arena")
 [node name="Tanks" type="Node3D" parent="."]
 
 [node name="Bullets" type="Node3D" parent="."]
+
+[node name="GridOverlay" parent="." instance=ExtResource("4_grid")]
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="MainMenu" parent="UI" instance=ExtResource("5_mainmenu")]
+
+[node name="HUD" parent="UI" instance=ExtResource("6_hud")]
+
+[node name="PauseMenu" parent="UI" instance=ExtResource("7_pause")]
+
+[node name="GameOver" parent="UI" instance=ExtResource("8_gameover")]
+
+[node name="StageComplete" parent="UI" instance=ExtResource("9_stagecomplete")]

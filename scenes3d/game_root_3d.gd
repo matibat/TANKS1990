@@ -3,6 +3,7 @@ extends Node3D
 ## GameRoot3D - Presentation Layer Root Script for DDD Architecture  
 ## Manages visual representation of game entities by listening to adapter signals
 ## Pure presentation logic - no game rules, just visual updates
+## Now acts as GameCoordinator - integrates GameStateMachine and UI screens
 
 ## Debug logger autoload
 var DebugLog: Node
@@ -17,12 +18,24 @@ const TerrainCell = preload("res://src/domain/entities/terrain_cell.gd")
 const SpawningService = preload("res://src/domain/services/spawning_service.gd")
 const Tank3D = preload("res://scenes3d/tank_3d.gd")
 const Bullet3D = preload("res://scenes3d/bullet_3d.gd")
+const GameStateMachine = preload("res://src/domain/game_state_machine.gd")
+const GameStateEnum = preload("res://src/domain/value_objects/game_state_enum.gd")
 
 ## Node references
 @onready var adapter: GodotGameAdapter = $GodotGameAdapter
 @onready var tanks_container: Node3D = $Tanks
 @onready var bullets_container: Node3D = $Bullets
 @onready var camera: Camera3D = $Camera3D
+
+## UI Screen references
+@onready var main_menu: Control = $UI/MainMenu
+@onready var hud: Control = $UI/HUD
+@onready var pause_menu: Control = $UI/PauseMenu
+@onready var game_over: Control = $UI/GameOver
+@onready var stage_complete: Control = $UI/StageComplete
+
+## State Management
+var _state_machine: GameStateMachine
 
 ## Visual node instances
 var tank_nodes: Dictionary = {} # tank_id -> Tank3D instance
@@ -37,6 +50,8 @@ const TILE_SIZE: float = 1.0 / 16.0 # 0.0625 world units per pixel
 ## Game state tracking
 var player_tank_id: String = ""
 var terrain_container: Node3D
+var current_score: int = 0
+var current_lives: int = 3
 
 func _ready() -> void:
 	# Get debug logger
@@ -44,10 +59,128 @@ func _ready() -> void:
 		DebugLog = get_node("/root/DebugLogger")
 		DebugLog.info("GameRoot3D initializing...")
 	
+	# Initialize state machine
+	_state_machine = GameStateMachine.new()
+	_state_machine.state_changed.connect(_on_state_changed)
+	
+	# Connect UI signals
+	_connect_ui_signals()
+	
+	# Hide all UI screens except main menu
+	_hide_all_ui()
+	main_menu.show()
+	
 	# Create terrain container
 	terrain_container = Node3D.new()
 	terrain_container.name = "Terrain"
 	add_child(terrain_container)
+	
+	# Start in MENU state
+	if DebugLog:
+		DebugLog.info("GameCoordinator initialized in MENU state")
+	
+	print("GameRoot3D ready - GameCoordinator initialized")
+
+## Connect UI screen signals
+func _connect_ui_signals() -> void:
+	# Main Menu signals
+	main_menu.start_game_pressed.connect(_on_start_game)
+	main_menu.quit_pressed.connect(_on_quit_game)
+	
+	# Pause Menu signals
+	pause_menu.resume_pressed.connect(_on_resume_game)
+	pause_menu.quit_to_menu_pressed.connect(_on_quit_to_menu)
+	
+	# Game Over signals
+	game_over.try_again_pressed.connect(_on_try_again)
+	game_over.main_menu_pressed.connect(_on_quit_to_menu)
+	
+	# Stage Complete signals
+	stage_complete.next_stage_pressed.connect(_on_next_stage)
+
+## State transition handler
+func _on_state_changed(old_state: int, new_state: int) -> void:
+	if DebugLog:
+		DebugLog.info("State transition", {
+			"from": GameStateEnum.state_to_string(old_state),
+			"to": GameStateEnum.state_to_string(new_state)
+		})
+	
+	match new_state:
+		GameStateEnum.State.MENU:
+			_show_main_menu()
+		GameStateEnum.State.PLAYING:
+			_show_hud()
+		GameStateEnum.State.PAUSED:
+			_show_pause_menu()
+		GameStateEnum.State.GAME_OVER:
+			_show_game_over()
+		GameStateEnum.State.STAGE_COMPLETE:
+			_show_stage_complete()
+
+## UI Screen Management
+
+func _hide_all_ui() -> void:
+	main_menu.hide()
+	hud.hide()
+	pause_menu.hide()
+	game_over.hide()
+	stage_complete.hide()
+
+func _show_main_menu() -> void:
+	_hide_all_ui()
+	main_menu.show()
+
+func _show_hud() -> void:
+	_hide_all_ui()
+	hud.show()
+	# Update HUD with current values
+	hud.update_score(current_score)
+	hud.update_lives(current_lives)
+
+func _show_pause_menu() -> void:
+	pause_menu.show_menu()
+
+func _show_game_over() -> void:
+	_hide_all_ui()
+	game_over.show_game_over(current_score)
+
+func _show_stage_complete() -> void:
+	_hide_all_ui()
+	# TODO: Track actual stats
+	stage_complete.show_stage_complete(20, 120.0, 1000)
+
+## UI Signal Handlers
+
+func _on_start_game() -> void:
+	if _state_machine.transition_to(GameStateEnum.State.PLAYING):
+		_start_new_game()
+
+func _on_quit_game() -> void:
+	get_tree().quit()
+
+func _on_resume_game() -> void:
+	_state_machine.transition_to(GameStateEnum.State.PLAYING)
+	pause_menu.hide_menu()
+
+func _on_quit_to_menu() -> void:
+	if _state_machine.transition_to(GameStateEnum.State.MENU):
+		_cleanup_game()
+
+func _on_try_again() -> void:
+	if _state_machine.transition_to(GameStateEnum.State.PLAYING):
+		_start_new_game()
+
+func _on_next_stage() -> void:
+	if _state_machine.transition_to(GameStateEnum.State.PLAYING):
+		_start_next_stage()
+
+## Game Management
+
+func _start_new_game() -> void:
+	_cleanup_game()
+	current_score = 0
+	current_lives = 3
 	
 	# Create and initialize game state
 	var game_state = _create_test_game_state()
@@ -67,16 +200,40 @@ func _ready() -> void:
 		if DebugLog:
 			DebugLog.info("Player tank set", {"tank_id": player_tank_id})
 	
-	print("GameRoot3D ready - DDD architecture initialized")
-	print("Player tank ID: ", player_tank_id)
+	print("New game started")
+
+func _start_next_stage() -> void:
+	# TODO: Implement next stage logic
+	print("Next stage not yet implemented")
+
+func _cleanup_game() -> void:
+	# Remove all tanks
+	for tank_node in tank_nodes.values():
+		tank_node.queue_free()
+	tank_nodes.clear()
 	
-	if DebugLog:
-		DebugLog.gameplay("GameRoot3D ready", {
-"player_tank_id": player_tank_id,
-"camera_pos": camera.position,
-"camera_rot": camera.rotation_degrees,
-"terrain_count": terrain_nodes.size()
-		})
+	# Remove all bullets
+	for bullet_node in bullet_nodes.values():
+		bullet_node.queue_free()
+	bullet_nodes.clear()
+	
+	# Remove terrain
+	for terrain_node in terrain_nodes:
+		terrain_node.queue_free()
+	terrain_nodes.clear()
+	
+	player_tank_id = ""
+
+## Input handling for pause
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_ESCAPE:
+			if _state_machine.get_current_state() == GameStateEnum.State.PLAYING:
+				_state_machine.transition_to(GameStateEnum.State.PAUSED)
+			elif _state_machine.get_current_state() == GameStateEnum.State.PAUSED:
+				_state_machine.transition_to(GameStateEnum.State.PLAYING)
+				pause_menu.hide_menu()
+
 
 ## Render terrain from stage state
 func _render_terrain(stage: StageState) -> void:
@@ -192,6 +349,12 @@ func _on_tank_spawned(tank_id: String, position: Vector2, tank_type: int, direct
 	# Add to scene
 	tanks_container.add_child(tank_node)
 	tank_nodes[tank_id] = tank_node
+	
+	# If this is the player tank, tell camera to track it
+	if tank_id == player_tank_id and tank_type == TankEntity.Type.PLAYER:
+		camera.set_player_tank(tank_node)
+		if DebugLog:
+			DebugLog.info("Camera tracking player tank", {"tank_id": tank_id})
 	
 	print("Tank spawned: ", tank_id, " at ", position, " world: ", world_pos, " type: ", tank_type)
 
