@@ -62,18 +62,22 @@ func _create_bullet() -> Area3D:
 	return bullet
 
 func _on_bullet_fired(event: GameEvent) -> void:
+	print("[BulletManager3D] _on_bullet_fired() called - event type: ", event.get_class())
 	# Convert to BulletFiredEvent
 	if not event is BulletFiredEvent:
+		print("  -> ERROR: Not a BulletFiredEvent!")
 		return
 	
 	var bullet_event = event as BulletFiredEvent
 	var tank_id = bullet_event.tank_id
+	print("  -> tank_id:", tank_id, " pos:", bullet_event.position, " dir:", bullet_event.direction)
 	
 	# Check bullet limit for this tank
 	if not active_bullets.has(tank_id):
 		active_bullets[tank_id] = []
 	
 	if active_bullets[tank_id].size() >= MAX_BULLETS_PER_TANK:
+		print("  -> Blocked: bullet limit reached")
 		return  # Tank has reached bullet limit
 	
 	# Get bullet from pool

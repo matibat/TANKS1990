@@ -16,67 +16,81 @@
 ## Root Causes
 
 ### 1. **Vector2/Vector3 Mismatch** (CRITICAL)
+
 **Error**: `Invalid assignment of property 'global_position' with value of type 'Vector2' on 'Area3D'`
 
-**Cause**: 
+**Cause**:
+
 - `tank3d.gd` was emitting `BulletFiredEvent` with `position: Vector2`
 - `bullet_manager_3d.gd` expected `position: Vector3`
 - Events were designed for 2D, used `Vector2` everywhere
 
 **Fix**:
+
 - Changed events to use `Variant` type for position/direction/velocity
 - Supports both `Vector2` (2D) and `Vector3` (3D)
 - Removed `_vec3_to_vec2()` conversion functions
 
 ### 2. **Continuous Movement** (MAJOR)
+
 **Issue**: `use_continuous_movement = true` by default
 
 **Cause**:
+
 - Tank moved smoothly with `velocity` and `move_and_slide()`
 - Never snapped to grid tile centers
 - No discrete steps
 
 **Fix**:
+
 - Set `use_continuous_movement = false`
 - `set_movement_direction()` now calls `move_in_direction()`
 - Movement happens in 0.5 unit steps (tile size)
 
 ### 3. **Diagonal Movement** (MAJOR)
+
 **Issue**: Controller sent diagonal input `Vector3(1, 0, 1)`
 
 **Cause**:
+
 - Input from `Input.get_vector()` allowed diagonals
 - Tank processed raw input without snapping
 
 **Fix**:
+
 - Added `_snap_to_cardinal(dir: Vector3)` function
 - Forces movement to strongest axis only (no diagonals)
 - `_vector_to_direction()` converts Vector3 → Direction enum
 
 ### 4. **Camera Static** (USABILITY)
+
 **Issue**: Camera at fixed position, couldn't see player when moving
 
 **Fix**:
+
 - Added `_update_camera_follow()` in game_controller_3d.gd
 - Camera tracks `player_tank.global_position`
 - Fixed height of 10 units above ground
 
 ### 5. **Duplicate Functions** (COMPILE ERROR)
+
 **Issue**: `_snap_to_cardinal()` defined twice
 
 **Fix**:
+
 - Removed duplicate at line 485
 
 ## Files Changed (7 files)
 
 ### [tank3d.gd](../src/entities/tank3d.gd) (+40 lines)
+
 ```gdscript
 # BEFORE
 var use_continuous_movement: bool = true
 func set_movement_direction(dir: Vector3) -> void:
     movement_direction = dir.normalized()
 
-# AFTER  
+# AFTER
 var use_continuous_movement: bool = false  # MUST use discrete
 func set_movement_direction(dir: Vector3) -> void:
     use_continuous_movement = false
@@ -95,6 +109,7 @@ func _snap_to_cardinal(dir: Vector3) -> Vector3:
 ```
 
 ### [game_controller_3d.gd](../scenes3d/game_controller_3d.gd) (+13 lines)
+
 ```gdscript
 func _physics_process(_delta: float) -> void:
     if player_tank and is_instance_valid(player_tank):
@@ -110,8 +125,10 @@ func _update_camera_follow() -> void:
     camera.global_position = target_pos
 ```
 
-### Events (3 files) 
+### Events (3 files)
+
 Changed `Vector2` → `Variant`:
+
 - [bullet_fired_event.gd](../src/events/bullet_fired_event.gd)
 - [tank_moved_event.gd](../src/events/tank_moved_event.gd)
 - [tank_destroyed_event.gd](../src/events/tank_destroyed_event.gd)
@@ -127,7 +144,9 @@ var direction: Variant  # Vector2 (2D) or Vector3 (3D)
 ```
 
 ### [test_3d_critical_fixes.gd](../tests/integration/test_3d_critical_fixes.gd) (NEW, 286 lines)
+
 30+ tests covering:
+
 - ✅ Discrete movement (no continuous)
 - ✅ Grid snapping (0.5 unit tiles)
 - ✅ No diagonal movement
@@ -140,6 +159,7 @@ var direction: Variant  # Vector2 (2D) or Vector3 (3D)
 ## Test Results
 
 ### Before Fixes
+
 ```
 ❌ Crash: Invalid assignment Vector2 on Area3D
 ❌ Tanks float continuously
@@ -149,6 +169,7 @@ var direction: Variant  # Vector2 (2D) or Vector3 (3D)
 ```
 
 ### After Fixes
+
 ```
 ✅ No crashes
 ✅ Discrete 0.5 unit steps
@@ -173,6 +194,7 @@ godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/integration -gexit
 ```
 
 **Expected behavior:**
+
 1. **Arrow keys** - Tank moves in discrete 0.5 unit steps
 2. **Diagonal input** - Snaps to strongest axis (no diagonals)
 3. **Space bar** - Shoots bullets (no crash)
@@ -202,16 +224,21 @@ godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/integration -gexit
 ## Technical Notes
 
 ### Why Variant Instead of Generic Type?
+
 Godot doesn't support generic types like `T` or `Vector<T>`. Using `Variant` allows events to work with both 2D (`Vector2`) and 3D (`Vector3`) without creating duplicate event classes.
 
 ### Why Discrete Movement?
+
 Original TANKS1990 used discrete tile-based movement (16px tiles). 3D version must maintain same gameplay:
+
 - 0.5 units = 1 tile (16px equivalent)
 - 26x26 tile map = 13x13 unit map
 - Deterministic for multiplayer/replay
 
 ### Why Cardinal Only?
+
 Tank game design:
+
 - 4-directional movement (UP/DOWN/LEFT/RIGHT)
 - No diagonal shooting
 - Maintains classic gameplay feel

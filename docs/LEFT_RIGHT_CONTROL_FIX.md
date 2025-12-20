@@ -8,7 +8,7 @@
 
 ## Problem Statement
 
-Player reported: *"Right/left is still crossed out"* - controls appeared inverted or tank facing didn't match movement direction in 3D demo.
+Player reported: _"Right/left is still crossed out"_ - controls appeared inverted or tank facing didn't match movement direction in 3D demo.
 
 ---
 
@@ -17,25 +17,30 @@ Player reported: *"Right/left is still crossed out"* - controls appeared inverte
 ### Investigation Steps
 
 1. **Examined Input Mapping** ([player_controller.gd](src/controllers/player_controller.gd))
+
    - Input actions properly mapped: `move_left`, `move_right`, `move_up`, `move_down`
    - Controller correctly converts to Tank.Direction enum
    - ✅ No issues found in input layer
 
 2. **Examined Game Controller** ([game_controller_3d.gd](scenes3d/game_controller_3d.gd#L78-L79))
+
    ```gdscript
    var input_dir = Input.get_vector("move_left", "move_right", "move_up", "move_down")
    var direction_3d = Vector3(input_dir.x, 0, input_dir.y)
    ```
+
    - Properly uses `get_vector()` with correct parameter order
    - ✅ No issues found in game controller
 
 3. **Examined Tank Movement** ([tank3d.gd](src/entities/tank3d.gd#L269-L281))
+
    ```gdscript
    func _direction_to_vector(direction: Direction) -> Vector3:
        match direction:
            Direction.LEFT: return Vector3(-1, 0, 0)  # -X
            Direction.RIGHT: return Vector3(1, 0, 0)  # +X
    ```
+
    - Movement vectors correct: LEFT=-X, RIGHT=+X
    - ✅ No issues found in movement logic
 
@@ -50,16 +55,19 @@ Player reported: *"Right/left is still crossed out"* - controls appeared inverte
 ### The Bug
 
 **Before (Incorrect)**:
+
 ```gdscript
 Direction.LEFT: rotation.y = -PI / 2  # -90° negative angle
 ```
 
 **Problem**: While mathematically `-PI/2` and `3*PI/2` represent the same angle (270°), using negative angles in 3D rendering can cause:
+
 - Visual inconsistencies in rotation interpolation
 - Confusing behavior when comparing or debugging rotation values
 - Potential issues with rotation normalization in game engines
 
 **The Fix**:
+
 ```gdscript
 Direction.LEFT: rotation.y = 3 * PI / 2  # 270° positive angle
 ```
@@ -91,12 +99,12 @@ Direction.LEFT: rotation.y = 3 * PI / 2  # 270° positive angle
 
 ### Rotation Convention (Standard)
 
-| Direction | Vector     | Rotation Y | Degrees | Description        |
-|-----------|------------|------------|---------|-------------------|
-| UP        | (0, 0, -1) | 0.0        | 0°      | Forward (-Z)      |
-| RIGHT     | (1, 0, 0)  | PI/2       | 90°     | Right (+X)        |
-| DOWN      | (0, 0, 1)  | PI         | 180°    | Backward (+Z)     |
-| LEFT      | (-1, 0, 0) | 3*PI/2     | 270°    | Left (-X)         |
+| Direction | Vector     | Rotation Y | Degrees | Description   |
+| --------- | ---------- | ---------- | ------- | ------------- |
+| UP        | (0, 0, -1) | 0.0        | 0°      | Forward (-Z)  |
+| RIGHT     | (1, 0, 0)  | PI/2       | 90°     | Right (+X)    |
+| DOWN      | (0, 0, 1)  | PI         | 180°    | Backward (+Z) |
+| LEFT      | (-1, 0, 0) | 3\*PI/2    | 270°    | Left (-X)     |
 
 ---
 
@@ -105,25 +113,32 @@ Direction.LEFT: rotation.y = 3 * PI / 2  # 270° positive angle
 **File**: [tests/integration/test_3d_critical_fixes.gd](tests/integration/test_3d_critical_fixes.gd#L287-L385)
 
 ### 1. `test_left_input_moves_tank_left_and_faces_left()`
+
 Validates:
+
 - LEFT input moves tank in -X direction
-- LEFT rotation is 270° (3*PI/2)
+- LEFT rotation is 270° (3\*PI/2)
 - facing_direction enum is LEFT
 
 ### 2. `test_right_input_moves_tank_right_and_faces_right()`
+
 Validates:
-- RIGHT input moves tank in +X direction  
+
+- RIGHT input moves tank in +X direction
 - RIGHT rotation is 90° (PI/2)
 - facing_direction enum is RIGHT
 
 ### 3. `test_all_four_directions_match_movement_and_rotation()`
+
 Comprehensive test for all four cardinal directions:
+
 - Movement vector matches direction
 - Rotation angle matches expected value
 - facing_direction enum is correct
 
 ### 4. Updated: `test_tank_rotation_matches_facing_direction()`
-Fixed expected rotation value for LEFT from -PI/2 to 3*PI/2
+
+Fixed expected rotation value for LEFT from -PI/2 to 3\*PI/2
 
 ---
 
@@ -139,11 +154,13 @@ Fixed expected rotation value for LEFT from -PI/2 to 3*PI/2
 ### Automated Testing
 
 Run test suite:
+
 ```bash
 make test
 ```
 
 Specific test file:
+
 ```bash
 godot --headless -s addons/gut/gut_cmdln.gd \
   -gdir=res://tests/integration \
@@ -156,16 +173,19 @@ godot --headless -s addons/gut/gut_cmdln.gd \
 ## Impact Analysis
 
 ### Files Modified
+
 - `src/entities/tank3d.gd` (1 line changed)
 - `tests/integration/test_3d_critical_fixes.gd` (107 lines added)
 
 ### Behavior Changes
+
 - **Before**: LEFT rotation was -90° (negative angle)
 - **After**: LEFT rotation is 270° (positive angle, consistent with others)
 - **Movement**: No change - LEFT still moves in -X direction
 - **Gameplay**: More consistent and predictable rotation behavior
 
 ### Compatibility
+
 - ✅ No breaking changes to public API
 - ✅ Existing gameplay logic unaffected
 - ✅ All existing tests remain valid (one test updated for correctness)
@@ -174,7 +194,7 @@ godot --headless -s addons/gut/gut_cmdln.gd \
 
 ## Related Issues
 
-This fix addresses the player feedback: *"Right/left is still crossed out"*
+This fix addresses the player feedback: _"Right/left is still crossed out"_
 
 The issue was NOT an actual control inversion (inputs were correct), but rather an inconsistency in rotation representation that could cause visual confusion or rendering artifacts.
 
@@ -192,6 +212,6 @@ The issue was NOT an actual control inversion (inputs were correct), but rather 
 
 **What was wrong**: Tank LEFT rotation used negative angle (-90°) instead of positive (270°)  
 **Why it mattered**: Negative angles can cause visual/rendering inconsistencies  
-**What was fixed**: Changed LEFT rotation to 3*PI/2 (270°) for consistency  
+**What was fixed**: Changed LEFT rotation to 3\*PI/2 (270°) for consistency  
 **How it was tested**: Added 3 comprehensive tests validating all four directions  
 **Result**: LEFT means left, RIGHT means right, facing matches movement ✅

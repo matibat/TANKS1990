@@ -73,14 +73,20 @@ func _handle_player_input() -> void:
 	
 	if input_dir.length() > 0:
 		# X axis = left/right, Z axis = up/down (negative Z = up in world space)
-		var direction_3d = Vector3(input_dir.x, 0, input_dir.y)
+		# FIX Issue #1: Negate input_dir.x to correct inverted left/right controls
+		# With top-down camera, screen-left is -X and screen-right is +X
+		# But Input.get_vector("move_left", "move_right",...) returns -1 for left, +1 for right
+		# We need to invert this to match screen coordinates
+		var direction_3d = Vector3(-input_dir.x, 0, input_dir.y)
 		player_tank.set_movement_direction(direction_3d)
 	else:
 		player_tank.set_movement_direction(Vector3.ZERO)
 	
 	# Shooting
 	if Input.is_action_just_pressed("fire"):
-		player_tank.try_fire()
+		print("[GameController3D] Fire button pressed!")
+		var result = player_tank.try_fire()
+		print("[GameController3D] try_fire() returned: ", result)
 
 func _clamp_tank_to_bounds(tank: Tank3D) -> void:
 	var pos = tank.global_position

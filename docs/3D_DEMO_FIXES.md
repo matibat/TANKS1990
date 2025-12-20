@@ -1,4 +1,5 @@
 # 3D Demo Critical Fixes Report
+
 **Date:** December 20, 2025  
 **Project:** TANKS1990 3D Demo  
 **Status:** ✅ FIXED - Demo is now playable
@@ -6,10 +7,11 @@
 ## Executive Summary
 
 Fixed 11 critical gameplay issues that made the 3D demo completely non-functional. The demo now has:
+
 - ✅ Functional player controls (arrows move tank, not camera)
 - ✅ Proper window size (832x832)
 - ✅ Working enemy AI
-- ✅ Shooting mechanics  
+- ✅ Shooting mechanics
 - ✅ Map boundaries enforcement
 - ✅ Game controller architecture
 - ✅ Integration tests
@@ -18,22 +20,28 @@ Fixed 11 critical gameplay issues that made the 3D demo completely non-functiona
 ## Problems Fixed
 
 ### 1. ❌ PROJECT CONFIGURATION
+
 **Before:**
+
 - Main scene set to 2D game (`scenes/main.tscn`)
 - Window mode not explicitly set (variable size)
 
 **After:**
+
 - Main scene: `scenes3d/demo3d.tscn`
 - Window size: 832x832 pixels (26 tiles × 32px)
 - Window mode: 0 (windowed, not fullscreen)
 
 **Files Modified:**
+
 - [`project.godot`](project.godot) - Lines 14, 27
 
 ---
 
 ### 2. ❌ ARROW KEYS MOVED CAMERA INSTEAD OF PLAYER
+
 **Before:**
+
 ```gdscript
 # demo3d.gd - _process()
 if Input.is_action_pressed("ui_up"):
@@ -42,21 +50,26 @@ if Input.is_action_pressed("ui_up"):
 ```
 
 **After:**
+
 - Created [`GameController3D`](scenes3d/game_controller_3d.gd) to handle input
 - Arrow keys mapped to player tank movement via `move_left/right/up/down` actions
 - Camera stays static in orthogonal top-down view
 
 **Files Created:**
+
 - [`scenes3d/game_controller_3d.gd`](scenes3d/game_controller_3d.gd) - 187 lines
 
 ---
 
 ### 3. ❌ NO PLAYER MOVEMENT SYSTEM
+
 **Before:**
+
 - Tank3D had only discrete tile-based movement (`move_in_direction()`)
 - No continuous movement for smooth 3D gameplay
 
 **After:**
+
 ```gdscript
 # tank3d.gd
 var movement_direction: Vector3 = Vector3.ZERO
@@ -71,25 +84,31 @@ func _process_continuous_movement(delta):
 ```
 
 **Files Modified:**
+
 - [`src/entities/tank3d.gd`](src/entities/tank3d.gd) - Added lines 53-84
 
 ---
 
 ### 4. ❌ NO ENEMY AI
+
 **Before:**
+
 - Enemy tanks spawned but had no AI controller
 - Tanks were static decoration
 
 **After:**
+
 - Created [`SimpleAI3D`](scenes3d/simple_ai_3d.gd) class
 - AI chooses direction every 1 second (70% toward player, 30% random)
 - Enemies shoot with 2% chance per frame
 - Game controller automatically attaches AI to spawned enemies
 
 **Files Created:**
+
 - [`scenes3d/simple_ai_3d.gd`](scenes3d/simple_ai_3d.gd) - 57 lines
 
 **Integration:**
+
 ```gdscript
 # game_controller_3d.gd - spawn_test_enemies()
 var ai = SimpleAI3D.new()
@@ -101,30 +120,38 @@ enemy.add_child(ai)
 ---
 
 ### 5. ❌ NO SHOOTING MECHANICS
+
 **Before:**
+
 - Space bar not connected to fire action
 - No bullet manager for 3D
 
 **After:**
+
 - Space bar mapped to `fire` action
 - Created [`BulletManager3D`](src/managers/bullet_manager_3d.gd)
 - Bullet pooling system (20 bullet pool, max 2 per tank)
 - EventBus integration for bullet events
 
 **Files Created:**
+
 - [`src/managers/bullet_manager_3d.gd`](src/managers/bullet_manager_3d.gd) - 127 lines
 
 **Files Modified:**
+
 - [`scenes3d/demo3d.gd`](scenes3d/demo3d.gd) - Auto-creates BulletManager3D
 
 ---
 
 ### 6. ❌ NO MAP BOUNDARIES
+
 **Before:**
+
 - Tanks could move infinitely in any direction
 - No collision with world edges
 
 **After:**
+
 ```gdscript
 # game_controller_3d.gd
 const MAP_MIN = 0.0
@@ -143,36 +170,45 @@ Applied to player and all enemies in `_physics_process()`.
 ---
 
 ### 7. ❌ EVENTBUS CRASHES IN HEADLESS MODE
+
 **Before:**
+
 ```gdscript
 EventBus.emit_game_event(event)  # ❌ Crashes if EventBus not loaded
 ```
 
 **After:**
+
 ```gdscript
 if EventBus:
     EventBus.emit_game_event(event)  # ✅ Safe
 ```
 
 **Files Modified:**
+
 - [`src/entities/tank3d.gd`](src/entities/tank3d.gd) - Lines 312, 427, 435
 - [`src/entities/base3d.gd`](src/entities/base3d.gd) - Line 89
 
 ---
 
 ### 8. ❌ NO INTEGRATION TESTS
+
 **Before:**
+
 - No tests for 3D gameplay
 - Issues went undetected
 
 **After:**
+
 - Created comprehensive integration test suite
 - Tests for: player existence, camera control, boundaries, AI, shooting
 
 **Files Created:**
+
 - [`tests/integration/test_3d_gameplay.gd`](tests/integration/test_3d_gameplay.gd) - 212 lines
 
 **Test Coverage:**
+
 - `test_player_tank_exists_and_visible()`
 - `test_game_controller_exists()`
 - `test_arrow_keys_move_player_not_camera()`
@@ -183,13 +219,16 @@ if EventBus:
 ---
 
 ### 9. ❌ MAKEFILE DIDN'T VALIDATE COMPILATION
+
 **Before:**
+
 ```makefile
 test:
     $(call RUN_GUT,Running full test suite...,res://tests,0)
 ```
 
 **After:**
+
 ```makefile
 test: check-compile
     $(call RUN_GUT,Running full test suite...,res://tests,0)
@@ -202,6 +241,7 @@ test-performance: check-compile
 All test targets now validate compilation first.
 
 **Files Modified:**
+
 - [`Makefile`](Makefile) - Lines 45-53
 
 ---
@@ -209,6 +249,7 @@ All test targets now validate compilation first.
 ## Architecture Changes
 
 ### Before (Broken)
+
 ```
 demo3d.tscn
 ├── Camera3D (controls move camera ❌)
@@ -217,6 +258,7 @@ demo3d.tscn
 ```
 
 ### After (Working)
+
 ```
 demo3d.tscn
 ├── GameController3D ✅
@@ -260,27 +302,32 @@ demo3d.tscn
 ## How to Play
 
 ### Option 1: Run from Terminal
+
 ```bash
 cd /Users/mati/GamesWorkspace/TANKS1990
 make demo3d
 ```
 
 ### Option 2: Run from Godot Editor
+
 ```bash
 godot scenes3d/demo3d.tscn
 ```
 
 ### Option 3: Set as Default (Done)
+
 ```bash
 godot  # Will launch demo3d.tscn automatically
 ```
 
 ### Controls
+
 - **Arrow Keys:** Move player tank
 - **Space Bar:** Shoot bullets
 - **Escape/P:** Pause (if implemented)
 
 ### Gameplay
+
 - 🎮 Player tank spawns at center
 - 🤖 3 enemy tanks with AI spawn at corners
 - 🎯 Enemies chase player and shoot
@@ -292,18 +339,21 @@ godot  # Will launch demo3d.tscn automatically
 ## Testing Results
 
 ### Compilation
+
 ```bash
 make check-compile
 ✅ No errors detected
 ```
 
 ### Scene Load
+
 ```bash
 godot --headless --path . -s scenes3d/demo3d.tscn --quit
 ✅ Scene loads without errors
 ```
 
 ### Integration Tests
+
 ```bash
 make test-integration
 Status: Partial (GUT framework issues, but game works)
@@ -333,7 +383,7 @@ Status: Partial (GUT framework issues, but game works)
 - [x] Enemies occasionally shoot (2% chance per frame)
 - [x] Tanks cannot leave 0-26 bounds (clamped every frame)
 - [x] Integration tests created (catching issues now)
-- [x] make test-* commands validate compilation first
+- [x] make test-\* commands validate compilation first
 - [ ] Documentation consolidated (deferred to separate task)
 
 ---
@@ -341,6 +391,7 @@ Status: Partial (GUT framework issues, but game works)
 ## Git Commit Recommendations
 
 ### Commit 1: Core Gameplay Fixes
+
 ```bash
 git add project.godot scenes3d/ src/entities/ src/managers/
 git commit -m "fix: Make 3D demo playable
@@ -357,6 +408,7 @@ Fixes: Arrows move camera, no AI, no shooting, no boundaries"
 ```
 
 ### Commit 2: Testing Infrastructure
+
 ```bash
 git add tests/ Makefile
 git commit -m "test: Add 3D gameplay integration tests
@@ -382,11 +434,13 @@ All test targets now run check-compile first"
 ## Known Good State
 
 **Tested on:**
+
 - OS: macOS
 - Godot: v4.5.1.stable.official
 - Date: December 20, 2025
 
 **What Works:**
+
 - Arrow key movement (smooth continuous)
 - Enemy AI (chase + random)
 - Shooting (input wired)
@@ -395,6 +449,7 @@ All test targets now run check-compile first"
 - Scene loading (no errors)
 
 **What Needs Work:**
+
 - Bullet visuals/collision (bullet scene setup)
 - Test execution (GUT framework issues)
 - Enemy spawner integration
@@ -406,21 +461,24 @@ All test targets now run check-compile first"
 ## Next Steps (Recommended)
 
 1. **Fix Bullet3D Scene:**
+
    - Add MeshInstance3D for visibility
    - Add CollisionShape3D (BoxShape3D 0.2×0.2×0.2)
    - Test bullet movement and collisions
 
 2. **Test Suite:**
+
    - Debug GUT headless mode crashes
    - Add visual test mode (run tests in editor)
 
 3. **Enemy Spawner:**
+
    - Integrate existing EnemySpawner with GameController3D
    - Add wave-based spawning
    - Implement spawn points
 
 4. **Documentation:**
-   - Consolidate PHASE*.md into docs/migration/
+   - Consolidate PHASE\*.md into docs/migration/
    - Create docs/TESTING.md
    - Update main README.md
 
@@ -431,7 +489,7 @@ All test targets now run check-compile first"
 The 3D demo is now **functionally playable**. All critical gameplay systems are wired and working:
 
 - ✅ Player controls
-- ✅ Enemy AI  
+- ✅ Enemy AI
 - ✅ Boundaries
 - ✅ Game loop
 - ✅ Architecture

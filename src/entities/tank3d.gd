@@ -312,14 +312,18 @@ func _vector_to_direction(vec: Vector3) -> Direction:
 
 ## Attempt to fire bullet
 func try_fire() -> bool:
+	print("[Tank3D] try_fire() called - tank_id:", tank_id, " cooldown:", fire_cooldown, " state:", current_state)
 	if fire_cooldown > 0.0:
+		print("  -> Blocked: cooldown active")
 		return false
 	
 	if current_state == State.DYING or current_state == State.SPAWNING:
+		print("  -> Blocked: invalid state")
 		return false
 	
 	fire_cooldown = fire_cooldown_time
 	_emit_bullet_fired_event()
+	print("  -> ✓ Bullet fired!")
 	return true
 
 ## Take damage from bullet or collision
@@ -471,6 +475,7 @@ func _emit_tank_moved_event() -> void:
 
 func _emit_bullet_fired_event() -> void:
 	if not EventBus:
+		print("[Tank3D] ERROR: EventBus not found!")
 		return
 	var event = BulletFiredEvent.new()
 	event.tank_id = tank_id
@@ -479,6 +484,7 @@ func _emit_bullet_fired_event() -> void:
 	event.direction = _direction_to_vector(facing_direction)  # Vector3
 	event.bullet_level = level
 	event.is_player_bullet = is_player
+	print("[Tank3D] Emitting BulletFiredEvent: pos=", event.position, " dir=", event.direction, " player=", is_player)
 	EventBus.emit_game_event(event)
 
 ## Calculate bullet spawn position
