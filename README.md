@@ -7,9 +7,10 @@ Classic NES Tank 1990 (Battle City) remake built with Godot 4.5+ using Domain-Dr
 - **Faithful Remake:** Core tank combat mechanics from the NES original
 - **DDD Architecture:** Clean separation between game logic and presentation
 - **Fully Tested:** 297 tests (268 domain + 29 integration) - all passing ✅
-- **3D Graphics:** Modern 3D rendering with classic top-down gameplay
+- **3D Graphics:** Modern 3D rendering with classic top-down gameplay ✨ **NEW!**
 - **Cross-Platform:** Desktop (Windows, macOS, Linux) and Mobile (iOS, Android)
 - **Deterministic:** Frame-based game logic for replays and networking
+- **Debug Logging:** Production-safe logging system for development 🔧 **NEW!**
 
 ## Quick Start
 
@@ -19,14 +20,14 @@ git clone https://github.com/matibat/TANKS1990.git
 cd TANKS1990
 git submodule update --init --recursive
 
+# Run the 3D game 🎮
+make demo3d
+
 # Run all tests
 make test
 
 # Open in Godot editor
 make edit
-
-# Play the 3D demo
-make demo3d
 ```
 
 ## Setup
@@ -171,7 +172,9 @@ func take_damage(amount: int) -> bool:
 - Keep domain layer pure (no Godot dependencies)
 - Use BDD test naming: `test_given_X_when_Y_then_Z()`es/new_feature.gd
   make test SUITE=domain PATTERN=test_new_feature
+
   # Test passes ✅
+
   ```
 
   ```

@@ -9,6 +9,9 @@ const Command = preload("res://src/domain/commands/command.gd")
 const CommandHandler = preload("res://src/domain/services/command_handler.gd")
 const MovementService = preload("res://src/domain/services/movement_service.gd")
 const CollisionService = preload("res://src/domain/services/collision_service.gd")
+const TickManager = preload("res://src/domain/services/tick_manager.gd")
+const AIService = preload("res://src/domain/services/ai_service.gd")
+const SpawnController = preload("res://src/domain/services/spawn_controller.gd")
 const DomainEvent = preload("res://src/domain/events/domain_event.gd")
 const TankDestroyedEvent = preload("res://src/domain/events/tank_destroyed_event.gd")
 const BulletDestroyedEvent = preload("res://src/domain/events/bullet_destroyed_event.gd")
@@ -18,15 +21,50 @@ const TankDamagedEvent = preload("res://src/domain/events/tank_damaged_event.gd"
 const StageCompleteEvent = preload("res://src/domain/events/stage_complete_event.gd")
 const GameOverEvent = preload("res://src/domain/events/game_over_event.gd")
 const Position = preload("res://src/domain/value_objects/position.gd")
+const TankEntity = preload("res://src/domain/entities/tank_entity.gd")
 
-## Process one game frame
+# Instance-based tick manager (for Phase 1.3)
+var _tick_manager: TickManager
+
+func _init():
+	_tick_manager = TickManager.new()
+
+## Set ticks per second for tick-based game loop
+func set_ticks_per_second(tps: int) -> void:
+	_tick_manager.set_ticks_per_second(tps)
+
+## Instance method: Process one game frame with tick-based logic
+## Returns array of events that occurred this frame (or empty if tick not ready)
+func process_frame(game_state: GameState, commands: Array, delta: float) -> Array[DomainEvent]:
+	# Check if tick is ready
+	if not _tick_manager.should_process_tick(delta):
+		return []  # No events, tick not ready
+	
+	# Tick is ready - execute game logic using static method
+	return GameLoop.process_frame_static(game_state, commands)
+
+## Static method: Process one game frame (legacy/direct call)
 ## Returns array of events that occurred this frame
-static func process_frame(game_state: GameState, commands: Array) -> Array[DomainEvent]:
+static func process_frame_static(game_state: GameState, commands: Array) -> Array[DomainEvent]:
 	var events: Array[DomainEvent] = []
 	
 	# Early exit if game is paused or over
 	if game_state.is_paused or game_state.is_game_over:
 		return events
+	
+	# 0a. Check if enemy should spawn
+	if game_state.spawn_controller and game_state.spawn_controller.should_spawn(game_state, 0.1):
+		var new_enemy = game_state.spawn_controller.spawn_enemy(game_state)
+		if new_enemy:
+			# Enemy spawned - game_state already updated
+			pass
+	
+	# 0b. AI decisions for enemy tanks
+	for tank in game_state.get_all_tanks():
+		if tank.tank_type != TankEntity.Type.PLAYER:  # Only AI for enemies
+			var ai_command = AIService.decide_action(tank, game_state, 0.1)
+			if ai_command:
+				commands.append(ai_command)
 	
 	# 1. Execute player/AI commands
 	for command in commands:
@@ -178,5 +216,17 @@ static func _detect_and_handle_collisions(game_state: GameState) -> Array[Domain
 				"bullet_terrain",
 				game_state.frame
 			))
+	
+	# Bullet-to-Bullet collisions
+	var bullets = game_state.get_all_bullets()
+	for i in range(bullets.size()):
+		for j in range(i + 1, bullets.size()):
+			var b1 = bullets[i]
+			var b2 = bullets[j]
+			if b1.is_active and b2.is_active and CollisionService.check_bullet_to_bullet_collision(b1, b2):
+				b1.deactivate()
+				b2.deactivate()
+				events.append(BulletDestroyedEvent.create(b1.id, b1.position, "bullet_collision", game_state.frame))
+				events.append(BulletDestroyedEvent.create(b2.id, b2.position, "bullet_collision", game_state.frame))
 	
 	return events

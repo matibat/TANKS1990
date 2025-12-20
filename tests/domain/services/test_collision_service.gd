@@ -374,3 +374,63 @@ func test_given_position_with_dead_tank_when_checking_occupied_then_returns_fals
 	
 	# Then: Position is not occupied (dead tanks don't occupy)
 	assert_false(occupied, "Position with dead tank should not be occupied")
+
+## Test: Bullet-to-Bullet Collision Detection (Phase 2.3)
+func test_given_two_bullets_at_same_position_when_check_collision_then_returns_true():
+	# Given: Two bullets from different owners at same position
+	var pos = Position.create(100, 100)
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1", pos, Direction.create(Direction.UP), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_2", pos, Direction.create(Direction.DOWN), 2, 1)
+	
+	# When: Check collision
+	var collided = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
+	
+	# Then: Should return true
+	assert_true(collided, "Bullets at same position should collide")
+
+func test_given_bullets_from_same_owner_when_check_collision_then_returns_false():
+	# Given: Two bullets from same owner at same position
+	var pos = Position.create(100, 100)
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1", pos, Direction.create(Direction.UP), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_1", pos, Direction.create(Direction.DOWN), 2, 1)
+	
+	# When: Check collision
+	var collided = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
+	
+	# Then: Should return false
+	assert_false(collided, "Bullets from same owner should not collide")
+
+func test_given_inactive_bullet_when_check_collision_then_returns_false():
+	# Given: One inactive bullet
+	var pos = Position.create(100, 100)
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1", pos, Direction.create(Direction.UP), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_2", pos, Direction.create(Direction.DOWN), 2, 1)
+	bullet1.deactivate()
+	
+	# When: Check collision
+	var collided = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
+	
+	# Then: Should return false
+	assert_false(collided, "Inactive bullet should not collide")
+
+func test_given_bullets_8px_apart_when_check_radius_collision_then_returns_true():
+	# Given: Two bullets 8 pixels apart (within collision radius)
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1", Position.create(100, 100), Direction.create(Direction.UP), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_2", Position.create(108, 100), Direction.create(Direction.DOWN), 2, 1)
+	
+	# When: Check collision (radius = 4px each, total = 8px)
+	var collided = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
+	
+	# Then: Should return true
+	assert_true(collided, "Bullets 8px apart should collide (radius 4+4)")
+
+func test_given_bullets_9px_apart_when_check_radius_collision_then_returns_false():
+	# Given: Two bullets 9 pixels apart (outside collision radius)
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1", Position.create(100, 100), Direction.create(Direction.UP), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_2", Position.create(109, 100), Direction.create(Direction.DOWN), 2, 1)
+	
+	# When: Check collision (radius = 4px each, total = 8px)
+	var collided = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
+	
+	# Then: Should return false
+	assert_false(collided, "Bullets 9px apart should not collide (outside radius)")

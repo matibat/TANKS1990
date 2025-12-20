@@ -1,11 +1,8 @@
 class_name GameRoot3D
 extends Node3D
-## GameRoot3D - Presentation Layer Root Script for DDD Architecture  
+## GameRoot3D - Presentation Layer Root Script for DDD Architecture
 ## Manages visual representation of game entities by listening to adapter signals
 ## Pure presentation logic - no game rules, just visual updates
-
-## Debug logger autoload
-var DebugLog: Node
 
 const GodotGameAdapter = preload("res://src/adapters/godot_game_adapter.gd")
 const GameState = preload("res://src/domain/aggregates/game_state.gd")
@@ -27,33 +24,16 @@ const Bullet3D = preload("res://scenes3d/bullet_3d.gd")
 ## Visual node instances
 var tank_nodes: Dictionary = {} # tank_id -> Tank3D instance
 var bullet_nodes: Dictionary = {} # bullet_id -> Bullet3D instance
-var terrain_nodes: Array = [] # terrain tiles
 
 ## Coordinate conversion
-# Adapter provides pixel coordinates (0-416 range for 26 tiles * 16 pixels)
-# Convert to world units: 1 pixel = 1/16 world units, so 416 pixels = 26 world units
-const TILE_SIZE: float = 1.0 / 16.0 # 0.0625 world units per pixel
+const TILE_SIZE: float = 1.0 # 1 tile = 1 unit in 3D space
 
 ## Game state tracking
 var player_tank_id: String = ""
-var terrain_container: Node3D
 
 func _ready() -> void:
-	# Get debug logger
-	if has_node("/root/DebugLogger"):
-		DebugLog = get_node("/root/DebugLogger")
-		DebugLog.info("GameRoot3D initializing...")
-	
-	# Create terrain container
-	terrain_container = Node3D.new()
-	terrain_container.name = "Terrain"
-	add_child(terrain_container)
-	
 	# Create and initialize game state
 	var game_state = _create_test_game_state()
-	
-	# Render terrain from game state
-	_render_terrain(game_state.stage)
 	
 	# Initialize adapter
 	adapter.initialize(game_state)
@@ -64,51 +44,9 @@ func _ready() -> void:
 	# Set player tank for input
 	if player_tank_id != "":
 		adapter.set_player_tank(player_tank_id)
-		if DebugLog:
-			DebugLog.info("Player tank set", {"tank_id": player_tank_id})
 	
 	print("GameRoot3D ready - DDD architecture initialized")
 	print("Player tank ID: ", player_tank_id)
-	
-	if DebugLog:
-		DebugLog.gameplay("GameRoot3D ready", {
-"player_tank_id": player_tank_id,
-"camera_pos": camera.position,
-"camera_rot": camera.rotation_degrees,
-"terrain_count": terrain_nodes.size()
-		})
-
-## Render terrain from stage state
-func _render_terrain(stage: StageState) -> void:
-	if DebugLog:
-		DebugLog.info("Rendering terrain", {"cell_count": stage.terrain.size()})
-	
-	# Load terrain tile script
-	var TerrainTile3D = load("res://scenes3d/terrain_tile_3d.gd")
-	
-	# Render all terrain cells
-	for terrain_cell in stage.terrain.values():
-		var tile = CSGBox3D.new()
-		tile.set_script(TerrainTile3D)
-		tile.cell_type = terrain_cell.cell_type
-		tile.position = _tile_to_world_pos(Vector2(terrain_cell.position.x, terrain_cell.position.y))
-		tile.position.y = 0.25 # Half height of the box
-		terrain_container.add_child(tile)
-		terrain_nodes.append(tile)
-	
-	# Render base if present
-	if stage.base:
-		var base_tile = CSGBox3D.new()
-		base_tile.set_script(TerrainTile3D)
-		base_tile.cell_type = 5 # BASE type
-		base_tile.size = Vector3(2.0, 0.6, 2.0) # Larger than normal tiles
-		base_tile.position = _tile_to_world_pos(Vector2(stage.base.position.x, stage.base.position.y))
-		base_tile.position.y = 0.3
-		terrain_container.add_child(base_tile)
-		terrain_nodes.append(base_tile)
-	
-	if DebugLog:
-		DebugLog.info("Terrain rendered", {"tile_count": terrain_nodes.size()})
 
 ## Connect all adapter signals to presentation handlers
 func _connect_adapter_signals() -> void:
@@ -168,48 +106,25 @@ func _create_test_game_state() -> GameState:
 ## Signal Handlers - Tank Events
 
 func _on_tank_spawned(tank_id: String, position: Vector2, tank_type: int, direction: int) -> void:
-	var world_pos = _tile_to_world_pos(position)
-	var rotation_y = _direction_to_rotation(direction)
-	
-	if DebugLog:
-		DebugLog.spawning("Tank spawned", {
-"tank_id": tank_id,
-"tile_pos": position,
-"world_pos": world_pos,
-"tank_type": tank_type,
-"direction": direction
-})
-	
 	var tank_node: Tank3D = preload("res://scenes3d/tank_3d.tscn").instantiate() as Tank3D
 	tank_node.tank_id = tank_id
 	tank_node.tank_type = tank_type
 	tank_node.name = "Tank_" + tank_id
 	
 	# Set initial position and rotation
-	tank_node.position = world_pos
-	tank_node.rotation.y = rotation_y
+	tank_node.position = _tile_to_world_pos(position)
+	tank_node.rotation.y = _direction_to_rotation(direction)
 	
 	# Add to scene
 	tanks_container.add_child(tank_node)
 	tank_nodes[tank_id] = tank_node
 	
-	print("Tank spawned: ", tank_id, " at ", position, " world: ", world_pos, " type: ", tank_type)
+	print("Tank spawned: ", tank_id, " at ", position, " type: ", tank_type)
 
 func _on_tank_moved(tank_id: String, old_position: Vector2, new_position: Vector2, direction: int) -> void:
 	if tank_nodes.has(tank_id):
 		var tank_node = tank_nodes[tank_id]
-		var world_pos = _tile_to_world_pos(new_position)
-		var rotation_y = _direction_to_rotation(direction)
-		
-		if DebugLog:
-			DebugLog.gameplay("Tank moved", {
-"tank_id": tank_id,
-"old_tile": old_position,
-"new_tile": new_position,
-"world_pos": world_pos
-})
-		
-		tank_node.move_to(world_pos, rotation_y)
+		tank_node.move_to(_tile_to_world_pos(new_position), _direction_to_rotation(direction))
 
 func _on_tank_damaged(tank_id: String, damage: int, old_health: int, new_health: int) -> void:
 	if tank_nodes.has(tank_id):
@@ -244,9 +159,6 @@ func _on_bullet_fired(bullet_id: String, position: Vector2, direction: int, tank
 	# Add to scene
 	bullets_container.add_child(bullet_node)
 	bullet_nodes[bullet_id] = bullet_node
-	
-	if DebugLog:
-		DebugLog.gameplay("Bullet fired", {"bullet_id": bullet_id, "tank_id": tank_id})
 
 func _on_bullet_moved(bullet_id: String, old_position: Vector2, new_position: Vector2) -> void:
 	if bullet_nodes.has(bullet_id):
@@ -267,24 +179,19 @@ func _on_bullet_destroyed(bullet_id: String, position: Vector2) -> void:
 
 func _on_stage_complete() -> void:
 	print("=== STAGE COMPLETE ===")
-	if DebugLog:
-		DebugLog.gameplay("Stage complete")
+	# Could show UI, load next stage, etc.
 
 func _on_game_over(reason: String) -> void:
 	print("=== GAME OVER ===")
 	print("Reason: ", reason)
-	if DebugLog:
-		DebugLog.gameplay("Game over", {"reason": reason})
+	# Could show game over screen, etc.
 
 ## Coordinate Conversion
 
 func _tile_to_world_pos(tile_pos: Vector2) -> Vector3:
-	# Convert from pixel coordinates (from adapter) to world position (3D)
-	# Adapter provides pixels (0-416), we convert to world units (0-26)
-	# Y pixel coord becomes Z in 3D, X stays X
-	# Add TILE_SIZE/2 to center entities in their tiles
-	# Y=0.5 to place tanks slightly above ground for visibility
-	return Vector3(tile_pos.x * TILE_SIZE + TILE_SIZE * 8.0, 0.5, tile_pos.y * TILE_SIZE + TILE_SIZE * 8.0)
+	# Convert from tile coordinates (2D) to world position (3D)
+	# Y tile coord becomes Z in 3D, X stays X, Y=0 (ground level)
+	return Vector3(tile_pos.x * TILE_SIZE, 0, tile_pos.y * TILE_SIZE)
 
 func _direction_to_rotation(direction: int) -> float:
 	# Convert domain direction to Y rotation (radians)

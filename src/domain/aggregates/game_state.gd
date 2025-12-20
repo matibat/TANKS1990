@@ -8,6 +8,7 @@ extends RefCounted
 const StageState = preload("res://src/domain/aggregates/stage_state.gd")
 const TankEntity = preload("res://src/domain/entities/tank_entity.gd")
 const BulletEntity = preload("res://src/domain/entities/bullet_entity.gd")
+const SpawnController = preload("res://src/domain/services/spawn_controller.gd")
 
 ## Properties
 var frame: int # Current frame number
@@ -19,6 +20,7 @@ var score: int
 var is_paused: bool
 var is_game_over: bool
 var next_entity_id: int # For generating unique IDs
+var spawn_controller: SpawnController # Handles enemy spawning
 
 ## Static factory method to create game state
 static func create(p_stage: StageState, p_player_lives: int = 3):
@@ -32,6 +34,7 @@ static func create(p_stage: StageState, p_player_lives: int = 3):
 	game_state.is_paused = false
 	game_state.is_game_over = false
 	game_state.next_entity_id = 0
+	game_state.spawn_controller = SpawnController.new(p_stage.stage_number)
 	return game_state
 
 ## Generate unique entity ID

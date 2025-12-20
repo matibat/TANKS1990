@@ -46,6 +46,15 @@ static func enemy_fast():
 	s.bullet_speed = 4    # bullet_speed: fast
 	return s
 
+## Static factory method for power enemy stats
+static func enemy_power():
+	var s = new()
+	s.speed = 2   # speed: normal
+	s.fire_rate = 45  # fire_rate: fast shooting
+	s.armor = 1   # armor: 1 hit point
+	s.bullet_speed = 4    # bullet_speed: fast
+	return s
+
 ## Static factory method for armored enemy stats
 static func enemy_armored():
 	var s = new()

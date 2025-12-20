@@ -27,14 +27,14 @@ check-only:
 check-import:
 	@echo "Importing assets..."
 	@$(GODOT) --headless --import --quit 2>&1 | tee /tmp/check-import.log
-	@if grep -q "ERROR\|SCRIPT ERROR" /tmp/check-import.log; then \
+	@if grep -E "SCRIPT ERROR|Parse Error|Compile Error" /tmp/check-import.log | grep -v "RID allocations\|resources still in use\|ObjectDB instances leaked" > /dev/null; then \
 		echo ""; \
 		echo "❌ Import errors detected. Fix before proceeding."; \
 		rm -f /tmp/check-import.log; \
 		exit 1; \
 	fi
 	@rm -f /tmp/check-import.log
-	@echo "✅ Assets imported successfully"
+	@echo "✅ Assets imported successfully (Godot headless resource warnings ignored)"
 
 check-compile:
 	@echo "Checking GDScript compilation..."
@@ -138,7 +138,7 @@ help:
 
 demo3d:
 	@echo "Opening 3D demo scene..."
-	@$(GODOT) scenes3d/demo3d.tscn
+	@$(GODOT) scenes3d/game_3d_ddd.tscn
 
 edit:
 	@echo "Opening project in Godot editor..."

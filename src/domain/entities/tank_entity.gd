@@ -15,7 +15,8 @@ enum Type {
 	PLAYER = 0,
 	ENEMY_BASIC = 1,
 	ENEMY_FAST = 2,
-	ENEMY_ARMORED = 3
+	ENEMY_POWER = 3,
+	ENEMY_ARMORED = 4
 }
 
 ## Identity
@@ -52,6 +53,8 @@ static func create(p_id: String, p_tank_type: int, p_position: Position, p_direc
 			tank.stats = TankStats.enemy_basic()
 		Type.ENEMY_FAST:
 			tank.stats = TankStats.enemy_fast()
+		Type.ENEMY_POWER:
+			tank.stats = TankStats.enemy_power()
 		Type.ENEMY_ARMORED:
 			tank.stats = TankStats.enemy_armored()
 		_:
@@ -148,6 +151,8 @@ static func from_dict(dict: Dictionary):
 			tank.stats = TankStats.enemy_basic()
 		Type.ENEMY_FAST:
 			tank.stats = TankStats.enemy_fast()
+		Type.ENEMY_POWER:
+			tank.stats = TankStats.enemy_power()
 		Type.ENEMY_ARMORED:
 			tank.stats = TankStats.enemy_armored()
 		_:

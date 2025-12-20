@@ -1,0 +1,186 @@
+extends GutTest
+
+const AIService = preload("res://src/domain/services/ai_service.gd")
+const TankEntity = preload("res://src/domain/entities/tank_entity.gd")
+const GameState = preload("res://src/domain/aggregates/game_state.gd")
+const StageState = preload("res://src/domain/aggregates/stage_state.gd")
+const Position = preload("res://src/domain/value_objects/position.gd")
+const Direction = preload("res://src/domain/value_objects/direction.gd")
+const MoveCommand = preload("res://src/domain/commands/move_command.gd")
+const FireCommand = preload("res://src/domain/commands/fire_command.gd")
+
+func test_given_enemy_far_from_player_when_decide_action_then_returns_patrol_command():
+	# Given: Enemy far from player (distance > 8 tiles)
+	var stage = StageState.create(1, 26, 26)
+	var game_state = GameState.create(stage)
+	
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER, 
+		Position.create(100, 100), Direction.create(Direction.UP))
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC,
+		Position.create(300, 300), Direction.create(Direction.DOWN))
+	
+	game_state.add_tank(player)
+	game_state.add_tank(enemy)
+	
+	# When: Decide action
+	var command = AIService.decide_action(enemy, game_state, 0.016)
+	
+	# Then: Should return patrol command (MoveCommand)
+	assert_not_null(command, "Should return a command")
+	assert_true(command is MoveCommand, "Should return MoveCommand for patrol")
+
+func test_given_enemy_near_player_when_decide_action_then_returns_chase_command():
+	# Given: Enemy near player (distance <= 8 tiles = 128 pixels)
+	var stage = StageState.create(1, 26, 26)
+	var game_state = GameState.create(stage)
+	
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER,
+		Position.create(100, 100), Direction.create(Direction.UP))
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC,
+		Position.create(116, 100), Direction.create(Direction.RIGHT))  # 16 pixels away = 1 tile
+	
+	game_state.add_tank(player)
+	game_state.add_tank(enemy)
+	
+	# When: Decide action
+	var command = AIService.decide_action(enemy, game_state, 0.016)
+	
+	# Then: Should return chase command (MoveCommand toward player)
+	assert_not_null(command, "Should return a command")
+	assert_true(command is MoveCommand, "Should return MoveCommand for chase")
+
+func test_given_enemy_facing_player_when_can_shoot_then_returns_fire_command():
+	# Given: Enemy facing player within shooting range (10 tiles = 160 pixels)
+	var stage = StageState.create(1, 26, 26)
+	var game_state = GameState.create(stage)
+	
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER,
+		Position.create(100, 100), Direction.create(Direction.UP))
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC,
+		Position.create(100, 150), Direction.create(Direction.UP))  # Facing player, 50 pixels away
+	
+	enemy.cooldown_frames = 0  # Can shoot
+	
+	game_state.add_tank(player)
+	game_state.add_tank(enemy)
+	
+	# When: Decide action
+	var command = AIService.decide_action(enemy, game_state, 0.016)
+	
+	# Then: Should return fire command
+	assert_not_null(command, "Should return a command")
+	assert_true(command is FireCommand, "Should return FireCommand when facing player")
+
+func test_given_basic_enemy_when_decide_then_simple_patrol_logic():
+	# Given: Basic enemy with simple AI
+	var stage = StageState.create(1, 26, 26)
+	var game_state = GameState.create(stage)
+	
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC,
+		Position.create(200, 200), Direction.create(Direction.DOWN))
+	
+	game_state.add_tank(enemy)
+	
+	# When: Decide action multiple times
+	var command = AIService.decide_action(enemy, game_state, 0.016)
+	
+	# Then: Should return patrol command
+	assert_not_null(command, "Basic enemy should return patrol command")
+	assert_true(command is MoveCommand, "Should patrol when no player nearby")
+
+func test_given_fast_enemy_when_decide_then_aggressive_chase():
+	# Given: Fast enemy near player
+	var stage = StageState.create(1, 26, 26)
+	var game_state = GameState.create(stage)
+	
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER,
+		Position.create(100, 100), Direction.create(Direction.UP))
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_FAST,
+		Position.create(120, 100), Direction.create(Direction.RIGHT))  # Close to player
+	
+	game_state.add_tank(player)
+	game_state.add_tank(enemy)
+	
+	# When: Decide action
+	var command = AIService.decide_action(enemy, game_state, 0.016)
+	
+	# Then: Should chase player aggressively
+	assert_not_null(command, "Fast enemy should return command")
+	assert_true(command is MoveCommand, "Should chase player")
+
+func test_given_armored_enemy_when_decide_then_defensive_patrol():
+	# Given: Armored enemy
+	var stage = StageState.create(1, 26, 26)
+	var game_state = GameState.create(stage)
+	
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_ARMORED,
+		Position.create(200, 200), Direction.create(Direction.DOWN))
+	
+	game_state.add_tank(enemy)
+	
+	# When: Decide action
+	var command = AIService.decide_action(enemy, game_state, 0.016)
+	
+	# Then: Should use defensive patrol pattern
+	assert_not_null(command, "Armored enemy should return command")
+
+func test_given_cooldown_active_when_decide_then_no_fire_command():
+	# Given: Enemy with active cooldown facing player
+	var stage = StageState.create(1, 26, 26)
+	var game_state = GameState.create(stage)
+	
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER,
+		Position.create(100, 100), Direction.create(Direction.UP))
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC,
+		Position.create(100, 150), Direction.create(Direction.UP))
+	
+	enemy.cooldown_frames = 30  # Cooldown active
+	
+	game_state.add_tank(player)
+	game_state.add_tank(enemy)
+	
+	# When: Decide action
+	var command = AIService.decide_action(enemy, game_state, 0.016)
+	
+	# Then: Should not fire (return move command instead)
+	assert_not_null(command, "Should return a command")
+	assert_false(command is FireCommand, "Should not fire when cooldown active")
+
+func test_given_no_player_tanks_when_decide_then_patrol_command():
+	# Given: Game state with no player tanks
+	var stage = StageState.create(1, 26, 26)
+	var game_state = GameState.create(stage)
+	
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC,
+		Position.create(200, 200), Direction.create(Direction.DOWN))
+	
+	game_state.add_tank(enemy)
+	
+	# When: Decide action
+	var command = AIService.decide_action(enemy, game_state, 0.016)
+	
+	# Then: Should return patrol command
+	assert_not_null(command, "Should return command even without player")
+	assert_true(command is MoveCommand, "Should patrol when no player exists")
+
+func test_given_power_enemy_when_decide_then_frequent_shooting():
+	# Given: Power enemy type facing player
+	var stage = StageState.create(1, 26, 26)
+	var game_state = GameState.create(stage)
+	
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER,
+		Position.create(100, 100), Direction.create(Direction.UP))
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_POWER,
+		Position.create(100, 150), Direction.create(Direction.UP))
+	
+	enemy.cooldown_frames = 0
+	
+	game_state.add_tank(player)
+	game_state.add_tank(enemy)
+	
+	# When: Decide action
+	var command = AIService.decide_action(enemy, game_state, 0.016)
+	
+	# Then: Power enemy should prefer shooting
+	assert_not_null(command, "Power enemy should return command")
+	assert_true(command is FireCommand, "Power enemy should fire when facing player")

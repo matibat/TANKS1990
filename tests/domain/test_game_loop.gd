@@ -42,7 +42,7 @@ func test_given_commands_when_process_frame_then_executes_commands():
 	var commands = [MoveCommand.create(tank.id, Direction.create(Direction.RIGHT))]
 	
 	# When: Process frame
-	var events = GameLoop.process_frame(game_state, commands)
+	var events = GameLoop.process_frame_static(game_state, commands)
 	
 	# Then: Tank moved to (11, 10)
 	assert_eq(tank.position.x, 11, "Tank should move right")
@@ -61,7 +61,7 @@ func test_given_moving_bullets_when_process_frame_then_bullets_move():
 	var old_x = bullet.position.x
 	
 	# When: Process frame
-	var events = GameLoop.process_frame(game_state, [])
+	var events = GameLoop.process_frame_static(game_state, [])
 	
 	# Then: Bullet moved forward
 	assert_gt(bullet.position.x, old_x, "Bullet should move forward")
@@ -78,7 +78,7 @@ func test_given_tank_with_cooldown_when_process_frame_then_cooldown_decreases():
 	game_state.add_tank(tank)
 	
 	# When: Process frame
-	GameLoop.process_frame(game_state, [])
+	GameLoop.process_frame_static(game_state, [])
 	
 	# Then: Cooldown decreased by 1
 	assert_eq(tank.cooldown_frames, 4, "Cooldown should decrease by 1")
@@ -96,7 +96,7 @@ func test_given_bullet_hits_tank_when_process_frame_then_tank_takes_damage_and_e
 	game_state.add_bullet(bullet)
 	
 	# When: Process frame
-	var events = GameLoop.process_frame(game_state, [])
+	var events = GameLoop.process_frame_static(game_state, [])
 	
 	# Then: Tank took damage
 	assert_lt(tank.health.current, initial_health, "Tank should take damage")
@@ -123,7 +123,7 @@ func test_given_bullet_hits_terrain_when_process_frame_then_terrain_damaged():
 	game_state.add_bullet(bullet)
 	
 	# When: Process frame
-	var events = GameLoop.process_frame(game_state, [])
+	var events = GameLoop.process_frame_static(game_state, [])
 	
 	# Then: Terrain took damage (health is int, not Health object)
 	assert_lt(terrain.health, initial_health, "Terrain should take damage")
@@ -142,7 +142,7 @@ func test_given_all_enemies_dead_when_process_frame_then_stage_complete_event():
 	stage.enemies_on_field = 0
 	
 	# When: Process frame
-	var events = GameLoop.process_frame(game_state, [])
+	var events = GameLoop.process_frame_static(game_state, [])
 	
 	# Then: StageCompleteEvent emitted
 	var complete_events = events.filter(func(e): return e is StageCompleteEvent)
@@ -154,7 +154,7 @@ func test_given_base_destroyed_when_process_frame_then_game_over_event():
 	stage.base.take_damage(999)
 	
 	# When: Process frame
-	var events = GameLoop.process_frame(game_state, [])
+	var events = GameLoop.process_frame_static(game_state, [])
 	
 	# Then: GameOverEvent emitted
 	var game_over_events = events.filter(func(e): return e is GameOverEvent)
@@ -166,7 +166,7 @@ func test_given_frame_processed_when_checking_frame_number_then_increments():
 	var initial_frame = game_state.frame
 	
 	# When: Process frame
-	GameLoop.process_frame(game_state, [])
+	GameLoop.process_frame_static(game_state, [])
 	
 	# Then: Frame incremented
 	assert_eq(game_state.frame, initial_frame + 1, "Frame should increment by 1")
@@ -185,7 +185,7 @@ func test_given_paused_game_when_process_frame_then_no_updates():
 	var old_frame = game_state.frame
 	
 	# When: Process frame
-	var events = GameLoop.process_frame(game_state, commands)
+	var events = GameLoop.process_frame_static(game_state, commands)
 	
 	# Then: No updates occurred
 	assert_eq(tank.position.x, old_position.x, "Tank should not move when paused")
@@ -216,8 +216,8 @@ func test_given_same_inputs_and_seed_when_process_frame_twice_then_same_results(
 	var commands2 = [MoveCommand.create("tank1", Direction.create(Direction.RIGHT))]
 	
 	# When: Process frames
-	var events1 = GameLoop.process_frame(game_state1, commands1)
-	var events2 = GameLoop.process_frame(game_state2, commands2)
+	var events1 = GameLoop.process_frame_static(game_state1, commands1)
+	var events2 = GameLoop.process_frame_static(game_state2, commands2)
 	
 	# Then: Same tank positions
 	assert_eq(tank1.position.x, tank2.position.x, "Tank X positions should match")
@@ -245,7 +245,7 @@ func test_given_destroyed_tank_when_process_frame_then_tank_removed():
 	game_state.add_bullet(bullet)
 	
 	# When: Process frame
-	var events = GameLoop.process_frame(game_state, [])
+	var events = GameLoop.process_frame_static(game_state, [])
 	
 	# Then: Tank removed from game state
 	assert_null(game_state.get_tank("tank1"), "Destroyed tank should be removed")
@@ -261,7 +261,7 @@ func test_given_inactive_bullet_when_process_frame_then_bullet_removed():
 	game_state.add_bullet(bullet)
 	
 	# When: Process frame (bullet moves out of bounds and deactivates)
-	var events = GameLoop.process_frame(game_state, [])
+	var events = GameLoop.process_frame_static(game_state, [])
 	
 	# Then: Bullet removed from game state
 	assert_null(game_state.get_bullet("bullet1"), "Inactive bullet should be removed")
@@ -280,7 +280,7 @@ func test_given_bullet_hits_base_when_process_frame_then_base_damaged():
 	game_state.add_bullet(bullet)
 	
 	# When: Process frame
-	var events = GameLoop.process_frame(game_state, [])
+	var events = GameLoop.process_frame_static(game_state, [])
 	
 	# Then: Base took damage
 	assert_lt(stage.base.health.current, initial_health, "Base should take damage")
@@ -291,3 +291,157 @@ func test_given_bullet_hits_base_when_process_frame_then_base_damaged():
 	# Then: Collision event emitted
 	var collision_events = events.filter(func(e): return e is CollisionEvent)
 	assert_gt(collision_events.size(), 0, "CollisionEvent should be emitted")
+
+## ==========================================
+## Phase 1.3: Tick-based Game Loop Tests
+## ==========================================
+
+## BDD: Given tick not ready When process_frame Then no logic updates
+func test_given_tick_not_ready_when_process_frame_then_no_logic_updates():
+	# Given: Game loop with 10 TPS
+	var game_loop_instance = GameLoop.new()
+	game_loop_instance.set_ticks_per_second(10)
+	
+	# Given: Tank at (10, 10)
+	var tank = TankEntity.create("tank1", TankEntity.Type.PLAYER, Position.create(10, 10), Direction.create(Direction.UP))
+	game_state.add_tank(tank)
+	
+	# Given: Move command
+	var commands = [MoveCommand.create(tank.id, Direction.create(Direction.RIGHT))]
+	
+	# When: Process frame with delta less than tick interval (0.05s < 0.1s)
+	var events = game_loop_instance.process_frame(game_state, commands, 0.05)
+	
+	# Then: Tank should NOT move (tick not ready)
+	assert_eq(tank.position.x, 10, "Tank should not move when tick not ready")
+	assert_eq(tank.position.y, 10, "Tank Y should not change")
+	
+	# Then: No events emitted
+	assert_eq(events.size(), 0, "No events should be emitted when tick not ready")
+
+## BDD: Given tick ready When process_frame Then executes logic
+func test_given_tick_ready_when_process_frame_then_executes_logic():
+	# Given: Game loop with 10 TPS
+	var game_loop_instance = GameLoop.new()
+	game_loop_instance.set_ticks_per_second(10)
+	
+	# Given: Tank at (10, 10)
+	var tank = TankEntity.create("tank1", TankEntity.Type.PLAYER, Position.create(10, 10), Direction.create(Direction.UP))
+	game_state.add_tank(tank)
+	
+	# Given: Move command
+	var commands = [MoveCommand.create(tank.id, Direction.create(Direction.RIGHT))]
+	
+	# When: Process frame with delta >= tick interval (0.1s)
+	var events = game_loop_instance.process_frame(game_state, commands, 0.1)
+	
+	# Then: Tank should move (tick is ready)
+	assert_eq(tank.position.x, 11, "Tank should move when tick is ready")
+	assert_eq(tank.position.y, 10, "Tank Y should not change")
+	
+	# Then: TankMoved event emitted
+	var moved_events = events.filter(func(e): return e is TankMovedEvent)
+	assert_gt(moved_events.size(), 0, "TankMoved event should be emitted when tick is ready")
+
+## BDD: Given 10 TPS When 60 frames Then exactly 10 ticks processed
+func test_given_10_tps_when_60_frames_then_exactly_10_ticks_processed():
+	# Given: Game loop with 10 TPS
+	var game_loop_instance = GameLoop.new()
+	game_loop_instance.set_ticks_per_second(10)
+	
+	# Given: Tank at (10, 10)
+	var tank = TankEntity.create("tank1", TankEntity.Type.PLAYER, Position.create(10, 10), Direction.create(Direction.UP))
+	game_state.add_tank(tank)
+	
+	# Given: Move command (tank moves right every tick)
+	var commands = [MoveCommand.create(tank.id, Direction.create(Direction.RIGHT))]
+	
+	# When: Simulate 60 frames at 60 FPS (1 second total)
+	var frame_delta = 1.0 / 60.0  # ~0.0167 seconds per frame
+	var tick_count = 0
+	
+	for frame in range(60):
+		var events = game_loop_instance.process_frame(game_state, commands, frame_delta)
+		# Count ticks by checking if tank moved
+		if events.size() > 0:
+			var moved_events = events.filter(func(e): return e is TankMovedEvent)
+			if moved_events.size() > 0:
+				tick_count += 1
+	
+	# Then: Exactly 10 ticks should have occurred (10 TPS × 1 second)
+	assert_eq(tick_count, 10, "Should process exactly 10 ticks in 1 second at 10 TPS")
+	
+	# Then: Tank should have moved 10 tiles (one per tick)
+	assert_eq(tank.position.x, 20, "Tank should have moved 10 tiles in 10 ticks")
+
+## Phase 2.4: Game Loop Integration Tests
+func test_given_enemy_tanks_when_process_frame_then_ai_commands_executed():
+	# Given: Enemy tank and player tank
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER,
+		Position.create(10, 10), Direction.create(Direction.UP))
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC,
+		Position.create(10, 15), Direction.create(Direction.UP))
+	
+	game_state.add_tank(player)
+	game_state.add_tank(enemy)
+	
+	var initial_dir = enemy.direction.value
+	
+	# When: Process multiple frames (AI should eventually act)
+	for i in range(10):
+		var events = GameLoop.process_frame_static(game_state, [])
+	
+	# Then: Enemy should have made some AI decision (moved or fired)
+	# This will fail until AI integration is complete
+	var moved = enemy.position.x != 10 or enemy.position.y != 15
+	var fired = game_state.get_all_bullets().size() > 0
+	assert_true(moved or fired, "Enemy should have performed AI action (move or fire)")
+
+func test_given_spawn_tick_when_process_frame_then_enemy_spawned():
+	# Given: Game loop with spawn controller integrated
+	# Initial state: no tanks
+	var initial_count = game_state.get_all_tanks().size()
+	
+	# When: Process multiple frames (spawning should occur)
+	for i in range(100):
+		var events = GameLoop.process_frame_static(game_state, [])
+	
+	# Then: At least one enemy should have spawned
+	var final_count = game_state.get_all_tanks().size()
+	assert_true(final_count > initial_count, 
+		"At least one enemy should spawn after many frames (got %d, expected > %d)" % [final_count, initial_count])
+
+func test_given_two_bullets_collide_when_process_frame_then_both_destroyed():
+	# Given: Two bullets on collision course at same position
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1",
+		Position.create(100, 100), Direction.create(Direction.RIGHT), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_2",
+		Position.create(100, 100), Direction.create(Direction.LEFT), 2, 1)
+	
+	game_state.add_bullet(bullet1)
+	game_state.add_bullet(bullet2)
+	
+	# When: Process frame (collision should be detected)
+	var events = GameLoop.process_frame_static(game_state, [])
+	
+	# Then: Both bullets should be destroyed
+	assert_false(bullet1.is_active, "Bullet 1 should be destroyed after collision")
+	assert_false(bullet2.is_active, "Bullet 2 should be destroyed after collision")
+
+func test_given_stage_start_when_process_frames_then_enemies_spawn_over_time():
+	# Given: Clean game state with no tanks
+	var clean_stage = StageState.create(1, 26, 26)
+	var clean_game_state = GameState.create(clean_stage, 3)
+	
+	# When: Process 200 frames
+	var spawn_count = 0
+	for i in range(200):
+		var before_count = clean_game_state.get_all_tanks().size()
+		var events = GameLoop.process_frame_static(clean_game_state, [])
+		var after_count = clean_game_state.get_all_tanks().size()
+		if after_count > before_count:
+			spawn_count += 1
+	
+	# Then: At least some enemies should have spawned
+	assert_true(spawn_count > 0, 
+		"Enemies should spawn over time (got %d spawns)" % spawn_count)

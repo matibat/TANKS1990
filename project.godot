@@ -19,13 +19,20 @@ config/icon="res://icon.svg"
 [autoload]
 
 RandomProvider="*res://src/autoload/random_provider.gd"
+DebugLogger="*res://src/autoload/debug_logger.gd"
+
+[debug]
+
+log_enabled=true
+log_gameplay=true
+log_spawning=true
+log_input=true
 
 [display]
 
 window/size/viewport_width=1024
 window/size/viewport_height=1024
 window/stretch/mode="viewport"
-window/stretch/aspect="keep"
 
 [editor_plugins]
 

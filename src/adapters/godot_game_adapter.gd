@@ -75,7 +75,7 @@ func _physics_process(_delta: float) -> void:
 		commands = input_adapter.get_commands_for_frame(player_tank_id, game_state.frame)
 	
 	# 2. Process frame in domain (pure logic)
-	var events = GameLoop.process_frame(game_state, commands)
+	var events = GameLoop.process_frame_static(game_state, commands)
 	
 	# 3. Convert domain events to Godot signals
 	_process_domain_events(events)
