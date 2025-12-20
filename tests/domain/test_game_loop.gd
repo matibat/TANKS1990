@@ -85,8 +85,8 @@ func test_given_tank_with_cooldown_when_process_frame_then_cooldown_decreases():
 
 ## BDD: Given bullet hits tank When process_frame Then tank takes damage and events emitted
 func test_given_bullet_hits_tank_when_process_frame_then_tank_takes_damage_and_events_emitted():
-	# Given: Enemy tank at (10, 10)
-	var tank = TankEntity.create("tank1", TankEntity.Type.ENEMY_BASIC, Position.create(10, 10), Direction.create(Direction.UP))
+	# Given: Player tank at (10, 10) - using PLAYER type to avoid AI movement
+	var tank = TankEntity.create("tank1", TankEntity.Type.PLAYER, Position.create(10, 10), Direction.create(Direction.UP))
 	game_state.add_tank(tank)
 	
 	var initial_health = tank.health.current
@@ -235,8 +235,8 @@ func test_given_same_inputs_and_seed_when_process_frame_twice_then_same_results(
 
 ## BDD: Given destroyed tank When process frame Then tank removed from game state
 func test_given_destroyed_tank_when_process_frame_then_tank_removed():
-	# Given: Tank with 1 health
-	var tank = TankEntity.create("tank1", TankEntity.Type.ENEMY_BASIC, Position.create(10, 10), Direction.create(Direction.UP))
+	# Given: Player tank with 1 health - using PLAYER type to avoid AI movement
+	var tank = TankEntity.create("tank1", TankEntity.Type.PLAYER, Position.create(10, 10), Direction.create(Direction.UP))
 	tank.take_damage(tank.health.current - 1) # Leave 1 HP
 	game_state.add_tank(tank)
 	

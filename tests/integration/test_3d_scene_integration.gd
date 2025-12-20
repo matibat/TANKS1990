@@ -4,6 +4,7 @@ extends GutTest
 
 const GameRoot3D = preload("res://scenes3d/game_root_3d.gd")
 const GodotGameAdapter = preload("res://src/adapters/godot_game_adapter.gd")
+const GameStateEnum = preload("res://src/domain/value_objects/game_state_enum.gd")
 
 var scene: Node3D
 var adapter: GodotGameAdapter
@@ -25,6 +26,11 @@ func test_scene_loads_successfully():
 	assert_true(adapter != null, "Adapter should exist in scene")
 
 func test_adapter_is_initialized():
+	# Start game
+	scene._state_machine.transition_to(GameStateEnum.State.PLAYING)
+	scene._start_new_game()
+	await wait_physics_frames(5)
+	
 	assert_true(adapter.game_state != null, "Adapter should have game state")
 	assert_true(adapter.input_adapter != null, "Adapter should have input adapter")
 
@@ -41,14 +47,21 @@ func test_camera_exists():
 	assert_true(camera is Camera3D, "Camera should be Camera3D type")
 
 func test_player_tank_spawned():
-	# Wait for scene initialization
-	await wait_physics_frames(2)
+	# Start game
+	scene._state_machine.transition_to(GameStateEnum.State.PLAYING)
+	scene._start_new_game()
+	await wait_physics_frames(5)
 	
 	# Check that player tank was spawned
 	var tanks_container = scene.get_node("Tanks")
 	assert_gt(tanks_container.get_child_count(), 0, "At least one tank should be spawned")
 
 func test_signal_connections():
+	# Start game
+	scene._state_machine.transition_to(GameStateEnum.State.PLAYING)
+	scene._start_new_game()
+	await wait_physics_frames(5)
+	
 	# Verify adapter signals are connected
 	var tank_spawned_connections = adapter.tank_spawned.get_connections()
 	assert_gt(tank_spawned_connections.size(), 0, "tank_spawned signal should be connected")
@@ -57,8 +70,10 @@ func test_signal_connections():
 	assert_gt(bullet_fired_connections.size(), 0, "bullet_fired signal should be connected")
 
 func test_one_frame_of_gameplay():
-	# Wait for initialization
-	await wait_physics_frames(2)
+	# Start game
+	scene._state_machine.transition_to(GameStateEnum.State.PLAYING)
+	scene._start_new_game()
+	await wait_physics_frames(5)
 	
 	# Get initial frame count
 	var initial_frame = adapter.get_current_frame()
@@ -71,8 +86,10 @@ func test_one_frame_of_gameplay():
 	assert_gt(new_frame, initial_frame, "Frame should have incremented")
 
 func test_player_can_fire():
-	# Wait for initialization
-	await wait_physics_frames(2)
+	# Start game
+	scene._state_machine.transition_to(GameStateEnum.State.PLAYING)
+	scene._start_new_game()
+	await wait_physics_frames(5)
 	
 	# Get initial bullet count
 	var bullets_container = scene.get_node("Bullets")

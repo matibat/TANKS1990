@@ -4,6 +4,7 @@ extends GutTest
 
 const GameRoot3D = preload("res://scenes3d/game_root_3d.gd")
 const GameState = preload("res://src/domain/aggregates/game_state.gd")
+const GameStateEnum = preload("res://src/domain/value_objects/game_state_enum.gd")
 
 var game_root: GameRoot3D
 var scene: PackedScene
@@ -36,17 +37,24 @@ func test_required_nodes_exist():
 
 ## Test: Camera configuration
 func test_camera_is_configured_correctly():
+	# Start game
+	game_root._state_machine.transition_to(GameStateEnum.State.PLAYING)
+	game_root._start_new_game()
+	await wait_physics_frames(5)
+	
 	var camera = game_root.get_node("Camera3D") as Camera3D
 	assert_eq(camera.projection, Camera3D.PROJECTION_ORTHOGONAL, "Camera should be orthogonal")
 	assert_true(camera.current, "Camera should be active")
-	assert_gt(camera.size, 20.0, "Camera size should cover arena")
-	# Camera should be positioned above the arena
-	assert_gt(camera.position.y, 20.0, "Camera should be elevated above ground")
+	assert_eq(camera.size, 20.0, "Camera size should be 20.0")
+	# Camera should be positioned above the arena at height 10
+	assert_eq(camera.position.y, 10.0, "Camera should be at height 10.0")
 
 ## Test: Terrain renders
 func test_terrain_renders():
-	await get_tree().process_frame
-	await get_tree().process_frame
+	# Start game
+	game_root._state_machine.transition_to(GameStateEnum.State.PLAYING)
+	game_root._start_new_game()
+	await wait_physics_frames(5)
 	
 	# Check terrain container was created
 	var terrain_container = null
@@ -63,8 +71,10 @@ func test_terrain_renders():
 
 ## Test: Player tank spawns
 func test_player_tank_spawns():
-	await get_tree().process_frame
-	await get_tree().process_frame
+	# Start game
+	game_root._state_machine.transition_to(GameStateEnum.State.PLAYING)
+	game_root._start_new_game()
+	await wait_physics_frames(5)
 	
 	# Check that player tank was spawned
 	assert_false(game_root.player_tank_id.is_empty(), "Player tank ID should be set")
@@ -85,8 +95,10 @@ func test_player_tank_spawns():
 
 ## Test: Enemy tank spawns
 func test_enemy_tank_spawns():
-	await get_tree().process_frame
-	await get_tree().process_frame
+	# Start game
+	game_root._state_machine.transition_to(GameStateEnum.State.PLAYING)
+	game_root._start_new_game()
+	await wait_physics_frames(5)
 	
 	var tanks_container = game_root.get_node("Tanks")
 	# Should have player + at least 1 enemy
@@ -110,7 +122,10 @@ func test_coordinate_conversion_centers_entities():
 
 ## Test: Adapter is initialized
 func test_adapter_initializes():
-	await get_tree().process_frame
+	# Start game
+	game_root._state_machine.transition_to(GameStateEnum.State.PLAYING)
+	game_root._start_new_game()
+	await wait_physics_frames(5)
 	
 	var adapter = game_root.get_node("GodotGameAdapter")
 	assert_not_null(adapter.game_state, "Adapter should have game state")
@@ -127,8 +142,10 @@ func test_debug_logger_available():
 
 ## Test: Tank nodes have correct types
 func test_tank_nodes_have_correct_properties():
-	await get_tree().process_frame
-	await get_tree().process_frame
+	# Start game
+	game_root._state_machine.transition_to(GameStateEnum.State.PLAYING)
+	game_root._start_new_game()
+	await wait_physics_frames(5)
 	
 	for tank_id in game_root.tank_nodes.keys():
 		var tank_node = game_root.tank_nodes[tank_id]
