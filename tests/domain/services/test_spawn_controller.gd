@@ -28,7 +28,7 @@ func test_given_less_than_4_enemies_when_spawn_tick_then_spawns_one_enemy():
 	game_state.add_tank(enemy2)
 	
 	var controller = SpawnController.new(1)
-	controller._spawn_timer = 100.0  # Force spawn ready
+	controller._spawn_timer = 100.0 # Force spawn ready
 	
 	# When: Check if should spawn
 	var should_spawn = controller.should_spawn(game_state, 0.016)
@@ -47,7 +47,7 @@ func test_given_4_enemies_on_field_when_spawn_tick_then_no_spawn():
 		game_state.add_tank(enemy)
 	
 	var controller = SpawnController.new(1)
-	controller._spawn_timer = 100.0  # Force spawn ready
+	controller._spawn_timer = 100.0 # Force spawn ready
 	
 	# When: Check if should spawn
 	var should_spawn = controller.should_spawn(game_state, 0.016)
@@ -61,8 +61,8 @@ func test_given_0_enemies_remaining_when_spawn_tick_then_no_spawn():
 	var game_state = GameState.create(stage)
 	
 	var controller = SpawnController.new(1)
-	controller._enemies_remaining = 0  # All enemies spawned
-	controller._spawn_timer = 100.0  # Force spawn ready
+	controller._enemies_remaining = 0 # All enemies spawned
+	controller._spawn_timer = 100.0 # Force spawn ready
 	
 	# When: Check if should spawn
 	var should_spawn = controller.should_spawn(game_state, 0.016)
@@ -81,8 +81,8 @@ func test_given_enemy_destroyed_when_field_count_drops_then_spawns_next():
 		game_state.add_tank(enemy)
 	
 	var controller = SpawnController.new(1)
-	controller._spawn_timer = 100.0  # Force spawn ready
-	controller._enemies_remaining = 10  # Still have enemies to spawn
+	controller._spawn_timer = 100.0 # Force spawn ready
+	controller._enemies_remaining = 10 # Still have enemies to spawn
 	
 	# When: Check if should spawn
 	var should_spawn = controller.should_spawn(game_state, 0.016)
@@ -132,7 +132,7 @@ func test_given_random_enemy_type_when_spawn_then_uses_weighted_distribution():
 		type_counts[enemy_type] += 1
 	
 	# Then: Basic should be most common (roughly 50%)
-	assert_true(type_counts[TankEntity.Type.ENEMY_BASIC] > 30, 
+	assert_true(type_counts[TankEntity.Type.ENEMY_BASIC] > 30,
 		"BASIC should be most common (expected ~50, got %d)" % type_counts[TankEntity.Type.ENEMY_BASIC])
 
 func test_given_spawn_locations_when_spawn_then_uses_top_positions():
@@ -144,8 +144,8 @@ func test_given_spawn_locations_when_spawn_then_uses_top_positions():
 	
 	# Then: Should be one of three top positions (x: 16, 192, 384; y: 0)
 	assert_eq(pos.y, 0, "Spawn Y should be 0 (top of screen)")
-	var valid_x = [16, 192, 384]  # (1*16, 12*16, 24*16)
-	assert_true(pos.x in valid_x, 
+	var valid_x = [16, 192, 384] # (1*16, 12*16, 24*16)
+	assert_true(pos.x in valid_x,
 		"Spawn X should be one of %s, got %d" % [valid_x, pos.x])
 
 func test_given_stage_complete_when_all_spawned_and_killed_then_returns_true():
@@ -154,7 +154,7 @@ func test_given_stage_complete_when_all_spawned_and_killed_then_returns_true():
 	var game_state = GameState.create(stage)
 	
 	var controller = SpawnController.new(1)
-	controller._enemies_remaining = 0  # All spawned
+	controller._enemies_remaining = 0 # All spawned
 	controller._enemies_spawned = 20
 	# No enemies on field (all killed)
 	
@@ -174,7 +174,7 @@ func test_given_enemies_still_on_field_when_check_complete_then_returns_false():
 	game_state.add_tank(enemy)
 	
 	var controller = SpawnController.new(1)
-	controller._enemies_remaining = 0  # All spawned
+	controller._enemies_remaining = 0 # All spawned
 	controller._enemies_spawned = 20
 	
 	# When: Check if stage complete

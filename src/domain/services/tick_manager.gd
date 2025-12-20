@@ -26,7 +26,7 @@ class_name TickManager
 ##       tank_visual.position = lerp(old_pos, new_pos, progress)
 
 const DEFAULT_TPS = 60
-const EPSILON = 0.0001  # Tolerance for floating point comparisons
+const EPSILON = 0.0001 # Tolerance for floating point comparisons
 
 var _ticks_per_second: int = DEFAULT_TPS
 var _fixed_delta: float = 1.0 / DEFAULT_TPS

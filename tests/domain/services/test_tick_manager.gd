@@ -29,8 +29,8 @@ func test_given_accumulator_when_tick_ready_then_processes_tick():
 	tick_manager.set_ticks_per_second(10)
 	
 	# When: Accumulate exactly one tick's worth of time
-	var should_tick1 = tick_manager.should_process_tick(0.05)  # First half
-	var should_tick2 = tick_manager.should_process_tick(0.05)  # Second half
+	var should_tick1 = tick_manager.should_process_tick(0.05) # First half
+	var should_tick2 = tick_manager.should_process_tick(0.05) # Second half
 	
 	# Then: First call returns false, second returns true
 	assert_false(should_tick1, "Should not tick after 0.05s")
@@ -41,7 +41,7 @@ func test_given_variable_delta_when_accumulating_then_stable_ticks():
 	tick_manager.set_ticks_per_second(10)
 	
 	# When: Process variable frame times that sum to 1.0 second
-	var deltas = [0.016, 0.020, 0.014, 0.018, 0.016, 0.019]  # Simulate 60 FPS with jitter
+	var deltas = [0.016, 0.020, 0.014, 0.018, 0.016, 0.019] # Simulate 60 FPS with jitter
 	var tick_count = 0
 	var total_time = 0.0
 	
@@ -92,7 +92,7 @@ func test_given_multiple_ticks_accumulated_when_should_process_then_returns_true
 	# Then consume remaining ticks
 	while tick_manager.should_process_tick(0.0):
 		tick_count += 1
-		if tick_count > 10:  # Safety break
+		if tick_count > 10: # Safety break
 			break
 	
 	# Then: Should process 3 ticks

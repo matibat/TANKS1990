@@ -357,7 +357,7 @@ func test_given_10_tps_when_60_frames_then_exactly_10_ticks_processed():
 	var commands = [MoveCommand.create(tank.id, Direction.create(Direction.RIGHT))]
 	
 	# When: Simulate 60 frames at 60 FPS (1 second total)
-	var frame_delta = 1.0 / 60.0  # ~0.0167 seconds per frame
+	var frame_delta = 1.0 / 60.0 # ~0.0167 seconds per frame
 	var tick_count = 0
 	
 	for frame in range(60):
@@ -408,7 +408,7 @@ func test_given_spawn_tick_when_process_frame_then_enemy_spawned():
 	
 	# Then: At least one enemy should have spawned
 	var final_count = game_state.get_all_tanks().size()
-	assert_true(final_count > initial_count, 
+	assert_true(final_count > initial_count,
 		"At least one enemy should spawn after many frames (got %d, expected > %d)" % [final_count, initial_count])
 
 func test_given_two_bullets_collide_when_process_frame_then_both_destroyed():
@@ -443,5 +443,5 @@ func test_given_stage_start_when_process_frames_then_enemies_spawn_over_time():
 			spawn_count += 1
 	
 	# Then: At least some enemies should have spawned
-	assert_true(spawn_count > 0, 
+	assert_true(spawn_count > 0,
 		"Enemies should spawn over time (got %d spawns)" % spawn_count)

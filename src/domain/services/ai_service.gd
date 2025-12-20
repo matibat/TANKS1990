@@ -15,8 +15,8 @@ const Position = preload("res://src/domain/value_objects/position.gd")
 const Direction = preload("res://src/domain/value_objects/direction.gd")
 
 ## AI behavior constants
-const CHASE_DISTANCE_TILES = 8  # Chase player within 8 tiles
-const SHOOT_RANGE_TILES = 10    # Shoot player within 10 tiles
+const CHASE_DISTANCE_TILES = 8 # Chase player within 8 tiles
+const SHOOT_RANGE_TILES = 10 # Shoot player within 10 tiles
 const TILE_SIZE = 16
 
 ## Random timer for patrol direction changes (in seconds)

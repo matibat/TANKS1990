@@ -38,7 +38,7 @@ func set_ticks_per_second(tps: int) -> void:
 func process_frame(game_state: GameState, commands: Array, delta: float) -> Array[DomainEvent]:
 	# Check if tick is ready
 	if not _tick_manager.should_process_tick(delta):
-		return []  # No events, tick not ready
+		return [] # No events, tick not ready
 	
 	# Tick is ready - execute game logic using static method
 	return process_frame_static(game_state, commands)
@@ -61,7 +61,7 @@ static func process_frame_static(game_state: GameState, commands: Array) -> Arra
 	
 	# 0b. AI decisions for enemy tanks
 	for tank in game_state.get_all_tanks():
-		if tank.tank_type != TankEntity.Type.PLAYER:  # Only AI for enemies
+		if tank.tank_type != TankEntity.Type.PLAYER: # Only AI for enemies
 			var ai_command = AIService.decide_action(tank, game_state, 0.1)
 			if ai_command:
 				commands.append(ai_command)

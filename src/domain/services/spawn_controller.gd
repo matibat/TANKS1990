@@ -13,21 +13,21 @@ const Direction = preload("res://src/domain/value_objects/direction.gd")
 ## Constants
 const ENEMIES_PER_STAGE = 20
 const MAX_ENEMIES_ON_FIELD = 4
-const SPAWN_INTERVAL_MIN = 3.0  # seconds
-const SPAWN_INTERVAL_MAX = 5.0  # seconds
+const SPAWN_INTERVAL_MIN = 3.0 # seconds
+const SPAWN_INTERVAL_MAX = 5.0 # seconds
 const TILE_SIZE = 16
 
 ## Spawn locations (top of screen)
 const SPAWN_POSITIONS = [
-	Vector2(1, 0),   # Left
-	Vector2(12, 0),  # Center
-	Vector2(24, 0)   # Right
+	Vector2(1, 0), # Left
+	Vector2(12, 0), # Center
+	Vector2(24, 0) # Right
 ]
 
 ## Enemy type distribution (weights)
-const BASIC_WEIGHT = 0.50   # 50%
-const FAST_WEIGHT = 0.25    # 25%
-const POWER_WEIGHT = 0.15   # 15%
+const BASIC_WEIGHT = 0.50 # 50%
+const FAST_WEIGHT = 0.25 # 25%
+const POWER_WEIGHT = 0.15 # 15%
 const ARMORED_WEIGHT = 0.10 # 10%
 
 ## Properties
