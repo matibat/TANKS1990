@@ -4,8 +4,8 @@ extends GameEvent
 
 var bullet_id: int
 var tank_id: int
-var position: Vector2
-var direction: Vector2
+var position: Variant  # Vector2 (2D) or Vector3 (3D)
+var direction: Variant  # Vector2 (2D) or Vector3 (3D)
 var bullet_level: int = 1  # Affects speed/power
 var is_player_bullet: bool = false  # True if fired by player
 

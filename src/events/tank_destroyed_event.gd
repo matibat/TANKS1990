@@ -5,7 +5,7 @@ extends GameEvent
 var tank_id: int
 var tank_type: String = ""  # Tank type (Basic, Fast, Power, Armored, Player)
 var destroyed_by_id: int  # ID of tank/bullet that caused destruction
-var position: Vector2
+var position: Variant  # Vector2 (2D) or Vector3 (3D)
 var was_player: bool
 var score_value: int
 

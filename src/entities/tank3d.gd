@@ -53,7 +53,7 @@ const EDGE_FIRE_MARGIN: float = 0.5  # Min distance from edge to fire
 
 # Movement control (for continuous 3D movement)
 var movement_direction: Vector3 = Vector3.ZERO
-var use_continuous_movement: bool = true  # Use smooth movement instead of discrete tiles
+var use_continuous_movement: bool = false  # MUST use discrete grid movement for game logic
 
 # Components
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D if has_node("CollisionShape3D") else null
@@ -181,7 +181,21 @@ func _process_continuous_movement(delta: float) -> void:
 
 ## Set movement direction for continuous movement (used by 3D controller)
 func set_movement_direction(dir: Vector3) -> void:
-	movement_direction = dir.normalized() if dir.length() > 0 else Vector3.ZERO
+	# Force discrete movement and cardinal directions
+	use_continuous_movement = false
+	
+	if dir.length() < 0.01:
+		movement_direction = Vector3.ZERO
+		stop_movement()
+		return
+	
+	# Snap to cardinal direction (no diagonals!)
+	var cardinal_dir = _snap_to_cardinal(dir)
+	movement_direction = cardinal_dir
+	
+	# Convert to Direction enum and move
+	var direction_enum = _vector_to_direction(cardinal_dir)
+	move_in_direction(direction_enum)
 
 ## Set movement direction and perform discrete tile movement
 func move_in_direction(direction: Direction) -> void:
@@ -274,6 +288,28 @@ func _update_rotation() -> void:
 		Direction.LEFT:
 			rotation.y = -PI / 2  # Facing -X (left)
 
+func _snap_to_cardinal(dir: Vector3) -> Vector3:
+	"""Force diagonal input to nearest cardinal direction"""
+	if absf(dir.x) > absf(dir.z):
+		# Horizontal movement dominant
+		return Vector3(sign(dir.x), 0, 0)
+	else:
+		# Vertical movement dominant
+		return Vector3(0, 0, sign(dir.z))
+
+func _vector_to_direction(vec: Vector3) -> Direction:
+	"""Convert Vector3 to Direction enum"""
+	if vec.z < -0.5:
+		return Direction.UP
+	elif vec.z > 0.5:
+		return Direction.DOWN
+	elif vec.x < -0.5:
+		return Direction.LEFT
+	elif vec.x > 0.5:
+		return Direction.RIGHT
+	else:
+		return Direction.UP  # Default
+
 ## Attempt to fire bullet
 func try_fire() -> bool:
 	if fire_cooldown > 0.0:
@@ -315,7 +351,7 @@ func die() -> void:
 		event.tank_id = tank_id
 		event.tank_type = _get_tank_type_string()
 		event.was_player = is_player
-		event.position = _vec3_to_vec2(global_position)  # Convert 3D -> 2D for event compatibility
+		event.position = global_position  # Vector3
 		event.destroyed_by_id = -1
 		event.score_value = _get_score_value()
 		EventBus.emit_game_event(event)
@@ -428,9 +464,9 @@ func _emit_tank_moved_event() -> void:
 		return
 	var event = TankMovedEvent.new()
 	event.tank_id = tank_id
-	event.position = _vec3_to_vec2(global_position)  # Convert 3D -> 2D for event compatibility
-	event.direction = _vec3_to_vec2(_direction_to_vector(facing_direction))
-	event.velocity = _vec3_to_vec2(velocity)
+	event.position = global_position  # Vector3
+	event.direction = _direction_to_vector(facing_direction)  # Vector3
+	event.velocity = velocity  # Vector3
 	EventBus.emit_game_event(event)
 
 func _emit_bullet_fired_event() -> void:
@@ -439,17 +475,11 @@ func _emit_bullet_fired_event() -> void:
 	var event = BulletFiredEvent.new()
 	event.tank_id = tank_id
 	event.bullet_id = 0  # Will be set by BulletManager
-	event.position = _vec3_to_vec2(get_bullet_spawn_position())  # Convert 3D -> 2D
-	event.direction = _vec3_to_vec2(_direction_to_vector(facing_direction))
+	event.position = get_bullet_spawn_position()  # Vector3
+	event.direction = _direction_to_vector(facing_direction)  # Vector3
 	event.bullet_level = level
 	event.is_player_bullet = is_player
 	EventBus.emit_game_event(event)
-
-## Helper: Convert Vector3 to Vector2 for event compatibility (X/Z -> X/Y)
-func _vec3_to_vec2(v3: Vector3) -> Vector2:
-	"""Convert 3D position (X/Z) to 2D position (X/Y) for events"""
-	# Scale: 0.5 units = 16 pixels, so multiply by 32
-	return Vector2(v3.x * 32.0, v3.z * 32.0)
 
 ## Calculate bullet spawn position
 func get_bullet_spawn_position() -> Vector3:

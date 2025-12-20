@@ -3,9 +3,9 @@ extends GameEvent
 ## Event emitted when a tank moves (for replay validation)
 
 var tank_id: int
-var position: Vector2
-var direction: Vector2
-var velocity: Vector2
+var position: Variant  # Vector2 (2D) or Vector3 (3D)
+var direction: Variant  # Vector2 (2D) or Vector3 (3D)
+var velocity: Variant  # Vector2 (2D) or Vector3 (3D)
 
 func get_event_type() -> String:
 	return "TankMoved"

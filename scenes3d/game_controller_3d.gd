@@ -47,12 +47,25 @@ func _physics_process(_delta: float) -> void:
 	if player_tank and is_instance_valid(player_tank):
 		_handle_player_input()
 		_clamp_tank_to_bounds(player_tank)
+		_update_camera_follow()  # Make camera follow player
 	
 	# Clamp all enemies
 	if enemies_container:
 		for enemy in enemies_container.get_children():
 			if enemy is Tank3D:
 				_clamp_tank_to_bounds(enemy)
+
+func _update_camera_follow() -> void:
+	"""Make camera follow player tank position"""
+	if not camera or not player_tank:
+		return
+	
+	# Camera should follow player (centered, with vertical offset)
+	var target_pos = player_tank.global_position
+	target_pos.y = 10.0  # Fixed height above ground
+	
+	# Smooth follow or instant (instant for now to avoid lag)
+	camera.global_position = target_pos
 
 func _handle_player_input() -> void:
 	# Convert 2D input to 3D direction (X/Z plane)
