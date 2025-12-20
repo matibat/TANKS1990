@@ -17,6 +17,9 @@ const MAP_MIN = 0.0
 const MAP_MAX = 26.0
 const TANK_HALF_SIZE = 0.5
 
+# Tank ID assignment
+var next_tank_id: int = 1
+
 # Enemy spawning
 
 func _ready() -> void:
@@ -30,6 +33,9 @@ func _ready() -> void:
 	if player_tank:
 		print("✓ Player tank found at: ", player_tank.global_position)
 		player_tank.visible = true
+		# CRITICAL: Assign unique tank ID to player
+		player_tank.tank_id = next_tank_id
+		next_tank_id += 1
 	else:
 		push_error("❌ Player tank not found!")
 	
@@ -113,6 +119,10 @@ func spawn_test_enemies() -> void:
 		enemies_container.add_child(enemy)
 		enemy.global_position = pos
 		enemy.tank_type = Tank3D.TankType.BASIC
+		
+		# CRITICAL: Assign unique tank ID to each enemy
+		enemy.tank_id = next_tank_id
+		next_tank_id += 1
 		
 		# Add AI controller
 		var ai = SimpleAI3D.new()
