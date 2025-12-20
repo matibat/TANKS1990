@@ -62,6 +62,54 @@ test-performance:
 	$(call RUN_GUT,Running performance tests...,res://tests/performance,0)
 
 test-file:
+	@if [ -z "$(FILE)" ]; then \
+		echo "Usage: make test-file FILE=res://tests/unit/test_example.gd"; \
+		exit 1; \
+	fi
 	$(call RUN_GUT,Running specific test...,$(FILE),0)
 
-# Please make me meaningful!
+# Development helpers
+.PHONY: help clean demo3d edit validate
+
+help:
+	@echo "TANKS1990 - Makefile Commands"
+	@echo "=============================="
+	@echo ""
+	@echo "Testing:"
+	@echo "  make check-compile      - Check for GDScript compile errors (fast)"
+	@echo "  make test               - Run all tests (unit + integration + performance)"
+	@echo "  make test-unit          - Run only unit tests"
+	@echo "  make test-integration   - Run integration tests"
+	@echo "  make test-performance   - Run performance benchmarks"
+	@echo "  make test-file FILE=... - Run specific test file"
+	@echo ""
+	@echo "3D Demo:"
+	@echo "  make demo3d             - Open 3D demo scene in Godot editor"
+	@echo "  make edit               - Open project in Godot editor"
+	@echo ""
+	@echo "Quality:"
+	@echo "  make validate           - Run compile check + all tests"
+	@echo "  make clean              - Clean temporary files"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make test-file FILE=res://tests/unit/test_tank3d.gd"
+	@echo "  make demo3d             # See the 3D game in action!"
+
+demo3d:
+	@echo "Opening 3D demo scene..."
+	@$(GODOT) scenes3d/demo3d.tscn
+
+edit:
+	@echo "Opening project in Godot editor..."
+	@$(GODOT) -e project.godot
+
+validate: check-compile test
+	@echo ""
+	@echo "✅ Validation complete!"
+
+clean:
+	@echo "Cleaning temporary files..."
+	@rm -rf .godot/imported/.import/
+	@rm -f .godot/uid_cache.bin~
+	@find . -name "*.log" -type f -delete
+	@echo "✅ Clean complete"
