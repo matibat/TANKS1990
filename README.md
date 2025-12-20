@@ -1,14 +1,33 @@
 # Tank 1990 - Godot Remake
 
-Classic NES Tank 1990 (Battle City) remake built with Godot 4.5+ for desktop and mobile platforms.
+Classic NES Tank 1990 (Battle City) remake built with Godot 4.5+ using Domain-Driven Design architecture.
 
 ## Features
 
 - **Faithful Remake:** Core tank combat mechanics from the NES original
+- **DDD Architecture:** Clean separation between game logic and presentation
+- **Fully Tested:** 297 tests (268 domain + 29 integration) - all passing ✅
+- **3D Graphics:** Modern 3D rendering with classic top-down gameplay
 - **Cross-Platform:** Desktop (Windows, macOS, Linux) and Mobile (iOS, Android)
-- **Event-Driven Architecture:** Deterministic replay system for game sessions
-- **35 Stages:** Progressive difficulty with varied terrain layouts
-- **Modern Controls:** Keyboard, gamepad, and touch support
+- **Deterministic:** Frame-based game logic for replays and networking
+
+## Quick Start
+
+```bash
+# Clone and setup
+git clone https://github.com/matibat/TANKS1990.git
+cd TANKS1990
+git submodule update --init --recursive
+
+# Run all tests
+make test
+
+# Open in Godot editor
+make edit
+
+# Play the 3D demo
+make demo3d
+```
 
 ## Setup
 
@@ -16,6 +35,7 @@ Classic NES Tank 1990 (Battle City) remake built with Godot 4.5+ for desktop and
 
 - Godot 4.5 or later
 - Git
+- Make (for build automation)
 
 ### Installation
 
@@ -32,42 +52,136 @@ cd TANKS1990
 git submodule update --init --recursive
 ```
 
-3. Open the project in Godot:
-   - Launch Godot
-   - Click "Import"
-   - Navigate to the project folder
-   - Select `project.godot`
+3. Verify setup:
 
-## Project Structure
-
-```
-TANKS1990/
-├── src/
-│   ├── autoload/          # Singleton systems (EventBus)
-│   ├── events/            # Event type definitions
-│   ├── entities/          # Game entities (tanks, bullets)
-│   └── systems/           # Game systems (spawner, collision)
-├── scenes/                # Godot scene files
-├── resources/
-│   ├── stages/           # Stage layout data (JSON)
-│   ├── audio/            # Sound effects and music
-│   └── sprites/          # Pixel art assets
-├── tests/
-│   ├── unit/             # Unit tests (BDD style)
-│   └── integration/      # Integration tests
-└── addons/
-    └── gut/              # GUT testing framework (submodule)
+```bash
+make test
 ```
 
-## Development
+All 297 tests should pass ✅
 
-### Running Tests
+## Architecture
 
-Tests use the GUT (Godot Unit Test) framework:
+The game follows **Domain-Driven Design (DDD)** principles with clean separation of concerns:
 
-1. Open project in Godot
-2. Go to **Project → Tools → GUT**
-3. Click "Run All" or select specific test files
+```
+┌─────────────────────────────────────┐
+│   Presentation Layer (Godot Nodes) │
+│   Tank3D, Bullet3D, Camera3D       │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│   Adapter Layer (Bridge)            │
+│   Syncs domain state ↔ presentation │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│   Domain Layer (Pure Logic)         │
+│   No Godot dependencies             │
+│   Frame-based, deterministic        │
+└─────────────────────────────────────┘
+```
+
+**Key Benefits:**
+
+- GaTesting
+
+The project has comprehensive test coverage using BDD (Behavior-Driven Development):
+
+```bash
+# Run all tests (297 tests)
+make test
+
+# Run domain tests only (268 tests - pure game logic)
+make test SUITE=domain
+
+# Run integration tests only (29 tests)
+make test SUITE=integration
+
+# Run specific tests by pattern
+make test PATTERN=test_tank
+
+# Validate entire project
+make validate
+```
+
+**Test Statistics:**
+
+- ✅ 297 tests passing
+- 268 domain tests (pure logic, no Godot)
+- 29 integration tests (adapter + presentation)
+- BDD style: `test_given_X_when_Y_then_Z()`
+
+📖 See [docs/TESTING.md](docs/TESTING.md) for complete testing guide
+
+### Common Commands
+
+```bash
+# Development
+make edit                 # Open project in Godot
+make demo3d              # Play 3D demo scene
+make clean               # Clean temporary files
+
+# Testing
+make test                # Run all tests
+make test SUITE=domain   # Domain tests only
+make validate            # Full validation
+
+# Utilities
+make help                # Show all commands
+```
+
+### Writing Domain Logic
+
+Domain code is pure GDScript (no Godot dependencies):
+
+```gdscript
+# src/domain/entities/tank_entity.gd
+class_name TankEntity extends RefCounted  # NOT Node!
+
+var position: Position  # Value object (tile coordinates)
+var direction: Direction  # NORTH, SOUTH, EAST, WEST
+var health: Health
+
+func move(new_position: Position) -> void:
+    position = new_position
+
+func take_damage(amount: int) -> bool:
+    return health.decrease(amount)
+```
+
+### Adding Features (TDD)
+
+1. **Write test first** (Red):
+   ```bash
+   # tests/domain/test_new_feature.gd
+   make test SUITE=domain PATTERN=test_new_feature
+   # Test fails irst (TDD): `make test PATTERN=test_new_feature`
+   ```
+2. Implement the feature in `src/domain/`
+3. Ensure all tests pass: `make validate`
+4. Commit: `git commit -m 'feat: add amazing feature'`
+5. Push: `git push origin feature/amazing-feature`
+6. Open a Pull Request
+
+**Code Guidelines:**
+
+- Follow DDD principles (see [docs/DDD_ARCHITECTURE.md](docs/DDD_ARCHITECTURE.md))
+- Write tests before implementation (TDD)
+- Keep domain layer pure (no Godot dependencies)
+- Use BDD test naming: `test_given_X_when_Y_then_Z()`es/new_feature.gd
+  make test SUITE=domain PATTERN=test_new_feature
+  # Test passes ✅
+  ```
+
+  ```
+
+3. **Refactor and validate**:
+   ```bash
+   make validate
+   # All tests pass ✅
+   3. Click "Run All" or select specific test files
+   ```
 
 Or run from command line:
 
@@ -85,7 +199,7 @@ godot --headless -s addons/gut/gut_cmdln.gd
 
 The game uses a centralized event bus for deterministic gameplay:
 
-```gdscript
+````gdscript
 # Emit events
 var event = InputEvent.create_fire()
 EventBus.emit_game_event(event)
@@ -95,16 +209,27 @@ EventBus.subscribe("Input", _on_input)
 
 # Recording/Replay
 EventBus.start_recording(seed)
-# ... gameplay ...
-var replay = EventBus.stop_recording()
-replay.save_to_file("user://replay.tres")
-```
+# .Documentation
 
-## Controls
+- [DDD Architecture](docs/DDD_ARCHITECTURE.md) - Domain-Driven Design principles
+- [Testing Guide](docs/TESTING.md) - Comprehensive testing documentation
+- [BDD Test Strategy](docs/BDD_TEST_STRATEGY.md) - Testing philosophy
+- [Adapter Architecture](docs/ADAPTER_ARCHITECTURE.md) - Layer communication
+- [MVP Specification](Tank%201990%20-%20MVP%20Specification.md) - Product requirements
 
-### Keyboard
+## Roadmap
 
-- **WASD / Arrow Keys:** Move
+- [x] DDD architecture implementation
+- [x] Domain layer (pure game logic)
+- [x] 3D rendering system
+- [x] Comprehensive test suite (297 tests)
+- [x] Makefile automation
+- [ ] Complete gameplay mechanics
+- [ ] 35 stage designs
+- [ ] Audio system
+- [ ] Mobile UI/controls
+- [ ] Multiplayer support (future)
+- [ ] Replay system
 - **Space / Enter:** Fire
 - **P / Escape:** Pause
 
@@ -122,7 +247,7 @@ replay.save_to_file("user://replay.tres")
 godot --headless --export-release "Windows Desktop" builds/tank1990.exe
 godot --headless --export-release "macOS" builds/tank1990.dmg
 godot --headless --export-release "Linux" builds/tank1990.x86_64
-```
+````
 
 ### Mobile
 

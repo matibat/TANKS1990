@@ -1,9 +1,10 @@
 extends GutHookScript
 ## Ensures critical autoload singletons exist for tests and are reset for determinism
 
+# DDD Migration: Legacy autoloads temporarily disabled
 const AUTOLOADS = [
-	{"name": "EventBus", "path": "res://src/autoload/event_bus.gd"},
-	{"name": "GameManager", "path": "res://src/autoload/game_manager.gd"},
+	# {"name": "EventBus", "path": "res://src/autoload/event_bus.gd"},
+	# {"name": "GameManager", "path": "res://src/autoload/game_manager.gd"},
 ]
 
 func run():
@@ -32,8 +33,9 @@ func run():
 			event_bus.is_recording = false
 			event_bus.is_replaying = false
 			event_bus.current_frame = 0
-		if event_bus.has_method("set_game_seed"):
-			event_bus.set_game_seed(RandomProvider.get_seed())
+		# DDD Migration: RandomProvider temporarily disabled
+		# if event_bus.has_method("set_game_seed"):
+		# 	event_bus.set_game_seed(RandomProvider.get_seed())
 
 func _ensure_autoload(root: Node, name: String, path: String) -> void:
 	var existing = root.get_node_or_null("/root/%s" % name)
@@ -46,4 +48,4 @@ func _ensure_autoload(root: Node, name: String, path: String) -> void:
 	var node = script.new()
 	node.name = name
 	root.add_child(node)
-	root.move_child(node, 0)  # keep autoloads ahead of tests
+	root.move_child(node, 0) # keep autoloads ahead of tests

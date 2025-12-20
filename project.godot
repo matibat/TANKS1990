@@ -12,21 +12,18 @@ config_version=5
 
 config/name="Tank 1990"
 config/description="Classic NES Tank 1990 remake for desktop and mobile"
-run/main_scene="res://scenes3d/demo3d.tscn"
+run/main_scene="res://scenes3d/game_3d_ddd.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
 
 RandomProvider="*res://src/autoload/random_provider.gd"
-EventBus="*res://src/autoload/event_bus.gd"
-GameManager="*res://src/autoload/game_manager.gd"
 
 [display]
 
 window/size/viewport_width=832
 window/size/viewport_height=832
-window/size/mode=0
 window/stretch/mode="canvas_items"
 
 [editor_plugins]

@@ -5,72 +5,94 @@ GODOT ?= godot
 GUT_SCRIPT := addons/gut/gut_cmdln.gd
 GUT_FLAGS ?= -gexit
 GUT_PRE_HOOK ?= res://tests/hooks/pre_run_hook.gd
-FATAL_GUT_PATTERN := \[ERROR\]:  Something went wrong and the run was aborted.
 
-define RUN_GUT
-	@echo "$(1)"
-	@log_file=$$(mktemp); \
-	fatal="$(FATAL_GUT_PATTERN)"; \
-	parse_pat="SCRIPT ERROR.*Parse Error"; \
-	compile_pat="SCRIPT ERROR.*Compile Error"; \
-	load_pat="ERROR: Failed to load script"; \
-	$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$(2) $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK) > $$log_file 2>&1 & \
-	pid=$$!; \
-	while kill -0 $$pid 2>/dev/null; do \
-		if grep -q "$$fatal" $$log_file 2>/dev/null; then \
-			echo "Detected fatal GUT error, stopping."; \
-			kill $$pid 2>/dev/null || true; \
-			break; \
-		fi; \
-		if grep -q "$$parse_pat" $$log_file 2>/dev/null || grep -q "$$compile_pat" $$log_file 2>/dev/null || grep -q "$$load_pat" $$log_file 2>/dev/null; then \
-			echo "Detected compile/parse error, stopping."; \
-			kill $$pid 2>/dev/null || true; \
-			break; \
-		fi; \
-		sleep 0.2; \
-	done; \
-	wait $$pid; status=$$?; \
-	if [ "$(3)" = "check-only" ] && (grep -q "$$parse_pat" $$log_file || grep -q "$$compile_pat" $$log_file || grep -q "$$load_pat" $$log_file); then \
-		echo ""; \
-		echo "=============================================="; \
-		echo "Compile errors detected. Fix errors before running tests."; \
-		echo "=============================================="; \
-		cat $$log_file; \
-		rm -f $$log_file; \
-		exit 1; \
-	fi; \
-	cat $$log_file; \
-	rm -f $$log_file; \
-	exit $$status
-endef
+# Early-fail: Check assets and compilation before running tests
+.PHONY: precheck check-only check-import check-compile
 
-.PHONY: test test-unit test-integration test-performance check-compile check-only
+precheck: check-only check-import check-compile
+	@echo "✅ All pre-checks passed"
 
 check-only:
-	@echo "Note: Only checking for compile errors, not running tests."
-	$(call RUN_GUT,Checking for compile errors...,res://tests,check-only)
-
-check-compile:
-	$(call RUN_GUT,Checking for compile errors...,res://tests,check-only)
-
-test: check-compile
-	$(call RUN_GUT,Running full test suite...,res://tests,run)
-
-test-unit: check-compile
-	$(call RUN_GUT,Running unit tests...,res://tests/unit,run)
-
-test-integration: check-compile
-	$(call RUN_GUT,Running integration tests...,res://tests/integration,run)
-
-test-performance: check-compile
-	$(call RUN_GUT,Running performance tests...,res://tests/performance,run)
-
-test-file:
-	@if [ -z "$(FILE)" ]; then \
-		echo "Usage: make test-file FILE=res://tests/unit/test_example.gd"; \
+	@echo "Checking assets and project validity..."
+	@$(GODOT) --headless --check-only --quit 2>&1 | tee /tmp/check-only.log
+	@if grep -q "ERROR\|SCRIPT ERROR" /tmp/check-only.log; then \
+		echo ""; \
+		echo "❌ Asset or project errors detected. Fix before proceeding."; \
+		rm -f /tmp/check-only.log; \
 		exit 1; \
 	fi
-	$(call RUN_GUT,Running specific test...,$(FILE),run)
+	@rm -f /tmp/check-only.log
+	@echo "✅ Assets and project valid"
+
+check-import:
+	@echo "Importing assets..."
+	@$(GODOT) --headless --import --quit 2>&1 | tee /tmp/check-import.log
+	@if grep -q "ERROR\|SCRIPT ERROR" /tmp/check-import.log; then \
+		echo ""; \
+		echo "❌ Import errors detected. Fix before proceeding."; \
+		rm -f /tmp/check-import.log; \
+		exit 1; \
+	fi
+	@rm -f /tmp/check-import.log
+	@echo "✅ Assets imported successfully"
+
+check-compile:
+	@echo "Checking GDScript compilation..."
+	@$(GODOT) --headless --script res://tests/hooks/compile_check.gd --quit 2>&1 | tee /tmp/check-compile.log
+	@if grep -q "SCRIPT ERROR\|Parse Error\|Compile Error" /tmp/check-compile.log; then \
+		echo ""; \
+		echo "❌ Compilation errors detected. Fix before running tests."; \
+		cat /tmp/check-compile.log; \
+		rm -f /tmp/check-compile.log; \
+		exit 1; \
+	fi
+	@rm -f /tmp/check-compile.log
+	@echo "✅ All scripts compiled successfully"
+
+# Test runner: Unified command for all test scenarios
+.PHONY: test
+
+# Test runner: Unified command for all test scenarios
+.PHONY: test
+
+# Usage:
+#   make test                          # Run all tests
+#   make test SUITE=domain            # Run domain tests only
+#   make test SUITE=integration       # Run integration tests only
+#   make test SUITE=unit              # Run unit tests only
+#   make test PATTERN=test_tank       # Run tests matching pattern
+#   make test SUITE=domain PATTERN=test_tank_entity  # Combine filters
+test: precheck
+	@suite=$${SUITE:-all}; \
+	pattern=$${PATTERN:-}; \
+	if [ "$$suite" = "all" ]; then \
+		test_dir="res://tests"; \
+	else \
+		test_dir="res://tests/$$suite"; \
+	fi; \
+	if [ -n "$$pattern" ]; then \
+		echo "Running tests matching '$$pattern' in $$test_dir..."; \
+		$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir -gselect=$$pattern $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK); \
+	else \
+		echo "Running all tests in $$test_dir..."; \
+		$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK); \
+	fi
+
+# Legacy aliases for backward compatibility (all use unified test command)
+.PHONY: test-unit test-integration test-performance test-domain
+
+test-unit:
+	@$(MAKE) test SUITE=unit
+
+test-integration:
+	@$(MAKE) test SUITE=integration
+
+test-performance:
+	@$(MAKE) test SUITE=performance
+
+test-domain:
+	@$(MAKE) test SUITE=domain
+
 
 # Development helpers
 .PHONY: help clean demo3d edit validate
@@ -79,25 +101,40 @@ help:
 	@echo "TANKS1990 - Makefile Commands"
 	@echo "=============================="
 	@echo ""
-	@echo "Testing:"
-	@echo "  make check-compile      - Check for GDScript compile errors (fast)"
-	@echo "  make test               - Run all tests (unit + integration + performance)"
-	@echo "  make test-unit          - Run only unit tests"
+	@echo "Pre-checks (run automatically before tests):"
+	@echo "  make precheck           - Run all pre-checks (assets + imports + compilation)"
+	@echo "  make check-only         - Check assets and project validity"
+	@echo "  make check-import       - Import all assets"
+	@echo "  make check-compile      - Check GDScript compilation"
+	@echo ""
+	@echo "Testing (unified interface):"
+	@echo "  make test                      - Run all tests"
+	@echo "  make test SUITE=domain         - Run domain tests only"
+	@echo "  make test SUITE=integration    - Run integration tests only"
+	@echo "  make test SUITE=unit           - Run unit tests only"
+	@echo "  make test PATTERN=test_tank    - Run tests matching pattern"
+	@echo "  make test SUITE=domain PATTERN=test_tank_entity  - Combine filters"
+	@echo ""
+	@echo "Testing (legacy aliases):"
+	@echo "  make test-domain        - Run domain tests"
 	@echo "  make test-integration   - Run integration tests"
-	@echo "  make test-performance   - Run performance benchmarks"
-	@echo "  make test-file FILE=... - Run specific test file"
+	@echo "  make test-unit          - Run unit tests"
+	@echo "  make test-performance   - Run performance tests"
 	@echo ""
 	@echo "3D Demo:"
 	@echo "  make demo3d             - Open 3D demo scene in Godot editor"
 	@echo "  make edit               - Open project in Godot editor"
 	@echo ""
 	@echo "Quality:"
-	@echo "  make validate           - Run compile check + all tests"
+	@echo "  make validate           - Run all pre-checks + all tests"
 	@echo "  make clean              - Clean temporary files"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make test-file FILE=res://tests/unit/test_tank3d.gd"
-	@echo "  make demo3d             # See the 3D game in action!"
+	@echo "  make test                              # Run everything"
+	@echo "  make test SUITE=domain                 # Just domain tests"
+	@echo "  make test PATTERN=test_game_loop       # Tests matching pattern"
+	@echo "  make test SUITE=domain PATTERN=tank    # Domain tests with 'tank' in name"
+	@echo "  make demo3d                            # See the 3D game!"
 
 demo3d:
 	@echo "Opening 3D demo scene..."
@@ -107,7 +144,7 @@ edit:
 	@echo "Opening project in Godot editor..."
 	@$(GODOT) -e project.godot
 
-validate: check-compile test
+validate: precheck test
 	@echo ""
 	@echo "✅ Validation complete!"
 
@@ -115,5 +152,6 @@ clean:
 	@echo "Cleaning temporary files..."
 	@rm -rf .godot/imported/.import/
 	@rm -f .godot/uid_cache.bin~
+	@rm -f /tmp/check-*.log
 	@find . -name "*.log" -type f -delete
 	@echo "✅ Clean complete"

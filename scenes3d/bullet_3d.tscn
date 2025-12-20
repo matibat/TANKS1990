@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://b7u8xwqr3plas"]
+
+[ext_resource type="Script" path="res://scenes3d/bullet_3d.gd" id="1_bullet3d"]
+
+[node name="Bullet3D" type="Node3D"]
+script = ExtResource("1_bullet3d")
+
+[node name="Sphere" type="CSGSphere3D" parent="."]
+radius = 0.2

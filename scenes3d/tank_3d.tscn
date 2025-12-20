@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3 uid="uid://cnm4xvwx3bm8v"]
+
+[ext_resource type="Script" path="res://scenes3d/tank_3d.gd" id="1_tank3d"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_tank_body"]
+size = Vector3(1, 0.5, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_tank_turret"]
+size = Vector3(0.4, 0.3, 0.6)
+
+[node name="Tank3D" type="Node3D"]
+script = ExtResource("1_tank3d")
+
+[node name="Body" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+size = Vector3(1, 0.5, 1)
+
+[node name="Turret" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0.2)
+size = Vector3(0.4, 0.3, 0.6)

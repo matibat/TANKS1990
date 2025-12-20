@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://player_tank3d_001"]
 
-[ext_resource type="Script" path="res://src/entities/tank3d.gd" id="1_tank3d"]
+[ext_resource type="Script" path="res://scenes3d/tank_3d.gd" id="1_tank3d"]
 [ext_resource type="PackedScene" path="res://resources/meshes3d/models/tank_base.tscn" id="2_tank_mesh"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_player"]
