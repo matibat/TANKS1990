@@ -5,7 +5,7 @@
     "should_maximize": true,
     "compact_mode": false,
     "double_strategy": "partial",
-    "pre_run_script": "",
+    "pre_run_script": "res://tests/test_pre_run_hook.gd",
     "post_run_script": "",
     "hide_orphans": true,
     "log_level": 1,
