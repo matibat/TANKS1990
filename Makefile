@@ -169,7 +169,7 @@ test-domain:
 
 
 # Development helpers
-.PHONY: help clean demo3d edit validate check-script validate-script check-errors
+.PHONY: help clean demo3d edit validate check-script validate-script check-errors verify-domain
 
 # Script-level development commands
 # Usage:
@@ -240,6 +240,10 @@ check-errors:
 	@cat /tmp/check-errors.log
 	@rm -f /tmp/check-errors.log
 
+verify-domain:
+	@echo "Verifying domain layer purity..."
+	@bash scripts/verify_domain_purity.sh
+
 help:
 	@echo "TANKS1990 - Makefile Commands"
 	@echo "=============================="
@@ -280,6 +284,7 @@ help:
 	@echo ""
 	@echo "Quality:"
 	@echo "  make validate           - Run all pre-checks + all tests"
+	@echo "  make verify-domain      - Verify domain layer has zero Godot coupling"
 	@echo "  make clean              - Clean temporary files"
 	@echo ""
 	@echo "Examples:"
