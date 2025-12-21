@@ -103,6 +103,15 @@ test: precheck
 		echo "Running all tests in $$test_dir..."; \
 		run_gut '$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK)' || status=$$?; \
 	fi; \
+	total=$$(grep "^Tests" "$$logfile" | awk '{print $$NF}' | head -n1); \
+	total=$${total:-0}; \
+	passing=$$(grep "^Passing Tests" "$$logfile" | awk '{print $$NF}' | head -n1); \
+	passing=$${passing:-0}; \
+	failing=$$(grep "^Failing Tests" "$$logfile" | awk '{print $$NF}' | head -n1); \
+	failing=$${failing:-0}; \
+	if [ "$$failing" -gt 0 ]; then \
+		status=1; \
+	fi; \
 	if [ $$status -ne 0 ]; then \
 		echo ""; \
 		if [ "$(MAKE_VERBOSE)" = "1" ]; then \
@@ -117,17 +126,17 @@ test: precheck
 			echo "❌ Tests failed. Summary:"; \
 			awk 'BEGIN {show=0} {if ($$0 ~ /Run Summary/) {if (prev_nonempty != "") print prev_nonempty; print; show=1; next} if (show) print; if ($$0 != "") prev_nonempty=$$0}' "$$logfile"; \
 		fi; \
+		echo ""; \
+		printf "Total registered tests: %s\n" "$$total"; \
+		printf "Passing tests: %s\n" "$$passing"; \
+		printf "Failing tests: %s\n" "$$failing"; \
 		exit $$status; \
 	fi; \
 	echo ""; \
-		total=$$(grep "^Tests" "$$logfile" | awk '{print $$NF}' | head -n1); \
-		total=$${total:-0}; \
-		passing=$$(grep "^Passing Tests" "$$logfile" | awk '{print $$NF}' | head -n1); \
-		passing=$${passing:-0}; \
 	if [ "$(MAKE_VERBOSE)" = "1" ]; then \
-		echo "✅ All tests passed!"; \
+		printf "✅ Tests passed: %s/%s\n" "$$passing" "$$total"; \
 	elif [ "$(MAKE_LOG_OUTPUT)" = "1" ]; then \
-		echo "✅ All tests passed! Full output:"; \
+		echo "✅ Tests passed: $$passing/$$total. Full output:"; \
 		cat "$$logfile"; \
 	else \
 		if [ "$(QUIET)" != "1" ]; then \
