@@ -1,0 +1,64 @@
+extends GutTest
+## Unit Tests for InputAdapter
+## Tests input buffering to prevent missed key presses
+
+const InputAdapter = preload("res://src/adapters/input_adapter.gd")
+const MoveCommand = preload("res://src/domain/commands/move_command.gd")
+const FireCommand = preload("res://src/domain/commands/fire_command.gd")
+const Direction = preload("res://src/domain/value_objects/direction.gd")
+
+var input_adapter: InputAdapter
+
+func before_each():
+	input_adapter = InputAdapter.new()
+
+func after_each():
+	input_adapter = null
+
+## ============================================================================
+## Epic: Input Handling
+## ============================================================================
+
+func test_given_input_adapter_when_get_commands_for_frame_with_move_up_then_returns_move_command():
+	# Given: Input adapter with stubbed just_pressed
+	stub(Input, "is_action_just_pressed").to_return(true).once()
+	
+	# When: Call get_commands_for_frame
+	var commands = input_adapter.get_commands_for_frame("tank1", 0)
+	
+	# Then: Returns move command
+	assert_eq(commands.size(), 1, "Should return 1 command")
+	assert_true(commands[0] is MoveCommand, "Should be MoveCommand")
+	assert_eq(commands[0].direction.value, Direction.UP, "Should move UP")
+
+func test_given_input_adapter_when_get_commands_for_frame_with_fire_then_returns_fire_command():
+	# Given: Input adapter with stubbed just_pressed for fire
+	stub(Input, "is_action_just_pressed").to_return(false).then().to_return(true).once()
+	
+	# When: Call get_commands_for_frame
+	var commands = input_adapter.get_commands_for_frame("tank1", 0)
+	
+	# Then: Returns fire command
+	assert_eq(commands.size(), 1, "Should return 1 command")
+	assert_true(commands[0] is FireCommand, "Should be FireCommand")
+
+func test_given_no_input_when_get_commands_for_frame_then_returns_empty():
+	# Given: No input
+	stub(Input, "is_action_just_pressed").to_return(false)
+	
+	# When: Call get_commands_for_frame
+	var commands = input_adapter.get_commands_for_frame("tank1", 0)
+	
+	# Then: Returns empty
+	assert_eq(commands.size(), 0, "Should return empty commands")
+
+func test_given_wasd_input_when_get_commands_wasd_then_returns_command():
+	# Given: WASD input
+	stub(Input, "is_action_just_pressed").to_return(true).once()
+	
+	# When: Call get_commands_wasd
+	var commands = input_adapter.get_commands_wasd("tank1", 0)
+	
+	# Then: Returns command
+	assert_eq(commands.size(), 1, "Should return 1 command")
+	assert_true(commands[0] is MoveCommand, "Should be MoveCommand")

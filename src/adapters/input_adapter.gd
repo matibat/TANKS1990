@@ -15,21 +15,21 @@ func get_commands_for_frame(tank_id: String, frame: int) -> Array:
 	var commands: Array = []
 	
 	# Check movement input (only one direction at a time, priority: up > down > left > right)
-	if Input.is_action_pressed("move_up"):
+	if Input.is_action_just_pressed("move_up"):
 		var direction = Direction.create(Direction.UP)
 		commands.append(MoveCommand.create(tank_id, direction, frame))
-	elif Input.is_action_pressed("move_down"):
+	elif Input.is_action_just_pressed("move_down"):
 		var direction = Direction.create(Direction.DOWN)
 		commands.append(MoveCommand.create(tank_id, direction, frame))
-	elif Input.is_action_pressed("move_left"):
+	elif Input.is_action_just_pressed("move_left"):
 		var direction = Direction.create(Direction.LEFT)
 		commands.append(MoveCommand.create(tank_id, direction, frame))
-	elif Input.is_action_pressed("move_right"):
+	elif Input.is_action_just_pressed("move_right"):
 		var direction = Direction.create(Direction.RIGHT)
 		commands.append(MoveCommand.create(tank_id, direction, frame))
 	
 	# Check fire input
-	if Input.is_action_pressed("fire"):
+	if Input.is_action_just_pressed("fire"):
 		commands.append(FireCommand.create(tank_id, frame))
 	
 	return commands
@@ -42,21 +42,20 @@ func get_commands_wasd(tank_id: String, frame: int) -> Array:
 	var commands: Array = []
 	
 	# Check WASD movement
-	if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
+	if Input.is_action_just_pressed("ui_up"):
 		var direction = Direction.create(Direction.UP)
 		commands.append(MoveCommand.create(tank_id, direction, frame))
-	elif Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
+	elif Input.is_action_just_pressed("ui_down"):
 		var direction = Direction.create(Direction.DOWN)
 		commands.append(MoveCommand.create(tank_id, direction, frame))
-	elif Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
+	elif Input.is_action_just_pressed("ui_left"):
 		var direction = Direction.create(Direction.LEFT)
 		commands.append(MoveCommand.create(tank_id, direction, frame))
-	elif Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
+	elif Input.is_action_just_pressed("ui_right"):
 		var direction = Direction.create(Direction.RIGHT)
 		commands.append(MoveCommand.create(tank_id, direction, frame))
 	
-	# Check fire input (Space or Return)
-	if Input.is_action_pressed("fire") or Input.is_key_pressed(KEY_SPACE):
+	if Input.is_action_just_pressed("fire"):
 		commands.append(FireCommand.create(tank_id, frame))
 	
 	return commands

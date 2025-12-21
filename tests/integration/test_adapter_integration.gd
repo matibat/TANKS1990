@@ -259,8 +259,8 @@ func test_given_adapter_in_physics_process_when_frame_advances_then_processes_ga
 	# Given: Adapter with game state
 	var initial_frame = game_state.frame
 	
-	# When: Enough physics frames are processed to hit a 10 TPS tick
-	for i in range(6):
+	# When: Enough physics frames are processed to hit a 5 TPS tick
+	for i in range(12):
 		adapter._physics_process(1.0 / 60.0)
 
 	# Then: Game state frame should advance by one tick

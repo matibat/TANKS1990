@@ -35,6 +35,15 @@ const GameTiming = preload("res://src/domain/constants/game_timing.gd")
 @onready var game_over: Control = $UI/GameOver
 @onready var stage_complete: Control = $UI/StageComplete
 
+## Audio references
+@onready var background_music: AudioStreamPlayer = $Audio/BackgroundMusic
+@onready var tank_move_sound: AudioStreamPlayer = $Audio/SoundEffects/TankMove
+@onready var tank_shoot_sound: AudioStreamPlayer = $Audio/SoundEffects/TankShoot
+@onready var tank_explosion_sound: AudioStreamPlayer = $Audio/SoundEffects/TankExplosion
+@onready var bullet_hit_sound: AudioStreamPlayer = $Audio/SoundEffects/BulletHit
+@onready var stage_complete_sound: AudioStreamPlayer = $Audio/SoundEffects/StageCompleteSound
+@onready var game_over_sound: AudioStreamPlayer = $Audio/SoundEffects/GameOverSound
+
 ## State Management
 var _state_machine: GameStateMachine
 
@@ -80,6 +89,9 @@ func _ready() -> void:
 	if DebugLog:
 		DebugLog.info("GameCoordinator initialized in MENU state")
 	
+	# Initialize audio system
+	_initialize_audio()
+	
 	print("GameRoot3D ready - GameCoordinator initialized")
 
 ## Connect UI screen signals
@@ -99,6 +111,224 @@ func _connect_ui_signals() -> void:
 	# Stage Complete signals
 	stage_complete.next_stage_pressed.connect(_on_next_stage)
 
+## Initialize audio system with procedural 8-bit sounds
+func _initialize_audio() -> void:
+	# Audio will be generated on-demand when sounds are played
+	if DebugLog:
+		DebugLog.info("Audio system initialized with procedural 8-bit sounds")
+
+## Audio playback functions with on-demand generation
+
+func _play_background_music() -> void:
+	if not background_music.playing:
+		_generate_background_music()
+		background_music.play()
+
+func _play_tank_move_sound() -> void:
+	_generate_tank_move_sound()
+	tank_move_sound.play()
+
+func _play_tank_shoot_sound() -> void:
+	_generate_tank_shoot_sound()
+	tank_shoot_sound.play()
+
+func _play_tank_explosion_sound() -> void:
+	_generate_tank_explosion_sound()
+	tank_explosion_sound.play()
+
+func _play_bullet_hit_sound() -> void:
+	_generate_bullet_hit_sound()
+	bullet_hit_sound.play()
+
+func _play_stage_complete_sound() -> void:
+	_generate_stage_complete_sound()
+	stage_complete_sound.play()
+
+func _play_game_over_sound() -> void:
+	_generate_game_over_sound()
+	game_over_sound.play()
+
+## Procedural 8-bit sound generation functions
+
+func _generate_background_music() -> void:
+	background_music.play()
+	var playback = background_music.get_stream_playback() as AudioStreamGeneratorPlayback
+	if playback == null:
+		background_music.stop()
+		return
+	
+	var sample_rate = background_music.stream.mix_rate
+	
+	# Simple 8-bit style looping melody
+	var frames = int(sample_rate * 10.0) # 10 second loop
+	var data = PackedVector2Array()
+	data.resize(frames)
+	
+	for i in range(frames):
+		var t = float(i) / sample_rate
+		var freq = 220.0 # A3 note
+		var wave = sin(t * freq * 2.0 * PI) * 0.3
+		
+		# Add some harmonics for 8-bit feel
+		wave += sin(t * freq * 4.0 * 2.0 * PI) * 0.1
+		wave += sin(t * freq * 6.0 * 2.0 * PI) * 0.05
+		
+		# Simple envelope
+		var envelope = 1.0
+		if t < 0.1: envelope = t / 0.1 # Attack
+		elif t > 9.5: envelope = (10.0 - t) / 0.5 # Release
+		
+		data[i] = Vector2(wave * envelope, wave * envelope)
+	
+	playback.push_buffer(data)
+	# Keep playing for background music
+
+func _generate_tank_move_sound() -> void:
+	tank_move_sound.play()
+	var playback = tank_move_sound.get_stream_playback() as AudioStreamGeneratorPlayback
+	if playback == null:
+		return
+	
+	var sample_rate = tank_move_sound.stream.mix_rate
+	
+	var frames = int(sample_rate * 0.1) # Short blip
+	var data = PackedVector2Array()
+	data.resize(frames)
+	
+	for i in range(frames):
+		var t = float(i) / sample_rate
+		var freq = 800.0 + randf() * 200.0 # Slight variation
+		var wave = sign(sin(t * freq * 2.0 * PI)) * 0.4 # Square wave
+		
+		# Quick decay
+		var envelope = max(0.0, 1.0 - t / 0.1)
+		data[i] = Vector2(wave * envelope, wave * envelope)
+	
+	playback.push_buffer(data)
+
+func _generate_tank_shoot_sound() -> void:
+	tank_shoot_sound.play()
+	var playback = tank_shoot_sound.get_stream_playback() as AudioStreamGeneratorPlayback
+	if playback == null:
+		return
+	
+	var sample_rate = tank_shoot_sound.stream.mix_rate
+	
+	var frames = int(sample_rate * 0.15) # Short pew
+	var data = PackedVector2Array()
+	data.resize(frames)
+	
+	for i in range(frames):
+		var t = float(i) / sample_rate
+		var freq = 1000.0 - t * 500.0 # Descending pitch
+		var wave = sign(sin(t * freq * 2.0 * PI)) * 0.5 # Square wave
+		
+		var envelope = max(0.0, 1.0 - t / 0.15)
+		data[i] = Vector2(wave * envelope, wave * envelope)
+	
+	playback.push_buffer(data)
+
+func _generate_tank_explosion_sound() -> void:
+	tank_explosion_sound.play()
+	var playback = tank_explosion_sound.get_stream_playback() as AudioStreamGeneratorPlayback
+	if playback == null:
+		return
+	
+	var sample_rate = tank_explosion_sound.stream.mix_rate
+	
+	var frames = int(sample_rate * 0.8) # Longer explosion
+	var data = PackedVector2Array()
+	data.resize(frames)
+	
+	for i in range(frames):
+		var t = float(i) / sample_rate
+		var noise = (randf() - 0.5) * 2.0 # White noise
+		var freq = 200.0 - t * 150.0 # Descending rumble
+		var wave = sin(t * freq * 2.0 * PI) * 0.3 + noise * 0.4
+		
+		var envelope = max(0.0, 1.0 - t / 0.8)
+		data[i] = Vector2(wave * envelope, wave * envelope)
+	
+	playback.push_buffer(data)
+
+func _generate_bullet_hit_sound() -> void:
+	bullet_hit_sound.play()
+	var playback = bullet_hit_sound.get_stream_playback() as AudioStreamGeneratorPlayback
+	if playback == null:
+		return
+	
+	var sample_rate = bullet_hit_sound.stream.mix_rate
+	
+	var frames = int(sample_rate * 0.1) # Quick hit
+	var data = PackedVector2Array()
+	data.resize(frames)
+	
+	for i in range(frames):
+		var t = float(i) / sample_rate
+		var freq = 1500.0 + randf() * 500.0 # High pitched
+		var wave = sign(sin(t * freq * 2.0 * PI)) * 0.6 # Square wave
+		
+		var envelope = max(0.0, 1.0 - t / 0.1)
+		data[i] = Vector2(wave * envelope, wave * envelope)
+	
+	playback.push_buffer(data)
+
+func _generate_stage_complete_sound() -> void:
+	stage_complete_sound.play()
+	var playback = stage_complete_sound.get_stream_playback() as AudioStreamGeneratorPlayback
+	if playback == null:
+		return
+	
+	var sample_rate = stage_complete_sound.stream.mix_rate
+	
+	var frames = int(sample_rate * 1.5) # Victory fanfare
+	var data = PackedVector2Array()
+	data.resize(frames)
+	
+	for i in range(frames):
+		var t = float(i) / sample_rate
+		# Arpeggio: C4, E4, G4, C5
+		var notes = [261.63, 329.63, 392.00, 523.25]
+		var note_index = int(t * 8) % 4
+		var freq = notes[note_index]
+		var wave = sin(t * freq * 2.0 * PI) * 0.4
+		
+		var envelope = 1.0
+		if t < 0.05: envelope = t / 0.05
+		elif t > 1.3: envelope = (1.5 - t) / 0.2
+		
+		data[i] = Vector2(wave * envelope, wave * envelope)
+	
+	playback.push_buffer(data)
+
+func _generate_game_over_sound() -> void:
+	game_over_sound.play()
+	var playback = game_over_sound.get_stream_playback() as AudioStreamGeneratorPlayback
+	if playback == null:
+		return
+	
+	var sample_rate = game_over_sound.stream.mix_rate
+	
+	var frames = int(sample_rate * 1.5) # Sad descending melody
+	var data = PackedVector2Array()
+	data.resize(frames)
+	
+	for i in range(frames):
+		var t = float(i) / sample_rate
+		# Descending notes: C4, B3, A3, G3
+		var notes = [261.63, 246.94, 220.00, 196.00]
+		var note_index = int(t * 4) % 4
+		var freq = notes[note_index]
+		var wave = sin(t * freq * 2.0 * PI) * 0.3
+		
+		var envelope = 1.0
+		if t < 0.1: envelope = t / 0.1
+		elif t > 1.2: envelope = (1.5 - t) / 0.3
+		
+		data[i] = Vector2(wave * envelope, wave * envelope)
+	
+	playback.push_buffer(data)
+
 ## State transition handler
 func _on_state_changed(old_state: int, new_state: int) -> void:
 	if DebugLog:
@@ -110,14 +340,22 @@ func _on_state_changed(old_state: int, new_state: int) -> void:
 	match new_state:
 		GameStateEnum.State.MENU:
 			_show_main_menu()
+			background_music.stop()
 		GameStateEnum.State.PLAYING:
 			_show_hud()
+			if not background_music.playing:
+				_play_background_music()
 		GameStateEnum.State.PAUSED:
 			_show_pause_menu()
+			background_music.stop()
 		GameStateEnum.State.GAME_OVER:
 			_show_game_over()
+			background_music.stop()
+			_play_game_over_sound()
 		GameStateEnum.State.STAGE_COMPLETE:
 			_show_stage_complete()
+			background_music.stop()
+			_play_stage_complete_sound()
 
 ## UI Screen Management
 
@@ -163,6 +401,8 @@ func _on_quit_game() -> void:
 func _on_resume_game() -> void:
 	_state_machine.transition_to(GameStateEnum.State.PLAYING)
 	pause_menu.hide_menu()
+	if not background_music.playing:
+		_play_background_music()
 
 func _on_quit_to_menu() -> void:
 	if _state_machine.transition_to(GameStateEnum.State.MENU):
@@ -420,6 +660,10 @@ func _on_tank_moved(tank_id: String, old_position: Vector2, new_position: Vector
 })
 		
 		tank_node.move_to(world_pos, rotation_y)
+		
+		# Play move sound (only for player tank to avoid spam)
+		if tank_id == player_tank_id:
+			_play_tank_move_sound()
 
 func _on_tank_damaged(tank_id: String, damage: int, old_health: int, new_health: int) -> void:
 	if tank_nodes.has(tank_id):
@@ -432,6 +676,9 @@ func _on_tank_destroyed(tank_id: String, position: Vector2) -> void:
 	if tank_nodes.has(tank_id):
 		var tank_node = tank_nodes[tank_id]
 		tank_node.play_destroy_effect()
+		
+		# Play explosion sound
+		_play_tank_explosion_sound()
 		
 		# Remove after animation
 		await get_tree().create_timer(0.5).timeout
@@ -455,6 +702,9 @@ func _on_bullet_fired(bullet_id: String, position: Vector2, direction: int, tank
 	bullets_container.add_child(bullet_node)
 	bullet_nodes[bullet_id] = bullet_node
 	
+	# Play shoot sound
+	_play_tank_shoot_sound()
+	
 	if DebugLog:
 		DebugLog.gameplay("Bullet fired", {"bullet_id": bullet_id, "tank_id": tank_id})
 
@@ -467,6 +717,9 @@ func _on_bullet_destroyed(bullet_id: String, position: Vector2) -> void:
 	if bullet_nodes.has(bullet_id):
 		var bullet_node = bullet_nodes[bullet_id]
 		bullet_node.play_destroy_effect()
+		
+		# Play hit sound
+		_play_bullet_hit_sound()
 		
 		# Remove after brief delay
 		await get_tree().create_timer(0.1).timeout

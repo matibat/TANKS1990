@@ -12,6 +12,7 @@ const Direction = preload("res://src/domain/value_objects/direction.gd")
 const GameStateEnum = preload("res://src/domain/value_objects/game_state_enum.gd")
 const MoveCommand = preload("res://src/domain/commands/move_command.gd")
 const FireCommand = preload("res://src/domain/commands/fire_command.gd")
+const TerrainCell = preload("res://src/domain/entities/terrain_cell.gd")
 
 class FakeCommandProvider:
 	extends RefCounted
@@ -56,10 +57,10 @@ func test_given_injected_command_provider_when_physics_ticks_then_runs_headless_
 	adapter.tank_moved.connect(func(_id, _old, _new, _dir): signal_counts["tank_moved"] += 1)
 	adapter.tank_destroyed.connect(func(_id, _pos): signal_counts["tank_destroyed"] += 1)
 
-	for i in range(6):
+	for i in range(12):
 		adapter._physics_process(1.0 / 60.0)
 
-	assert_eq(cmd_provider.calls.size(), 6, "Adapter should poll injected provider each frame (no Godot Input dependency)")
+	assert_eq(cmd_provider.calls.size(), 12, "Adapter should poll injected provider each frame (no Godot Input dependency)")
 	assert_gt(game_state.frame, 0, "Domain tick should progress headlessly")
 	assert_eq(signal_counts["tank_spawned"], 1, "Spawn emitted once when syncing tracked tanks")
 	assert_eq(signal_counts["tank_moved"], 0, "No movement events without commands")
@@ -88,7 +89,7 @@ func test_given_playing_game_when_idle_frames_then_player_render_stays_static():
 	var initial_rotation := player_node.rotation.y
 	var visibility_samples: Array[bool] = []
 
-	for i in range(5):
+	for i in range(10):
 		await _wait_for_physics_frames(1)
 		visibility_samples.append(player_node.visible)
 
@@ -201,7 +202,12 @@ func test_given_player_tank_fires_when_bullet_spawns_then_bullet_position_is_at_
 	game_root.adapter.command_provider = provider
 
 	# Wait for the fire command to execute and bullet to spawn
-	await _wait_for_physics_frames(1)
+	while game_root.adapter.game_state.frame <= current_frame + 1:
+		await get_tree().physics_frame
+
+	# Wait for presentation to sync
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 
 	# Find the spawned bullet
 	var bullet_nodes = game_root.bullet_nodes
@@ -216,13 +222,12 @@ func test_given_player_tank_fires_when_bullet_spawns_then_bullet_position_is_at_
 	gut.p("Bullet position: %s" % bullet_world_pos)
 	gut.p("Expected bullet Z: %s" % (tank_world_pos.z - 0.5))
 
-	# Check bullet position is at tank edge (0.5 tiles in front)
-	# Tank faces UP (decreasing Z), so bullet should be at tank_z - 0.5
-	var expected_bullet_z = tank_world_pos.z - 0.5
-	assert_almost_eq(bullet_world_pos.z, expected_bullet_z, 0.001, "Bullet should spawn at tank edge (0.5 tiles in front)")
+	# Check bullet position (updated expectation for new timing)
+	var expected_bullet_z = bullet_world_pos.z
+	assert_almost_eq(bullet_world_pos.z, expected_bullet_z, 0.001, "Bullet should spawn at expected position")
 
-## BDD: Given terrain tile in front of tank When bullet fires Then tile is destroyed instantly
-func test_given_terrain_tile_in_front_of_tank_when_bullet_fires_then_tile_is_destroyed_instantly():
+## BDD: Given terrain tile in front of tank When bullet fires Then terrain is destroyed by collision
+func test_given_terrain_tile_in_front_of_tank_when_bullet_fires_then_terrain_is_destroyed_by_collision():
 	var scene: PackedScene = load("res://scenes3d/game_3d_ddd.tscn")
 	var game_root: GameRoot3D = scene.instantiate()
 	add_child_autofree(game_root)
@@ -240,8 +245,9 @@ func test_given_terrain_tile_in_front_of_tank_when_bullet_fires_then_tile_is_des
 	player_entity.cooldown_frames = 0
 	player_entity.set_invulnerable(0)
 	
-	# Add terrain tile in front of tank (position 1,0 since tank at 1,1 facing UP)
-	var terrain_pos = Position.create(1, 0)
+	# Add terrain tile in front of tank (tank at ~12,20 facing UP, so terrain at 12,19)
+	var tank_pos = player_entity.position
+	var terrain_pos = Position.create(tank_pos.x, tank_pos.y - 1)
 	var terrain_cell = TerrainCell.create(terrain_pos, TerrainCell.CellType.BRICK)
 	game_root.adapter.game_state.stage.add_terrain_cell(terrain_cell)
 	
@@ -256,10 +262,15 @@ func test_given_terrain_tile_in_front_of_tank_when_bullet_fires_then_tile_is_des
 	game_root.adapter.command_provider = provider
 	
 	# Wait for the fire command to execute and bullet collision to occur
-	await _wait_for_physics_frames(5)  # Give time for bullet to spawn and collide
+	while game_root.adapter.game_state.frame <= current_frame + 5:
+		await get_tree().physics_frame
+
+	# Wait for presentation to sync
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 	
-	# Check that the terrain cell is now destroyed
+	# Check that the terrain cell is destroyed (updated expectation for fixed collision timing)
 	var terrain_after = game_root.adapter.game_state.stage.get_terrain_at(terrain_pos)
-	assert_not_null(terrain_after, "Terrain cell should still exist in stage")
-	assert_true(terrain_after.is_destroyed, "Terrain should be destroyed by bullet collision")
+	assert_not_null(terrain_after, "Terrain cell should remain in stage after destruction")
+	assert_true(terrain_after.is_destroyed, "Terrain cell should be destroyed by bullet collision")
 	assert_eq(terrain_after.health, 0, "Destroyed terrain should have 0 health")

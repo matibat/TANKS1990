@@ -16,6 +16,34 @@ size = Vector2(26, 26)
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_arena"]
 albedo_color = Color(0.3, 0.3, 0.3, 1)
 
+[sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_background"]
+mix_rate = 44100.0
+buffer_length = 10.0
+
+[sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_tank_move"]
+mix_rate = 44100.0
+buffer_length = 0.5
+
+[sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_tank_shoot"]
+mix_rate = 44100.0
+buffer_length = 0.3
+
+[sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_tank_explosion"]
+mix_rate = 44100.0
+buffer_length = 1.0
+
+[sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_bullet_hit"]
+mix_rate = 44100.0
+buffer_length = 0.2
+
+[sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_stage_complete"]
+mix_rate = 44100.0
+buffer_length = 2.0
+
+[sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_game_over"]
+mix_rate = 44100.0
+buffer_length = 2.0
+
 [node name="GameRoot" type="Node3D"]
 script = ExtResource("1_gameroot")
 
@@ -50,3 +78,36 @@ surface_material_override/0 = SubResource("StandardMaterial3D_arena")
 [node name="GameOver" parent="UI" instance=ExtResource("8_gameover")]
 
 [node name="StageComplete" parent="UI" instance=ExtResource("9_stagecomplete")]
+
+[node name="Audio" type="Node" parent="."]
+
+[node name="BackgroundMusic" type="AudioStreamPlayer" parent="Audio"]
+stream = SubResource("AudioStreamGenerator_background")
+volume_db = -10.0
+autoplay = false
+
+[node name="SoundEffects" type="Node" parent="Audio"]
+
+[node name="TankMove" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = SubResource("AudioStreamGenerator_tank_move")
+volume_db = -15.0
+
+[node name="TankShoot" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = SubResource("AudioStreamGenerator_tank_shoot")
+volume_db = -12.0
+
+[node name="TankExplosion" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = SubResource("AudioStreamGenerator_tank_explosion")
+volume_db = -8.0
+
+[node name="BulletHit" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = SubResource("AudioStreamGenerator_bullet_hit")
+volume_db = -10.0
+
+[node name="StageCompleteSound" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = SubResource("AudioStreamGenerator_stage_complete")
+volume_db = -10.0
+
+[node name="GameOverSound" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = SubResource("AudioStreamGenerator_game_over")
+volume_db = -10.0
