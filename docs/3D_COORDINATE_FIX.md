@@ -169,6 +169,71 @@ godot scenes3d/game_3d_ddd.tscn
 - WASD/Arrows move player tank smoothly
 - Space/Enter fires bullets that fly in the correct direction
 
+## Grid-Based Collision System
+
+**Complete Domain-Presentation Decoupling**:
+
+All collision detection occurs in the domain layer using exact grid position matching:
+
+```gdscript
+# Domain layer collision (pure integer logic)
+static func check_bullet_to_bullet_collision(b1: BulletEntity, b2: BulletEntity) -> bool:
+    if not b1.is_active or not b2.is_active:
+        return false
+    if b1.owner_id == b2.owner_id:  # Same owner's bullets don't collide
+        return false
+    return b1.position.equals(b2.position)  # Exact grid match
+```
+
+**Bullet-to-Bullet Collision Logic**:
+
+- Bullets collide only when at **exact same grid position** (same tile)
+- No pixel-based distance calculations (removed in refactoring)
+- Owner check prevents friendly fire between bullets from same tank
+- Inactive bullets are ignored (already destroyed)
+
+**Deterministic Properties**:
+
+1. **Integer-based**: Position(x: int, y: int) ensures exact comparisons
+2. **Frame-perfect**: Collision checks run every frame in domain layer
+3. **Order-independent**: Pairwise collision checks have consistent results
+4. **Replay-safe**: Same input sequence produces identical collision events
+5. **Network-ready**: Pure domain logic with no render-dependent calculations
+
+**Example Scenarios**:
+
+```gdscript
+# Scenario 1: Head-on collision
+var bullet1 = BulletEntity.create("b1", "tank1", Position.create(5, 5), Direction.UP, 2, 1)
+var bullet2 = BulletEntity.create("b2", "tank2", Position.create(5, 5), Direction.DOWN, 2, 1)
+assert(CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2) == true)
+
+# Scenario 2: Adjacent tiles (no collision)
+var bullet1 = BulletEntity.create("b1", "tank1", Position.create(5, 5), Direction.UP, 2, 1)
+var bullet2 = BulletEntity.create("b2", "tank2", Position.create(5, 6), Direction.DOWN, 2, 1)
+assert(CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2) == false)
+
+# Scenario 3: Same owner (no collision)
+var bullet1 = BulletEntity.create("b1", "tank1", Position.create(5, 5), Direction.UP, 2, 1)
+var bullet2 = BulletEntity.create("b2", "tank1", Position.create(5, 5), Direction.LEFT, 2, 1)
+assert(CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2) == false)
+```
+
+**Breaking Change from Pixel-Based System**:
+
+Previous implementation used 8-pixel collision radius:
+```gdscript
+# OLD (removed):
+var distance_squared = dx * dx + dy * dy
+const COLLISION_DISTANCE = 8  # pixels
+return distance_squared <= COLLISION_DISTANCE * COLLISION_DISTANCE
+```
+
+New implementation requires bullets to be on the same tile. This makes collision:
+- More predictable for players
+- Deterministic for networked gameplay
+- Consistent with original NES Tank 1990 behavior
+
 ## Architecture Notes
 
 This fix maintains the clean DDD separation:
@@ -183,6 +248,8 @@ The coordinate system chain:
 Domain (tiles) → Adapter (pixels) → Presentation (world units)
     0-25       →     0-416        →        0-26
 ```
+
+**Collision Detection**: Happens entirely in domain layer using `Position.equals()` - no presentation coupling
 
 ## Summary
 

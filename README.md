@@ -8,11 +8,12 @@ Classic NES Tank 1990 (Battle City) remake built with Godot 4.5+ using Domain-Dr
 - **DDD Architecture:** Clean separation between game logic and presentation
 - **Fully Tested:** 375 tests (366 domain + 9 integration) - 100% passing ✅
 - **3D Graphics:** Modern 3D rendering with classic top-down gameplay ✨
-- **Combat System:** Friendly fire prevention, spawn invulnerability (3s), bullet collision priority
+- **Combat System:** Grid-based collision with friendly fire prevention, spawn invulnerability (3s)
 - **Player Systems:** Lives and respawn mechanics with visual flicker effects
 - **Enemy Scoring:** 100-400 points per kill based on enemy type
 - **Cross-Platform:** Desktop (Windows, macOS, Linux) and Mobile (iOS, Android)
-- **Deterministic:** Frame-based game logic for replays and networking
+- **Deterministic:** Frame-based game logic with exact grid collision for replays and networking
+- **Zero Godot Coupling:** Pure domain layer verified with `make verify-domain`
 - **Debug Logging:** Production-safe logging system for development
 
 ## Quick Start
@@ -129,7 +130,8 @@ make clean               # Clean temporary files
 # Testing
 make test                # Run all tests
 make test SUITE=domain   # Domain tests only
-make validate            # Full validation
+make validate            # Full validation (tests + verify-domain)
+make verify-domain       # Check domain layer has zero Godot coupling
 
 # Utilities
 make help                # Show all commands

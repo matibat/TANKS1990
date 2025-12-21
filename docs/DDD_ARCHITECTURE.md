@@ -169,6 +169,54 @@ src/
 - `ScoringService` - Calculate score from kills
 - `CommandHandler` - Execute commands on GameState
 
+**Grid-Based Collision System**:
+
+All collision detection uses exact grid position matching via `Position.equals()`. This ensures:
+
+- **Zero Godot coupling** - No pixel calculations, physics engines, or node queries
+- **Deterministic behavior** - Integer comparisons are exact, no floating-point errors
+- **Network-ready** - Pure domain logic that can run on server or client
+
+```gdscript
+# Tank-bullet collision (src/domain/services/collision_service.gd:20-33)
+static func check_tank_bullet_collision(tank: TankEntity, bullet: BulletEntity) -> bool:
+    if not tank.is_alive() or not bullet.is_active:
+        return false
+    if tank.id == bullet.owner_id:  # Can't hit own bullet
+        return false
+    return tank.position.equals(bullet.position)  # Exact grid match
+
+# Bullet-bullet collision (lines 123-138)
+static func check_bullet_to_bullet_collision(b1: BulletEntity, b2: BulletEntity) -> bool:
+    if not b1.is_active or not b2.is_active:
+        return false
+    if b1.owner_id == b2.owner_id:  # Same owner's bullets don't collide
+        return false
+    return b1.position.equals(b2.position)  # Exact grid match
+
+# Bullet-terrain collision (lines 48-56)
+static func check_bullet_terrain_collision(bullet: BulletEntity, terrain_cell: TerrainCell) -> bool:
+    if not bullet.position.equals(terrain_cell.position):
+        return false
+    return not terrain_cell.is_passable_for_bullet()
+```
+
+**Position.equals() Implementation**:
+
+```gdscript
+# src/domain/value_objects/position.gd
+func equals(other: Position) -> bool:
+    return x == other.x and y == other.y  # Integer comparison
+```
+
+Bullets collide when at the exact same grid tile, regardless of:
+- Movement direction
+- Pixel offsets (handled by presentation layer)
+- Animation states
+- Visual interpolation
+
+This matches the NES original's tile-based collision model
+
 ### Commands (Inputs)
 
 **Purpose**: Represent player/AI intent.
@@ -303,6 +351,51 @@ func _update_tank_node(node: Tank3D, entity: TankEntity) -> void:
     # Update rotation based on direction
     # etc.
 ```
+
+## Domain Purity Verification
+
+**Automated Verification**: The domain layer is continuously verified for zero Godot coupling:
+
+```bash
+make verify-domain
+```
+
+This script (`scripts/verify_domain_purity.sh`) checks all files in `src/domain/` for:
+
+- ❌ Node inheritance (`extends Node`, `extends Node2D`, `extends Node3D`)
+- ❌ Godot annotations (`@export`, `@onready`)
+- ❌ Scene tree access (`get_node()`, `$NodePath`, `get_tree()`)
+- ❌ Scene/resource loading (`load("res://...tscn")`)
+- ❌ Engine singletons (`Engine.`, `OS.`)
+- ✅ Only `extends RefCounted` or `extends Object` allowed
+
+**Example Output**:
+
+```
+=== Domain Layer Purity Verification ===
+Scanning domain files...
+✅ src/domain/entities/tank_entity.gd
+✅ src/domain/entities/bullet_entity.gd
+✅ src/domain/services/collision_service.gd
+...
+
+✅ VERIFICATION PASSED
+39 files scanned, 0 violations found
+```
+
+**CI Integration**: This check runs in continuous integration to prevent accidental coupling:
+
+```bash
+make validate  # Runs tests + verify-domain
+```
+
+**Why This Matters**:
+
+- Guarantees domain logic can run without Godot engine
+- Enables server-side game state computation
+- Facilitates porting to other engines or platforms
+- Supports deterministic replays and networked multiplayer
+- Makes unit tests fast (no engine initialization)
 
 ## Testing Strategy
 
