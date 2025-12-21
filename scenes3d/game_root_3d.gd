@@ -239,6 +239,15 @@ func _unhandled_input(event: InputEvent) -> void:
 				_state_machine.transition_to(GameStateEnum.State.PLAYING)
 				pause_menu.hide_menu()
 
+func _physics_process(_delta: float) -> void:
+	if adapter == null:
+		return
+	var progress = adapter.get_tick_progress()
+	for tank_node in tank_nodes.values():
+		tank_node.set_tick_progress(progress)
+	for bullet_node in bullet_nodes.values():
+		bullet_node.set_tick_progress(progress)
+
 
 ## Render terrain from stage state
 func _render_terrain(stage: StageState) -> void:

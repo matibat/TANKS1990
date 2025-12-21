@@ -109,6 +109,17 @@ func test_given_tick_manager_when_get_tick_progress_then_returns_interpolation_f
 	# Then: Progress should be 0.5 (halfway to next tick)
 	assert_almost_eq(progress, 0.5, 0.1, "Tick progress should be 0.5 halfway through tick interval")
 
+func test_given_accumulator_exceeds_tick_when_get_tick_progress_then_clamps_to_one():
+	# Given: 10 TPS
+	tick_manager.set_ticks_per_second(10)
+
+	# When: Accumulate more than one tick but only consume one
+	tick_manager.should_process_tick(0.25)
+	var progress = tick_manager.get_tick_progress()
+
+	# Then: Progress should clamp to 1.0
+	assert_almost_eq(progress, 1.0, 0.001, "Tick progress should clamp to 1.0 when over-accumulated")
+
 func test_given_new_tick_manager_when_created_then_defaults_to_60_tps():
 	# Given: New tick manager
 	var new_manager = TickManager.new()

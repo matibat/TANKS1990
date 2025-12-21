@@ -48,7 +48,7 @@ func test_camera_is_configured_correctly():
 	var viewport_size = camera.get_viewport().get_visible_rect().size
 	var aspect = max(viewport_size.aspect(), 0.0001)
 	var playfield_world_size = 416 * (1.0 / 16.0)
-	var padding = 0.5
+	var padding = camera.CAMERA_PADDING + camera.UI_SAFE_MARGIN
 	var expected_size = max(playfield_world_size * 0.5 + padding, (playfield_world_size * 0.5 + padding) / aspect)
 	assert_almost_eq(camera.size, expected_size, 0.01, "Camera size should fit full playfield")
 	# Camera should be positioned above the arena at height 10

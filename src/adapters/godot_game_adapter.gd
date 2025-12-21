@@ -21,6 +21,7 @@ const BulletMovedEvent = preload("res://src/domain/events/bullet_moved_event.gd"
 const BulletDestroyedEvent = preload("res://src/domain/events/bullet_destroyed_event.gd")
 const StageCompleteEvent = preload("res://src/domain/events/stage_complete_event.gd")
 const GameOverEvent = preload("res://src/domain/events/game_over_event.gd")
+const LOGIC_TPS: int = 10
 
 ## Signals for presentation layer
 signal tank_spawned(tank_id: String, position: Vector2, tank_type: int, direction: int)
@@ -35,6 +36,7 @@ signal game_over(reason: String)
 
 ## Domain state
 var game_state: GameState
+var game_loop: GameLoop
 
 ## Input handler
 var input_adapter: InputAdapter
@@ -53,6 +55,8 @@ var player_tank_id: String = ""
 ## Initialize the adapter with a game state
 func initialize(p_game_state: GameState) -> void:
 	game_state = p_game_state
+	game_loop = GameLoop.new()
+	game_loop.set_ticks_per_second(LOGIC_TPS)
 	input_adapter = InputAdapter.new()
 	tracked_tanks = {}
 	tracked_bullets = {}
@@ -66,7 +70,7 @@ func _ready() -> void:
 
 ## Process one physics frame (60 FPS)
 func _physics_process(_delta: float) -> void:
-	if game_state == null:
+	if game_state == null or game_loop == null:
 		return
 	
 	# 1. Gather input commands
@@ -75,7 +79,7 @@ func _physics_process(_delta: float) -> void:
 		commands = input_adapter.get_commands_for_frame(player_tank_id, game_state.frame)
 	
 	# 2. Process frame in domain (pure logic)
-	var events = GameLoop.process_frame_static(game_state, commands)
+	var events = game_loop.process_frame(game_state, commands, _delta)
 	
 	# 3. Convert domain events to Godot signals
 	_process_domain_events(events)
@@ -230,3 +234,8 @@ func get_current_frame() -> int:
 	if game_state:
 		return game_state.frame
 	return 0
+
+func get_tick_progress() -> float:
+	if game_loop == null:
+		return 0.0
+	return game_loop.get_tick_progress()

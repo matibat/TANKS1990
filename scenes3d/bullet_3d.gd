@@ -12,6 +12,7 @@ var bullet_id: String = ""
 ## Movement interpolation
 var target_position: Vector3
 var last_position: Vector3 # Position at last logic tick
+var tick_progress: float = 0.0
 var movement_speed: float = 15.0 # Faster than tanks for bullets
 var use_interpolation: bool = true
 
@@ -31,13 +32,14 @@ func _ready() -> void:
 func move_to(new_position: Vector3) -> void:
 	# Store previous position for interpolation
 	if use_interpolation:
-		last_position = target_position
+		last_position = position
 	
 	target_position = new_position
 	
 	# If not using interpolation, snap immediately
 	if not use_interpolation:
 		position = new_position
+		tick_progress = 1.0
 
 ## Called when bullet is destroyed
 func play_destroy_effect() -> void:
@@ -52,12 +54,14 @@ func play_destroy_effect() -> void:
 	tween.tween_property(self, "scale", Vector3(2.0, 2.0, 2.0), 0.1)
 
 ## Smooth interpolation in physics process
-func _physics_process(delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	if not use_interpolation:
 		return
-	
-	# Interpolate position with higher speed for bullets
-	if position.distance_to(target_position) > 0.01:
-		position = position.lerp(target_position, min(movement_speed * delta, 1.0))
-	else:
-		position = target_position
+
+	position = last_position.lerp(target_position, tick_progress)
+
+func set_tick_progress(progress: float) -> void:
+	if not use_interpolation:
+		return
+	tick_progress = clamp(progress, 0.0, 1.0)
+	position = last_position.lerp(target_position, tick_progress)

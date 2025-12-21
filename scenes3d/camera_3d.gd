@@ -8,7 +8,8 @@ const GRID_SIZE := 26
 const CAMERA_HEIGHT := 10.0
 const PLAYFIELD_SIZE_PIXELS := 416 # 26 tiles * 16 pixels
 const TILE_SIZE_WORLD := 1.0 / 16.0 # World units per pixel
-const CAMERA_PADDING := 0.5 # Extra world units to avoid clipping at edges
+const CAMERA_PADDING := 0.75 # Base padding to avoid clipping at edges
+const UI_SAFE_MARGIN := 1.0 # Additional world-units margin so HUD never hides the playfield
 
 var player_tank: Node3D = null
 var _playfield_world_size: float = PLAYFIELD_SIZE_PIXELS * TILE_SIZE_WORLD
@@ -36,8 +37,9 @@ func _ready() -> void:
 func _update_camera_size() -> void:
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
 	var aspect: float = max(viewport_size.aspect(), 0.0001)
-	var half_height: float = _playfield_world_size * 0.5 + CAMERA_PADDING
-	var half_width: float = _playfield_world_size * 0.5 + CAMERA_PADDING
+	var safety: float = CAMERA_PADDING + UI_SAFE_MARGIN
+	var half_height: float = _playfield_world_size * 0.5 + safety
+	var half_width: float = _playfield_world_size * 0.5 + safety
 
 	# Size is half of the vertical span; ensure both width and height fit
 	size = max(half_height, half_width / aspect)

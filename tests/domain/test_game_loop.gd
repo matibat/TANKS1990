@@ -374,6 +374,28 @@ func test_given_10_tps_when_60_frames_then_exactly_10_ticks_processed():
 	# Then: Tank should have moved 10 tiles (one per tick)
 	assert_eq(tank.position.x, 20, "Tank should have moved 10 tiles in 10 ticks")
 
+func test_given_large_delta_when_process_frame_then_consumes_all_ready_ticks_once():
+	# Given: Game loop with 10 TPS
+	var game_loop_instance = GameLoop.new()
+	game_loop_instance.set_ticks_per_second(10)
+
+	# Given: Tank at (10, 10)
+	var tank = TankEntity.create("tank1", TankEntity.Type.PLAYER, Position.create(10, 10), Direction.create(Direction.UP))
+	game_state.add_tank(tank)
+
+	# Given: Move command
+	var commands = [MoveCommand.create(tank.id, Direction.create(Direction.RIGHT))]
+	var initial_frame = game_state.frame
+
+	# When: Process frame with 0.25s delta (~2.5 ticks)
+	var events = game_loop_instance.process_frame(game_state, commands, 0.25)
+	var moved_events = events.filter(func(e): return e is TankMovedEvent)
+
+	# Then: Two ticks should have been processed, consuming only ready ticks
+	assert_eq(moved_events.size(), 2, "Should process two ticks for 0.25s at 10 TPS")
+	assert_eq(tank.position.x, 12, "Tank should move two tiles when two ticks are processed")
+	assert_eq(game_state.frame, initial_frame + 2, "Frame counter should advance per tick")
+
 ## Phase 2.4: Game Loop Integration Tests
 func test_given_enemy_tanks_when_process_frame_then_ai_commands_executed():
 	# Given: Enemy tank and player tank

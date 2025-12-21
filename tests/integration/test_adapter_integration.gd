@@ -259,11 +259,12 @@ func test_given_adapter_in_physics_process_when_frame_advances_then_processes_ga
 	# Given: Adapter with game state
 	var initial_frame = game_state.frame
 	
-	# When: Physics process is called (simulating one frame)
-	adapter._physics_process(1.0 / 60.0)
-	
-	# Then: Game state frame should advance
-	assert_eq(game_state.frame, initial_frame + 1, "Frame should advance by 1")
+	# When: Enough physics frames are processed to hit a 10 TPS tick
+	for i in range(6):
+		adapter._physics_process(1.0 / 60.0)
+
+	# Then: Game state frame should advance by one tick
+	assert_eq(game_state.frame, initial_frame + 1, "Frame should advance after accumulating one tick")
 
 func test_given_tank_in_game_when_physics_process_then_syncs_to_presentation():
 	# Given: Tank in game state

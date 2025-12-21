@@ -93,8 +93,8 @@ func test_one_frame_of_gameplay():
 	# Get initial frame count
 	var initial_frame = adapter.get_current_frame()
 	
-	# Wait one physics frame
-	await wait_physics_frames(1)
+	# Wait enough physics frames to reach a 10 TPS logic tick
+	await wait_physics_frames(6)
 	
 	# Frame should have incremented
 	var new_frame = adapter.get_current_frame()

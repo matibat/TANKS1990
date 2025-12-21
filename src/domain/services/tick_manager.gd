@@ -65,8 +65,8 @@ func should_process_tick(delta: float) -> bool:
 		_accumulator += delta
 	
 	# Use epsilon tolerance for floating point comparison
-	if _accumulator >= _fixed_delta - EPSILON:
-		_accumulator -= _fixed_delta
+	if _accumulator + EPSILON >= _fixed_delta:
+		_accumulator = max(_accumulator - _fixed_delta, 0.0)
 		return true
 	
 	return false
@@ -80,4 +80,6 @@ func should_process_tick(delta: float) -> bool:
 ##   var progress = tick_manager.get_tick_progress()
 ##   visual_position = lerp(last_tick_pos, next_tick_pos, progress)
 func get_tick_progress() -> float:
-	return _accumulator / _fixed_delta
+	if _fixed_delta <= 0.0:
+		return 0.0
+	return clamp(_accumulator / _fixed_delta, 0.0, 1.0)

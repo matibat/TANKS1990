@@ -15,13 +15,37 @@ const Position = preload("res://src/domain/value_objects/position.gd")
 const Direction = preload("res://src/domain/value_objects/direction.gd")
 
 ## AI behavior constants
-const CHASE_DISTANCE_TILES = 8 # Chase player within 8 tiles
-const SHOOT_RANGE_TILES = 10 # Shoot player within 10 tiles
 const TILE_SIZE = 16
+const ALIGN_TOLERANCE_PIXELS = 8
 
-## Random timer for patrol direction changes (in seconds)
-var _patrol_timer: float = 0.0
-var _patrol_change_interval: float = 2.0
+const DEFAULT_PROFILE = {
+	"chase_tiles": 8,
+	"shoot_tiles": 10,
+	"patrol_interval_frames": 24
+}
+
+const AI_PROFILES = {
+	TankEntity.Type.ENEMY_BASIC: {
+		"chase_tiles": 8,
+		"shoot_tiles": 10,
+		"patrol_interval_frames": 24
+	},
+	TankEntity.Type.ENEMY_FAST: {
+		"chase_tiles": 12,
+		"shoot_tiles": 10,
+		"patrol_interval_frames": 18
+	},
+	TankEntity.Type.ENEMY_POWER: {
+		"chase_tiles": 10,
+		"shoot_tiles": 12,
+		"patrol_interval_frames": 20
+	},
+	TankEntity.Type.ENEMY_ARMORED: {
+		"chase_tiles": 6,
+		"shoot_tiles": 9,
+		"patrol_interval_frames": 30
+	}
+}
 
 ## Decide action for enemy tank based on game state
 static func decide_action(enemy: TankEntity, game_state: GameState, delta: float) -> Command:
@@ -33,24 +57,29 @@ static func decide_action(enemy: TankEntity, game_state: GameState, delta: float
 	
 	# If no player exists, patrol
 	if not nearest_player:
-		return _create_patrol_command(enemy)
+		return _create_patrol_command(enemy, game_state.frame, _get_ai_profile(enemy.tank_type))
 	
-	# Calculate distance to player
+	var profile = _get_ai_profile(enemy.tank_type)
 	var distance = _calculate_distance(enemy.position, nearest_player.position)
+	var aligned = _is_axis_aligned(enemy.position, nearest_player.position)
 	
-	# Check if can shoot at player
-	if can_shoot(enemy) and _is_facing_target(enemy, nearest_player.position):
-		var shoot_range = SHOOT_RANGE_TILES * TILE_SIZE
+	# Shoot if lined up and ready
+	var shoot_range = profile["shoot_tiles"] * TILE_SIZE
+	if aligned and _is_facing_target(enemy, nearest_player.position) and can_shoot(enemy):
 		if distance <= shoot_range:
 			return FireCommand.create(enemy.id, game_state.frame)
+
+	# If aligned but not facing the player, turn toward them
+	if aligned and not _is_facing_target(enemy, nearest_player.position):
+		return _create_face_target_command(enemy, nearest_player.position, game_state.frame)
 	
-	# Check if should chase player
-	var chase_range = CHASE_DISTANCE_TILES * TILE_SIZE
+	# Chase when close enough
+	var chase_range = profile["chase_tiles"] * TILE_SIZE
 	if distance <= chase_range:
-		return _create_chase_command(enemy, nearest_player.position)
+		return _create_chase_command(enemy, nearest_player.position, game_state.frame)
 	
 	# Default to patrol
-	return _create_patrol_command(enemy)
+	return _create_patrol_command(enemy, game_state.frame, profile)
 
 ## Update cooldowns for enemy tank
 static func update_cooldowns(enemy: TankEntity, delta: float) -> void:
@@ -81,20 +110,22 @@ static func get_nearest_player_tank(game_state: GameState, enemy_pos: Position) 
 	return nearest
 
 ## Create patrol command (random or forward movement)
-static func _create_patrol_command(enemy: TankEntity) -> Command:
-	# Simple patrol: continue in current direction or pick random direction occasionally
-	var direction = enemy.direction
-	
-	# 10% chance to change direction for variety
-	if randf() < 0.1:
-		direction = _get_random_direction()
-	
-	return MoveCommand.create(enemy.id, direction, 0)
+static func _create_patrol_command(enemy: TankEntity, frame: int, profile: Dictionary) -> Command:
+	var directions = [Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT]
+	var interval = max(1, profile.get("patrol_interval_frames", DEFAULT_PROFILE["patrol_interval_frames"]))
+	var phase = int(frame / interval) + abs(hash(enemy.id))
+	var dir_value = directions[phase % directions.size()]
+	return MoveCommand.create(enemy.id, Direction.create(dir_value), frame)
 
 ## Create chase command (move toward player)
-static func _create_chase_command(enemy: TankEntity, target_pos: Position) -> Command:
+static func _create_chase_command(enemy: TankEntity, target_pos: Position, frame: int) -> Command:
 	var direction = _get_direction_toward(enemy.position, target_pos)
-	return MoveCommand.create(enemy.id, direction, 0)
+	return MoveCommand.create(enemy.id, direction, frame)
+
+## Create command that turns tank to face aligned target axis
+static func _create_face_target_command(enemy: TankEntity, target_pos: Position, frame: int) -> Command:
+	var direction = _get_axis_facing_direction(enemy.position, target_pos)
+	return MoveCommand.create(enemy.id, direction, frame)
 
 ## Calculate Euclidean distance between two positions
 static func _calculate_distance(pos1: Position, pos2: Position) -> float:
@@ -104,16 +135,28 @@ static func _calculate_distance(pos1: Position, pos2: Position) -> float:
 
 ## Check if enemy is facing toward target position
 static func _is_facing_target(enemy: TankEntity, target_pos: Position) -> bool:
-	var delta = enemy.direction.to_position_delta()
-	var to_target = Position.create(target_pos.x - enemy.position.x, target_pos.y - enemy.position.y)
-	
-	# Check if direction delta points toward target (same sign)
-	if abs(delta.x) > abs(delta.y):
-		# Horizontal movement
-		return (delta.x * to_target.x) > 0
-	else:
-		# Vertical movement
-		return (delta.y * to_target.y) > 0
+	var dx = target_pos.x - enemy.position.x
+	var dy = target_pos.y - enemy.position.y
+
+	if abs(dx) <= ALIGN_TOLERANCE_PIXELS:
+		if dy < 0:
+			return enemy.direction.value == Direction.UP
+		elif dy > 0:
+			return enemy.direction.value == Direction.DOWN
+		return true
+
+	if abs(dy) <= ALIGN_TOLERANCE_PIXELS:
+		if dx < 0:
+			return enemy.direction.value == Direction.LEFT
+		elif dx > 0:
+			return enemy.direction.value == Direction.RIGHT
+		return true
+
+	return false
+
+## Check if aligned on either axis
+static func _is_axis_aligned(pos1: Position, pos2: Position) -> bool:
+	return abs(pos1.x - pos2.x) <= ALIGN_TOLERANCE_PIXELS or abs(pos1.y - pos2.y) <= ALIGN_TOLERANCE_PIXELS
 
 ## Get direction toward target position
 static func _get_direction_toward(from_pos: Position, to_pos: Position) -> Direction:
@@ -132,8 +175,21 @@ static func _get_direction_toward(from_pos: Position, to_pos: Position) -> Direc
 		else:
 			return Direction.create(Direction.UP)
 
-## Get random direction
-static func _get_random_direction() -> Direction:
-	var directions = [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]
-	var random_index = randi() % directions.size()
-	return Direction.create(directions[random_index])
+## Get axis direction toward an aligned target (used for turning)
+static func _get_axis_facing_direction(from_pos: Position, to_pos: Position) -> Direction:
+	var dx = to_pos.x - from_pos.x
+	var dy = to_pos.y - from_pos.y
+
+	if abs(dx) <= ALIGN_TOLERANCE_PIXELS and dy != 0:
+		return Direction.create(Direction.DOWN if dy > 0 else Direction.UP)
+
+	if abs(dy) <= ALIGN_TOLERANCE_PIXELS and dx != 0:
+		return Direction.create(Direction.RIGHT if dx > 0 else Direction.LEFT)
+
+	return _get_direction_toward(from_pos, to_pos)
+
+## Select AI profile for given enemy type
+static func _get_ai_profile(tank_type: int) -> Dictionary:
+	if AI_PROFILES.has(tank_type):
+		return AI_PROFILES[tank_type]
+	return DEFAULT_PROFILE
