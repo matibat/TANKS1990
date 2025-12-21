@@ -122,7 +122,7 @@ func test_given_different_enemy_types_when_spawning_then_correct_types_created()
 	assert_eq(armored.tank_type, TankEntity.Type.ENEMY_ARMORED, "Should create ENEMY_ARMORED")
 
 ## Test: Spawn Bullet
-func test_given_tank_facing_up_when_spawning_bullet_then_bullet_spawns_in_front():
+func test_given_tank_facing_up_when_spawning_bullet_then_bullet_spawns_one_tile_ahead():
 	# Given: A tank facing UP
 	var stage = StageState.create(1, 26, 26)
 	var game_state = GameState.create(stage)
@@ -132,14 +132,14 @@ func test_given_tank_facing_up_when_spawning_bullet_then_bullet_spawns_in_front(
 	# When: Spawning bullet
 	var bullet = SpawningService.spawn_bullet(game_state, tank)
 	
-	# Then: Bullet spawns one tile in front of tank
+	# Then: Bullet spawns one tile in front of tank (close to tank nose)
 	assert_not_null(bullet, "Bullet should be created")
 	assert_eq(bullet.owner_id, tank.id, "Bullet should have correct owner ID")
-	assert_true(bullet.position.equals(Position.create(5, 4)), "Bullet should be in front of tank (UP)")
+	assert_true(bullet.position.equals(Position.create(5, 4)), "Bullet should start one tile ahead (UP)")
 	assert_eq(bullet.direction.value, Direction.UP, "Bullet should face same direction as tank")
 	assert_true(bullet.is_active, "Bullet should be active")
 
-func test_given_tank_facing_right_when_spawning_bullet_then_bullet_spawns_in_front():
+func test_given_tank_facing_right_when_spawning_bullet_then_bullet_spawns_one_tile_ahead():
 	# Given: A tank facing RIGHT
 	var stage = StageState.create(1, 26, 26)
 	var game_state = GameState.create(stage)
@@ -150,7 +150,33 @@ func test_given_tank_facing_right_when_spawning_bullet_then_bullet_spawns_in_fro
 	var bullet = SpawningService.spawn_bullet(game_state, tank)
 	
 	# Then: Bullet spawns one tile to the right
-	assert_true(bullet.position.equals(Position.create(6, 5)), "Bullet should be in front of tank (RIGHT)")
+	assert_true(bullet.position.equals(Position.create(6, 5)), "Bullet should start one tile ahead (RIGHT)")
+
+func test_given_tank_facing_down_when_spawning_bullet_then_bullet_spawns_one_tile_ahead():
+	# Given: A tank facing DOWN
+	var stage = StageState.create(1, 26, 26)
+	var game_state = GameState.create(stage)
+	var tank = TankEntity.create("tank_1", TankEntity.Type.PLAYER, Position.create(5, 5), Direction.create(Direction.DOWN))
+	game_state.add_tank(tank)
+
+	# When: Spawning bullet
+	var bullet = SpawningService.spawn_bullet(game_state, tank)
+
+	# Then: Bullet spawns one tile below
+	assert_true(bullet.position.equals(Position.create(5, 6)), "Bullet should start one tile ahead (DOWN)")
+
+func test_given_tank_facing_left_when_spawning_bullet_then_bullet_spawns_one_tile_ahead():
+	# Given: A tank facing LEFT
+	var stage = StageState.create(1, 26, 26)
+	var game_state = GameState.create(stage)
+	var tank = TankEntity.create("tank_1", TankEntity.Type.PLAYER, Position.create(5, 5), Direction.create(Direction.LEFT))
+	game_state.add_tank(tank)
+
+	# When: Spawning bullet
+	var bullet = SpawningService.spawn_bullet(game_state, tank)
+
+	# Then: Bullet spawns one tile to the left
+	assert_true(bullet.position.equals(Position.create(4, 5)), "Bullet should start one tile ahead (LEFT)")
 
 func test_given_bullet_spawned_when_spawning_then_tank_cooldown_starts():
 	# Given: A tank with no cooldown

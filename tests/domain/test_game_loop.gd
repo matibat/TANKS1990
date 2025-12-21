@@ -111,6 +111,58 @@ func test_given_bullet_hits_tank_when_process_frame_then_tank_takes_damage_and_e
 	assert_gt(collision_events.size(), 0, "CollisionEvent should be emitted")
 	assert_gt(damage_events.size(), 0, "TankDamagedEvent should be emitted")
 
+func test_given_moving_player_bullet_when_it_reaches_enemy_then_enemy_damaged_and_bullet_removed():
+	# Given: Player and enemy facing each other on the same column
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER, Position.create(5, 6), Direction.create(Direction.UP))
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC, Position.create(5, 3), Direction.create(Direction.DOWN))
+	game_state.add_tank(player)
+	game_state.add_tank(enemy)
+	var initial_enemy_health = enemy.health.current
+	# Given: Bullet starts between them and moves toward enemy
+	var bullet = BulletEntity.create("bullet1", player.id, Position.create(5, 5), Direction.create(Direction.UP), 2, 1)
+	game_state.add_bullet(bullet)
+
+	# When: Process bullet steps until it is removed
+	var iterations = 0
+	while bullet.is_active and iterations < 5:
+		GameLoop._process_single_bullet(bullet, game_state)
+		iterations += 1
+	
+	# Clean up: remove deactivated bullets (mirrors frame cleanup)
+	for existing_bullet in game_state.get_all_bullets():
+		if not existing_bullet.is_active:
+			game_state.remove_bullet(existing_bullet.id)
+
+	# Then: Enemy took damage and bullet removed
+	assert_lt(enemy.health.current, initial_enemy_health, "Enemy should take damage from moving bullet")
+	assert_null(game_state.get_bullet(bullet.id), "Bullet should be removed after hitting enemy")
+
+func test_given_moving_enemy_bullet_when_it_reaches_player_then_player_damaged_and_bullet_removed():
+	# Given: Enemy and player facing each other on the same column
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC, Position.create(5, 3), Direction.create(Direction.DOWN))
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER, Position.create(5, 6), Direction.create(Direction.UP))
+	game_state.add_tank(enemy)
+	game_state.add_tank(player)
+	var initial_player_health = player.health.current
+	# Given: Bullet starts between them and moves toward player
+	var bullet = BulletEntity.create("bullet2", enemy.id, Position.create(5, 4), Direction.create(Direction.DOWN), 2, 1)
+	game_state.add_bullet(bullet)
+
+	# When: Process bullet steps until it is removed
+	var iterations = 0
+	while bullet.is_active and iterations < 5:
+		GameLoop._process_single_bullet(bullet, game_state)
+		iterations += 1
+	
+	# Clean up: remove deactivated bullets (mirrors frame cleanup)
+	for existing_bullet in game_state.get_all_bullets():
+		if not existing_bullet.is_active:
+			game_state.remove_bullet(existing_bullet.id)
+
+	# Then: Player took damage and bullet removed
+	assert_lt(player.health.current, initial_player_health, "Player should take damage from enemy bullet")
+	assert_null(game_state.get_bullet(bullet.id), "Enemy bullet should be removed after hitting player")
+
 ## BDD: Given bullet hits terrain When process_frame Then terrain damaged
 func test_given_bullet_hits_terrain_when_process_frame_then_terrain_damaged():
 	# Given: Destructible terrain at (10, 10)
