@@ -53,6 +53,13 @@ const AI_PROFILES = {
 	}
 }
 
+static var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+static func set_rng(p_rng: RandomNumberGenerator) -> void:
+	# Allow deterministic seeding for tests/server or replay
+	_rng = p_rng if p_rng != null else RandomNumberGenerator.new()
+	if p_rng == null:
+		_rng.randomize()
+
 ## Decide action for enemy tank based on game state
 static func decide_action(enemy: TankEntity, game_state: GameState, delta: float) -> Command:
 	if not enemy or not enemy.is_alive():

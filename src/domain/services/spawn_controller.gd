@@ -37,13 +37,23 @@ var _enemies_remaining: int
 var _enemies_spawned: int
 var _spawn_timer: float
 var _spawn_interval: float
+var rng: RandomNumberGenerator
 
-func _init(stage_number: int):
+func _init(stage_number: int, p_rng: RandomNumberGenerator = null):
 	_stage_number = stage_number
 	_enemies_remaining = ENEMIES_PER_STAGE
 	_enemies_spawned = 0
 	_spawn_timer = 0.0
-	_spawn_interval = randf_range(SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX)
+	rng = p_rng if p_rng != null else RandomNumberGenerator.new()
+	if p_rng == null:
+		rng.randomize()
+	_spawn_interval = rng.randf_range(SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX)
+
+func set_rng(p_rng: RandomNumberGenerator) -> void:
+	# Allow deterministic seeding for tests/server replay
+	rng = p_rng if p_rng != null else RandomNumberGenerator.new()
+	if p_rng == null:
+		rng.randomize()
 
 ## Get number of enemies remaining to spawn
 func get_enemies_remaining() -> int:
@@ -66,7 +76,7 @@ func should_spawn(game_state: GameState, delta: float) -> bool:
 	# Check if spawn interval has passed
 	if _spawn_timer >= _spawn_interval:
 		_spawn_timer = 0.0
-		_spawn_interval = randf_range(SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX)
+		_spawn_interval = rng.randf_range(SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX)
 		return true
 	
 	return false
@@ -92,13 +102,13 @@ func spawn_enemy(game_state: GameState) -> TankEntity:
 
 ## Get spawn position (one of three top locations)
 func get_spawn_position() -> Position:
-	var spawn_idx = randi() % SPAWN_POSITIONS.size()
+	var spawn_idx = rng.randi() % SPAWN_POSITIONS.size()
 	var tile_pos = SPAWN_POSITIONS[spawn_idx]
 	return Position.create(int(tile_pos.x * TILE_SIZE), int(tile_pos.y * TILE_SIZE))
 
 ## Get random enemy type based on weighted distribution
 func get_random_enemy_type() -> int:
-	var rand_val = randf()
+	var rand_val = rng.randf()
 	
 	if rand_val < BASIC_WEIGHT:
 		return TankEntity.Type.ENEMY_BASIC
