@@ -413,24 +413,145 @@ func test_given_inactive_bullet_when_check_collision_then_returns_false():
 	# Then: Should return false
 	assert_false(collided, "Inactive bullet should not collide")
 
-func test_given_bullets_8px_apart_when_check_radius_collision_then_returns_true():
-	# Given: Two bullets 8 pixels apart (within collision radius)
-	var bullet1 = BulletEntity.create("bullet_1", "tank_1", Position.create(100, 100), Direction.create(Direction.UP), 2, 1)
-	var bullet2 = BulletEntity.create("bullet_2", "tank_2", Position.create(108, 100), Direction.create(Direction.DOWN), 2, 1)
-	
-	# When: Check collision (radius = 4px each, total = 8px)
-	var collided = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
-	
-	# Then: Should return true
-	assert_true(collided, "Bullets 8px apart should collide (radius 4+4)")
+## Test: Grid-Based Bullet-to-Bullet Collision (New Grid-Only Logic)
+## These tests verify exact grid position matching for bullet collision
 
-func test_given_bullets_9px_apart_when_check_radius_collision_then_returns_false():
-	# Given: Two bullets 9 pixels apart (outside collision radius)
-	var bullet1 = BulletEntity.create("bullet_1", "tank_1", Position.create(100, 100), Direction.create(Direction.UP), 2, 1)
-	var bullet2 = BulletEntity.create("bullet_2", "tank_2", Position.create(109, 100), Direction.create(Direction.DOWN), 2, 1)
+func test_given_two_active_bullets_at_same_exact_grid_position_when_collision_checked_then_returns_true():
+	# Given: Two active bullets from different owners at exact same grid position
+	var pos = Position.create(5, 5)
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1", pos, Direction.create(Direction.UP), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_2", pos, Direction.create(Direction.DOWN), 2, 1)
 	
-	# When: Check collision (radius = 4px each, total = 8px)
+	# When: Collision is checked
 	var collided = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
 	
-	# Then: Should return false
-	assert_false(collided, "Bullets 9px apart should not collide (outside radius)")
+	# Then: Collision is detected
+	assert_true(collided, "Two active bullets at exact same grid position should collide")
+
+func test_given_two_active_bullets_at_different_grid_positions_when_collision_checked_then_returns_false():
+	# Given: Two active bullets at different grid positions (even if visually close)
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1", Position.create(5, 5), Direction.create(Direction.UP), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_2", Position.create(6, 5), Direction.create(Direction.DOWN), 2, 1)
+	
+	# When: Collision is checked
+	var collided = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
+	
+	# Then: No collision (different grid positions)
+	assert_false(collided, "Bullets at different grid positions should not collide, even if adjacent")
+
+func test_given_bullets_in_same_tile_but_different_vertices_when_collision_checked_then_returns_false():
+	# Given: Two bullets in adjacent grid positions (same tile at 0.5 precision, different vertices)
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1", Position.create(10, 10), Direction.create(Direction.UP), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_2", Position.create(10, 11), Direction.create(Direction.DOWN), 2, 1)
+	
+	# When: Collision is checked
+	var collided = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
+	
+	# Then: No collision (different grid positions means different vertices)
+	assert_false(collided, "Bullets at adjacent grid positions should not collide")
+
+func test_given_bullets_with_fractional_step_positions_when_at_same_grid_position_then_collides():
+	# Given: Bullets that moved with fractional steps (0.125) but landed at same grid position
+	# Simulating Position(8, 8) which could be reached by various fractional movements
+	var pos = Position.create(8, 8)
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1", pos, Direction.create(Direction.RIGHT), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_2", pos, Direction.create(Direction.LEFT), 2, 1)
+	
+	# When: Collision is checked
+	var collided = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
+	
+	# Then: Collision is detected (same integer grid position)
+	assert_true(collided, "Bullets with fractional movement history at same grid position should collide")
+
+func test_given_bullets_at_grid_edge_boundaries_when_at_same_position_then_collides():
+	# Given: Two bullets at edge boundary positions (grid bounds)
+	var edge_positions = [
+		Position.create(0, 0), # Top-left corner
+		Position.create(25, 0), # Top-right corner
+		Position.create(0, 25), # Bottom-left corner
+		Position.create(25, 25), # Bottom-right corner
+		Position.create(12, 0), # Top edge
+		Position.create(0, 12) # Left edge
+	]
+	
+	for pos in edge_positions:
+		# Given: Two bullets at edge boundary position
+		var bullet1 = BulletEntity.create("bullet_1", "tank_1", pos, Direction.create(Direction.UP), 2, 1)
+		var bullet2 = BulletEntity.create("bullet_2", "tank_2", pos, Direction.create(Direction.DOWN), 2, 1)
+		
+		# When: Collision is checked
+		var collided = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
+		
+		# Then: Collision is detected at edge boundaries
+		assert_true(collided, "Bullets at edge boundary position %s should collide" % pos)
+
+func test_given_multiple_bullets_at_same_grid_position_when_checked_pairwise_then_all_collide():
+	# Given: Three bullets from different owners at same grid position
+	var pos = Position.create(10, 10)
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1", pos, Direction.create(Direction.UP), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_2", pos, Direction.create(Direction.DOWN), 2, 1)
+	var bullet3 = BulletEntity.create("bullet_3", "tank_3", pos, Direction.create(Direction.LEFT), 2, 1)
+	
+	# When: Checking all pairwise collisions
+	var collided_1_2 = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
+	var collided_1_3 = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet3)
+	var collided_2_3 = CollisionService.check_bullet_to_bullet_collision(bullet2, bullet3)
+	
+	# Then: All pairs should collide
+	assert_true(collided_1_2, "Bullet 1 and 2 should collide at same position")
+	assert_true(collided_1_3, "Bullet 1 and 3 should collide at same position")
+	assert_true(collided_2_3, "Bullet 2 and 3 should collide at same position")
+
+func test_given_bullets_moving_opposite_directions_at_same_grid_position_when_collision_checked_then_returns_true():
+	# Given: Two bullets moving in opposite directions at same grid position
+	var pos = Position.create(12, 12)
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1", pos, Direction.create(Direction.UP), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_2", pos, Direction.create(Direction.DOWN), 2, 1)
+	
+	# When: Collision is checked
+	var collided = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
+	
+	# Then: Collision is detected (direction doesn't matter, only position)
+	assert_true(collided, "Bullets at same position should collide regardless of direction")
+
+func test_given_bullets_at_diagonal_adjacent_positions_when_collision_checked_then_returns_false():
+	# Given: Two bullets at diagonal adjacent positions
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1", Position.create(10, 10), Direction.create(Direction.UP), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_2", Position.create(11, 11), Direction.create(Direction.DOWN), 2, 1)
+	
+	# When: Collision is checked
+	var collided = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
+	
+	# Then: No collision (diagonal positions don't match exactly)
+	assert_false(collided, "Bullets at diagonal adjacent positions should not collide")
+
+func test_given_same_bullet_positions_when_checked_multiple_times_then_results_are_deterministic():
+	# Given: Two bullets at same position
+	var pos = Position.create(15, 15)
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1", pos, Direction.create(Direction.UP), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_2", pos, Direction.create(Direction.DOWN), 2, 1)
+	
+	# When: Checking collision multiple times
+	var results = []
+	for i in range(100):
+		results.append(CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2))
+	
+	# Then: All results should be identical (deterministic)
+	var first_result = results[0]
+	for result in results:
+		assert_eq(result, first_result, "Collision check should be deterministic across multiple calls")
+	assert_true(first_result, "Bullets at same position should always collide")
+
+func test_given_two_bullets_when_collision_checked_in_either_order_then_results_are_identical():
+	# Given: Two bullets at same position
+	var pos = Position.create(7, 7)
+	var bullet1 = BulletEntity.create("bullet_1", "tank_1", pos, Direction.create(Direction.RIGHT), 2, 1)
+	var bullet2 = BulletEntity.create("bullet_2", "tank_2", pos, Direction.create(Direction.LEFT), 2, 1)
+	
+	# When: Checking collision in both orders
+	var collided_1_2 = CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2)
+	var collided_2_1 = CollisionService.check_bullet_to_bullet_collision(bullet2, bullet1)
+	
+	# Then: Results should be identical (commutative)
+	assert_eq(collided_1_2, collided_2_1, "Collision check should be order-independent")
+	assert_true(collided_1_2, "Bullets at same position should collide regardless of check order")

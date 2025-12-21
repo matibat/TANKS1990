@@ -120,10 +120,6 @@ static func is_position_occupied_by_tank(game_state: GameState, pos: Position, i
 	
 	return false
 
-## Check if two bullets collide (Phase 2.3)
-## Bullets from same owner don't collide
-## Inactive bullets don't collide
-## Collision radius: 4 pixels per bullet (total 8 pixels)
 static func check_bullet_to_bullet_collision(b1: BulletEntity, b2: BulletEntity) -> bool:
 	# Inactive bullets don't collide
 	if not b1.is_active or not b2.is_active:
@@ -133,13 +129,5 @@ static func check_bullet_to_bullet_collision(b1: BulletEntity, b2: BulletEntity)
 	if b1.owner_id == b2.owner_id:
 		return false
 	
-	# Calculate distance between bullets
-	var dx = b2.position.x - b1.position.x
-	var dy = b2.position.y - b1.position.y
-	var distance = sqrt(dx * dx + dy * dy)
-	
-	# Collision if distance <= 8 pixels (4 + 4 radius)
-	const BULLET_RADIUS = 4
-	const COLLISION_DISTANCE = BULLET_RADIUS * 2
-	
-	return distance <= COLLISION_DISTANCE
+	# Grid-based collision: bullets collide if on same grid cell
+	return b1.position.equals(b2.position)

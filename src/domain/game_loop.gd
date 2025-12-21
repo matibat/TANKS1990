@@ -191,8 +191,8 @@ static func _process_single_bullet(bullet: BulletEntity, game_state: GameState) 
 	var step_dx = 0 if bullet.velocity.dx == 0 else int(sign(bullet.velocity.dx))
 	var step_dy = 0 if bullet.velocity.dy == 0 else int(sign(bullet.velocity.dy))
 	
-	# Initial collision check at spawn/current position
-	var hit_something = _check_bullet_collisions(bullet, game_state, events)
+	# Initial collision check at spawn/current position (skip bullet-to-bullet until after movement)
+	var hit_something = _check_bullet_collisions(bullet, game_state, events, false)
 	if hit_something or not bullet.is_active:
 		return events
 	
@@ -209,8 +209,8 @@ static func _process_single_bullet(bullet: BulletEntity, game_state: GameState) 
 			bullet.deactivate()
 			break
 		
-		# Collision check at new position
-		hit_something = _check_bullet_collisions(bullet, game_state, events)
+		# Collision check at new position (allow bullet-to-bullet now)
+		hit_something = _check_bullet_collisions(bullet, game_state, events, true)
 		if hit_something or not bullet.is_active:
 			break
 		
@@ -226,7 +226,7 @@ static func _process_single_bullet(bullet: BulletEntity, game_state: GameState) 
 
 ## Check all types of collisions for a bullet at its current position
 ## Returns true if bullet hit something and was deactivated
-static func _check_bullet_collisions(bullet: BulletEntity, game_state: GameState, events: Array) -> bool:
+static func _check_bullet_collisions(bullet: BulletEntity, game_state: GameState, events: Array, allow_bullet_to_bullet: bool = true) -> bool:
 	var hit_something = false
 	
 	# Tank collisions
@@ -298,18 +298,19 @@ static func _check_bullet_collisions(bullet: BulletEntity, game_state: GameState
 		hit_something = true
 	if hit_something:
 		return true
-	
+
 	# Bullet-to-bullet collision
-	for other_bullet in game_state.get_all_bullets():
-		if other_bullet == bullet or not other_bullet.is_active:
-			continue
-		if CollisionService.check_bullet_to_bullet_collision(bullet, other_bullet):
-			bullet.deactivate()
-			other_bullet.deactivate()
-			events.append(BulletDestroyedEvent.create(bullet.id, bullet.position, "bullet_collision", game_state.frame))
-			events.append(BulletDestroyedEvent.create(other_bullet.id, other_bullet.position, "bullet_collision", game_state.frame))
-			hit_something = true
-			break
+	if allow_bullet_to_bullet:
+		for other_bullet in game_state.get_all_bullets():
+			if other_bullet == bullet or not other_bullet.is_active:
+				continue
+			if CollisionService.check_bullet_to_bullet_collision(bullet, other_bullet):
+				bullet.deactivate()
+				other_bullet.deactivate()
+				events.append(BulletDestroyedEvent.create(bullet.id, bullet.position, "bullet_collision", game_state.frame))
+				events.append(BulletDestroyedEvent.create(other_bullet.id, other_bullet.position, "bullet_collision", game_state.frame))
+				hit_something = true
+				break
 	
 	return hit_something
 

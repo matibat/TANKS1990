@@ -670,6 +670,7 @@ func test_given_player_and_enemy_bullets_hit_same_terrain_when_process_frame_the
 	assert_gt(terrain_collision_events.size(), 0, "Should have at least player bullet collision")
 	
 	# Verify player bullet collision happened by checking event entity IDs
+	# Bullet-to-bullet collisions still use a radius (4px per bullet), so the player terrain hit happens before two bullets can overlap within that radius.
 	var player_bullet_hit_terrain = terrain_collision_events.any(func(e):
 		return e.entity2_id == "player_bullet"
 	)
