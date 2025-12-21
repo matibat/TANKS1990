@@ -11,6 +11,7 @@ const BulletEntity = preload("res://src/domain/entities/bullet_entity.gd")
 const Position = preload("res://src/domain/value_objects/position.gd")
 const Direction = preload("res://src/domain/value_objects/direction.gd")
 const GameState = preload("res://src/domain/aggregates/game_state.gd")
+const GameTiming = preload("res://src/domain/constants/game_timing.gd")
 
 ## Spawn a player tank at given spawn index
 ## Returns newly created TankEntity
@@ -24,8 +25,8 @@ static func spawn_player_tank(game_state: GameState, spawn_index: int) -> TankEn
 	# Create player tank facing UP by default
 	var tank = TankEntity.create(tank_id, TankEntity.Type.PLAYER, spawn_pos, Direction.create(Direction.UP))
 	
-	# Set spawn invulnerability (3 seconds at 60 FPS)
-	tank.set_invulnerable(180)
+	# Set spawn invulnerability (logic ticks)
+	tank.set_invulnerable(GameTiming.INVULNERABILITY_FRAMES)
 	
 	return tank
 
@@ -42,8 +43,8 @@ static func spawn_enemy_tank(game_state: GameState, enemy_type: int, spawn_index
 	# Create enemy tank facing DOWN by default
 	var tank = TankEntity.create(tank_id, enemy_type, spawn_pos, Direction.create(Direction.DOWN))
 	
-	# Set spawn invulnerability (3 seconds at 60 FPS)
-	tank.set_invulnerable(180)
+	# Set spawn invulnerability (logic ticks)
+	tank.set_invulnerable(GameTiming.INVULNERABILITY_FRAMES)
 	
 	# Update stage enemy counts
 	game_state.stage.enemies_remaining -= 1

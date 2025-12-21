@@ -6,11 +6,14 @@ Classic NES Tank 1990 (Battle City) remake built with Godot 4.5+ using Domain-Dr
 
 - **Faithful Remake:** Core tank combat mechanics from the NES original
 - **DDD Architecture:** Clean separation between game logic and presentation
-- **Fully Tested:** 297 tests (268 domain + 29 integration) - all passing ✅
-- **3D Graphics:** Modern 3D rendering with classic top-down gameplay ✨ **NEW!**
+- **Fully Tested:** 375 tests (366 domain + 9 integration) - 100% passing ✅
+- **3D Graphics:** Modern 3D rendering with classic top-down gameplay ✨
+- **Combat System:** Friendly fire prevention, spawn invulnerability (3s), bullet collision priority
+- **Player Systems:** Lives and respawn mechanics with visual flicker effects
+- **Enemy Scoring:** 100-400 points per kill based on enemy type
 - **Cross-Platform:** Desktop (Windows, macOS, Linux) and Mobile (iOS, Android)
 - **Deterministic:** Frame-based game logic for replays and networking
-- **Debug Logging:** Production-safe logging system for development 🔧 **NEW!**
+- **Debug Logging:** Production-safe logging system for development
 
 ## Quick Start
 
@@ -59,7 +62,7 @@ git submodule update --init --recursive
 make test
 ```
 
-All 297 tests should pass ✅
+All 375 tests should pass ✅
 
 ## Architecture
 
@@ -90,13 +93,13 @@ The game follows **Domain-Driven Design (DDD)** principles with clean separation
 The project has comprehensive test coverage using BDD (Behavior-Driven Development):
 
 ```bash
-# Run all tests (297 tests)
+# Run all tests (375 tests)
 make test
 
-# Run domain tests only (268 tests - pure game logic)
+# Run domain tests only (366 tests - pure game logic)
 make test SUITE=domain
 
-# Run integration tests only (29 tests)
+# Run integration tests only (9 tests)
 make test SUITE=integration
 
 # Run specific tests by pattern
@@ -108,9 +111,9 @@ make validate
 
 **Test Statistics:**
 
-- ✅ 297 tests passing
-- 268 domain tests (pure logic, no Godot)
-- 29 integration tests (adapter + presentation)
+- ✅ 375 tests passing (100%)
+- 366 domain tests (pure logic, no Godot)
+- 9 integration tests (adapter + presentation)
 - BDD style: `test_given_X_when_Y_then_Z()`
 
 📖 See [docs/TESTING.md](docs/TESTING.md) for complete testing guide
@@ -225,14 +228,14 @@ EventBus.start_recording(seed)
 - [x] DDD architecture implementation
 - [x] Domain layer (pure game logic)
 - [x] 3D rendering system
-- [x] Comprehensive test suite (297 tests)
+- [x] Comprehensive test suite (375 tests - 100%)
 - [x] Makefile automation
-- [ ] Complete gameplay mechanics
+- [x] Core gameplay mechanics (combat, spawning, scoring)
 - [ ] 35 stage designs
 - [ ] Audio system
+- [ ] Complete stage progression
 - [ ] Mobile UI/controls
 - [ ] Multiplayer support (future)
-- [ ] Replay system
 - **Space / Enter:** Fire
 - **P / Escape:** Pause
 

@@ -9,6 +9,7 @@ const TankEntity = preload("res://src/domain/entities/tank_entity.gd")
 const GameState = preload("res://src/domain/aggregates/game_state.gd")
 const Position = preload("res://src/domain/value_objects/position.gd")
 const Direction = preload("res://src/domain/value_objects/direction.gd")
+const GameTiming = preload("res://src/domain/constants/game_timing.gd")
 
 ## Constants
 const ENEMIES_PER_STAGE = 20
@@ -81,6 +82,7 @@ func spawn_enemy(game_state: GameState) -> TankEntity:
 	var spawn_dir = Direction.create(Direction.DOWN)
 	
 	var enemy = TankEntity.create(enemy_id, enemy_type, spawn_pos, spawn_dir)
+	enemy.set_invulnerable(GameTiming.INVULNERABILITY_FRAMES)
 	game_state.add_tank(enemy)
 	
 	_enemies_remaining -= 1

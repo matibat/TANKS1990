@@ -20,6 +20,7 @@ const Tank3D = preload("res://scenes3d/tank_3d.gd")
 const Bullet3D = preload("res://scenes3d/bullet_3d.gd")
 const GameStateMachine = preload("res://src/domain/game_state_machine.gd")
 const GameStateEnum = preload("res://src/domain/value_objects/game_state_enum.gd")
+const GameTiming = preload("res://src/domain/constants/game_timing.gd")
 
 ## Node references
 @onready var adapter: GodotGameAdapter = $GodotGameAdapter
@@ -352,7 +353,7 @@ func _create_test_game_state() -> GameState:
 	
 	# Spawn player tank at first spawn position
 	var player_tank = SpawningService.spawn_player_tank(game_state, 0)
-	player_tank.set_invulnerable(180)  # 3 seconds at 60 FPS
+	player_tank.set_invulnerable(GameTiming.INVULNERABILITY_FRAMES) # ~3 seconds at logic tick rate
 	game_state.add_tank(player_tank)
 	player_tank_id = player_tank.id
 	

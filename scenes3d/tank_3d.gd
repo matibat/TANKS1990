@@ -8,7 +8,7 @@ const TankEntity = preload("res://src/domain/entities/tank_entity.gd")
 ## Tank identity
 var tank_id: String = ""
 var tank_type: int = TankEntity.Type.PLAYER
-var tank_entity: TankEntity = null  # Reference to domain entity for invulnerability check
+var tank_entity: TankEntity = null # Reference to domain entity for invulnerability check
 
 ## Visual components
 @onready var body: CSGBox3D = $Body
@@ -62,10 +62,10 @@ func _setup_visual() -> void:
 
 ## Called when tank should move to new position
 func move_to(new_position: Vector3, new_rotation: float) -> void:
-	# Store previous target so interpolation starts from the last committed tick
+	# Store current pose so interpolation starts from the actual previous position
 	if use_interpolation:
-		last_position = target_position
-		last_rotation = target_rotation
+		last_position = position
+		last_rotation = rotation.y
 	else:
 		position = new_position
 		rotation.y = new_rotation
@@ -115,7 +115,7 @@ func _physics_process(_delta: float) -> void:
 func _process(delta: float) -> void:
 	# Invulnerability flicker effect
 	if tank_entity and tank_entity.is_invulnerable():
-		var flicker_rate = 0.1  # Flicker every 0.1 seconds
+		var flicker_rate = 0.1 # Flicker every 0.1 seconds
 		visible = int(Time.get_ticks_msec() / (flicker_rate * 1000)) % 2 == 0
 	else:
 		visible = true

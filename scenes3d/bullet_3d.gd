@@ -31,9 +31,9 @@ func _ready() -> void:
 
 ## Called when bullet should move to new position
 func move_to(new_position: Vector3) -> void:
-	# Store previous target so interpolation starts from last committed position
+	# Store current position so interpolation starts from actual pose
 	if use_interpolation:
-		last_position = target_position
+		last_position = position
 	else:
 		position = new_position
 

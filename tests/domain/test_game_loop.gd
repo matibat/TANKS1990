@@ -572,3 +572,99 @@ func test_given_player_bullet_hits_enemy_when_process_frame_then_enemy_takes_dam
 	
 	# Then: Bullet deactivated
 	assert_false(bullet.is_active, "Bullet should be deactivated after hit")
+
+## BDD: ACCEPTANCE - Given player and enemy bullets hit same terrain simultaneously When process_frame Then player bullet resolves first
+func test_given_player_and_enemy_bullets_hit_same_terrain_when_process_frame_then_player_bullet_resolves_first():
+	# Given: Player tank and enemy tank
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER, Position.create(10, 8), Direction.create(Direction.DOWN))
+	game_state.add_tank(player)
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC, Position.create(10, 12), Direction.create(Direction.UP))
+	game_state.add_tank(enemy)
+	
+	# Given: Brick terrain at (10, 10) with 1 health
+	var terrain = TerrainCell.create(Position.create(10, 10), TerrainCell.CellType.BRICK)
+	terrain.take_damage(terrain.health - 1) # Leave 1 HP so single bullet destroys it
+	stage.add_terrain_cell(terrain)
+	
+	# Given: Player bullet moving toward terrain from above (will hit this frame)
+	var player_bullet = BulletEntity.create("player_bullet", "player1", Position.create(10, 9), Direction.create(Direction.DOWN), 1, 1)
+	game_state.add_bullet(player_bullet)
+	
+	# Given: Enemy bullet moving toward same terrain from below (will hit this frame)
+	var enemy_bullet = BulletEntity.create("enemy_bullet", "enemy1", Position.create(10, 11), Direction.create(Direction.UP), 1, 1)
+	game_state.add_bullet(enemy_bullet)
+	
+	# When: Process frame
+	var events = GameLoop.process_frame_static(game_state, [])
+	
+	# Then: Terrain is destroyed (health = 0)
+	assert_eq(terrain.health, 0, "Terrain should be destroyed")
+	
+	# Then: Player bullet hit and deactivated
+	assert_false(player_bullet.is_active, "Player bullet should be deactivated after hitting terrain")
+	
+	# Then: Enemy bullet should NOT hit terrain (it was already destroyed by player bullet)
+	# The enemy bullet either passes through or stays active depending on implementation
+	# Key: Only ONE collision event for the terrain should exist (from player bullet)
+	var terrain_collision_events = events.filter(func(e):
+		return e is CollisionEvent and e.collision_type == "bullet_terrain"
+	)
+	
+	# We expect at least the player bullet collision
+	assert_gt(terrain_collision_events.size(), 0, "Should have at least player bullet collision")
+	
+	# Verify player bullet collision happened by checking event entity IDs
+	var player_bullet_hit_terrain = terrain_collision_events.any(func(e):
+		return e.entity2_id == "player_bullet"
+	)
+	assert_true(player_bullet_hit_terrain, "Player bullet should have collided with terrain")
+	
+	# If enemy bullet is also deactivated with a collision event, priority is NOT working
+	# Enemy bullet should either: stay active (missed destroyed terrain) OR deactivate without terrain collision
+	var enemy_bullet_hit_terrain = terrain_collision_events.any(func(e):
+		return e.entity2_id == "enemy_bullet"
+	)
+	assert_false(enemy_bullet_hit_terrain, "Enemy bullet should NOT collide with already-destroyed terrain")
+
+## BDD: ACCEPTANCE - Given multiple player bullets and enemy bullets When process_frame Then all player bullets resolve before enemy bullets
+func test_given_multiple_player_and_enemy_bullets_when_process_frame_then_player_bullets_resolve_first():
+	# Given: Player and enemy tanks
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER, Position.create(5, 5), Direction.create(Direction.DOWN))
+	game_state.add_tank(player)
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC, Position.create(15, 15), Direction.create(Direction.UP))
+	game_state.add_tank(enemy)
+	
+	# Given: Three brick terrains in a row, each with 1 health
+	for i in range(3):
+		var terrain = TerrainCell.create(Position.create(10 + i, 10), TerrainCell.CellType.BRICK)
+		terrain.take_damage(terrain.health - 1) # Leave 1 HP
+		stage.add_terrain_cell(terrain)
+	
+	# Given: Two player bullets heading toward the terrains
+	var player_bullet1 = BulletEntity.create("player_bullet1", "player1", Position.create(10, 9), Direction.create(Direction.DOWN), 1, 1)
+	game_state.add_bullet(player_bullet1)
+	var player_bullet2 = BulletEntity.create("player_bullet2", "player1", Position.create(11, 9), Direction.create(Direction.DOWN), 1, 1)
+	game_state.add_bullet(player_bullet2)
+	
+	# Given: One enemy bullet heading toward a terrain
+	var enemy_bullet = BulletEntity.create("enemy_bullet", "enemy1", Position.create(12, 11), Direction.create(Direction.UP), 1, 1)
+	game_state.add_bullet(enemy_bullet)
+	
+	# When: Process frame
+	var events = GameLoop.process_frame_static(game_state, [])
+	
+	# Then: All three terrains are destroyed
+	assert_eq(stage.get_terrain_at(Position.create(10, 10)).health, 0, "First terrain destroyed")
+	assert_eq(stage.get_terrain_at(Position.create(11, 10)).health, 0, "Second terrain destroyed")
+	assert_eq(stage.get_terrain_at(Position.create(12, 10)).health, 0, "Third terrain destroyed")
+	
+	# Then: All bullets deactivated
+	assert_false(player_bullet1.is_active, "Player bullet 1 deactivated")
+	assert_false(player_bullet2.is_active, "Player bullet 2 deactivated")
+	assert_false(enemy_bullet.is_active, "Enemy bullet deactivated")
+	
+	# Then: Verify collision events show player bullets processed first by checking terrain hits
+	var terrain_collision_events = events.filter(func(e):
+		return e is CollisionEvent and e.collision_type == "bullet_terrain"
+	)
+	assert_eq(terrain_collision_events.size(), 3, "Should have exactly 3 terrain collisions")

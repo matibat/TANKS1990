@@ -177,3 +177,37 @@ func test_given_cooldown_active_when_decide_then_no_fire_command():
 	# Then: Should not fire (return move command instead)
 	assert_not_null(command, "Should return a command")
 	assert_true(command is MoveCommand, "Should not fire when cooldown active")
+
+func test_enemy_holds_direction_until_hold_frames_elapse():
+	# Given: Enemy chasing player that changes axis rapidly
+	var stage = StageState.create(1, 26, 26)
+	var game_state = GameState.create(stage)
+
+	var enemy = TankEntity.create("enemy_hold", TankEntity.Type.ENEMY_BASIC,
+		Position.create(100, 100), Direction.create(Direction.RIGHT))
+	var player = TankEntity.create("player_hold", TankEntity.Type.PLAYER,
+		Position.create(105, 103), Direction.create(Direction.UP))
+
+	AIService.clear_direction_state(enemy.id)
+	game_state.add_tank(enemy)
+	game_state.add_tank(player)
+
+	var profile = AIService._get_ai_profile(enemy.tank_type)
+	var hold_frames = profile["direction_hold_frames"]
+
+	# When: First decision should chase to the right
+	var initial = AIService.decide_action(enemy, game_state, 0.1)
+	assert_true(initial is MoveCommand, "Should initially chase instead of firing")
+	var initial_direction_value = initial.direction.value
+
+	# Move player to a new axis that would normally require switching to UP
+	player.position = Position.create(98, 94)
+	for _i in range(hold_frames):
+		game_state.frame += 1
+		var held = AIService.decide_action(enemy, game_state, 0.1)
+		assert_eq(held.direction.value, initial_direction_value, "Should keep previous direction until real frames advance")
+
+	# Simulate the frame-based hold expiring before switching to the new axis
+	game_state.frame += 1
+	var swung = AIService.decide_action(enemy, game_state, 0.1)
+	assert_eq(swung.direction.value, Direction.UP, "Should switch direction after hold frames")

@@ -85,6 +85,7 @@ static func process_frame_static(game_state: GameState, commands: Array, fixed_d
 	# 5. Remove destroyed entities
 	var destroyed_tanks = []
 	var destroyed_bullets = []
+	var player_destroyed = false
 	
 	# Find destroyed tanks
 	for tank in game_state.get_all_tanks():
@@ -96,6 +97,14 @@ static func process_frame_static(game_state: GameState, commands: Array, fixed_d
 				"", # killer_id (unknown at this point)
 				game_state.frame
 			))
+			
+			# Track if player was destroyed
+			if tank.is_player:
+				player_destroyed = true
+			
+			# Award score for enemy kills
+			if not tank.is_player:
+				game_state.score += _get_score_for_enemy(tank.tank_type)
 	
 	# Find destroyed bullets
 	for bullet in game_state.get_all_bullets():
@@ -116,6 +125,17 @@ static func process_frame_static(game_state: GameState, commands: Array, fixed_d
 	for bullet_id in destroyed_bullets:
 		game_state.remove_bullet(bullet_id)
 	
+	# Handle player respawn or game over
+	if player_destroyed:
+		game_state.player_lives -= 1
+		if game_state.player_lives > 0:
+			# Respawn player
+			_respawn_player(game_state)
+		else:
+			# Game over - no lives left
+			events.append(GameOverEvent.create(game_state.frame, "No lives remaining"))
+			game_state.is_game_over = true
+	
 	# 6. Check win/loss conditions
 	if game_state.is_stage_complete():
 		events.append(StageCompleteEvent.create(game_state.frame))
@@ -129,118 +149,175 @@ static func process_frame_static(game_state: GameState, commands: Array, fixed_d
 
 ## Move bullets step-by-step and resolve collisions during movement
 ## Returns array of movement and collision events
+## Player bullets are processed before enemy bullets for gameplay fairness
 static func _move_bullets_and_handle_collisions(game_state: GameState) -> Array[DomainEvent]:
 	var events: Array[DomainEvent] = []
+	
+	# Partition bullets by owner type for priority processing
+	var player_bullets: Array[BulletEntity] = []
+	var enemy_bullets: Array[BulletEntity] = []
 	
 	for bullet in game_state.get_all_bullets():
 		if not bullet.is_active:
 			continue
 		
-		var steps = max(1, max(abs(bullet.velocity.dx), abs(bullet.velocity.dy)))
-		var step_dx = 0 if bullet.velocity.dx == 0 else int(sign(bullet.velocity.dx))
-		var step_dy = 0 if bullet.velocity.dy == 0 else int(sign(bullet.velocity.dy))
+		# Determine if bullet is from player or enemy
+		var owner_tank = game_state.get_tank(bullet.owner_id)
+		if owner_tank and owner_tank.is_player:
+			player_bullets.append(bullet)
+		else:
+			enemy_bullets.append(bullet)
+	
+	# Process player bullets first (player advantage)
+	for bullet in player_bullets:
+		var bullet_events = _process_single_bullet(bullet, game_state)
+		events.append_array(bullet_events)
+	
+	# Then process enemy bullets
+	for bullet in enemy_bullets:
+		var bullet_events = _process_single_bullet(bullet, game_state)
+		events.append_array(bullet_events)
+	
+	return events
+
+## Process a single bullet's movement and collisions
+static func _process_single_bullet(bullet: BulletEntity, game_state: GameState) -> Array[DomainEvent]:
+	var events: Array[DomainEvent] = []
+	
+	if not bullet.is_active:
+		return events
+	
+	var steps = max(1, max(abs(bullet.velocity.dx), abs(bullet.velocity.dy)))
+	var step_dx = 0 if bullet.velocity.dx == 0 else int(sign(bullet.velocity.dx))
+	var step_dy = 0 if bullet.velocity.dy == 0 else int(sign(bullet.velocity.dy))
+	
+	for _i in range(steps):
+		if not bullet.is_active:
+			break
 		
-		for _i in range(steps):
-			if not bullet.is_active:
-				break
-			
-			var old_pos = Position.create(bullet.position.x, bullet.position.y)
-			bullet.position = Position.create(bullet.position.x + step_dx, bullet.position.y + step_dy)
-			
-			# Out of bounds check
-			if not game_state.stage.is_within_bounds(bullet.position):
+		var old_pos = Position.create(bullet.position.x, bullet.position.y)
+		bullet.position = Position.create(bullet.position.x + step_dx, bullet.position.y + step_dy)
+		
+		# Out of bounds check
+		if not game_state.stage.is_within_bounds(bullet.position):
+			bullet.deactivate()
+			break
+		
+		# Tank collisions
+		var hit_something = false
+		for tank in game_state.get_all_tanks():
+			if not tank.is_alive():
+				continue
+			if tank.id == bullet.owner_id:
+				continue
+			# Friendly fire prevention: bullets don't hit same team
+			var bullet_owner = game_state.get_tank(bullet.owner_id)
+			if bullet_owner and bullet_owner.is_player == tank.is_player:
+				continue # Same team, skip collision
+			# Invulnerability: spawn-protected tanks don't take damage
+			if tank.is_invulnerable():
+				continue
+			if CollisionService.check_tank_bullet_collision(tank, bullet):
+				var old_health = tank.health.current
+				tank.take_damage(bullet.damage)
+				var new_health = tank.health.current
 				bullet.deactivate()
-				break
-			
-			# Tank collisions
-			var hit_something = false
-			for tank in game_state.get_all_tanks():
-				if not tank.is_alive():
-					continue
-				if tank.id == bullet.owner_id:
-					continue
-				# Friendly fire prevention: bullets don't hit same team
-				var bullet_owner = game_state.get_tank(bullet.owner_id)
-				if bullet_owner and bullet_owner.is_player == tank.is_player:
-					continue  # Same team, skip collision
-				# Invulnerability: spawn-protected tanks don't take damage
-				if tank.is_invulnerable():
-					continue
-				if CollisionService.check_tank_bullet_collision(tank, bullet):
-					var old_health = tank.health.current
-					tank.take_damage(bullet.damage)
-					var new_health = tank.health.current
-					bullet.deactivate()
-					events.append(CollisionEvent.create(
-						tank.id,
-						bullet.id,
-						tank.position,
-						"tank_bullet",
-						game_state.frame
-					))
-					events.append(TankDamagedEvent.create(
-						tank.id,
-						bullet.damage,
-						old_health,
-						new_health,
-						game_state.frame
-					))
-					hit_something = true
-					break
-			if hit_something:
-				break
-			
-			# Base collision
-			if game_state.stage.base != null and game_state.stage.base.is_alive():
-				if CollisionService.check_bullet_base_collision(bullet, game_state.stage.base):
-					game_state.stage.base.take_damage(bullet.damage)
-					bullet.deactivate()
-					events.append(CollisionEvent.create(
-						game_state.stage.base.id,
-						bullet.id,
-						game_state.stage.base.position,
-						"bullet_base",
-						game_state.frame
-					))
-					hit_something = true
-					break
-			
-			# Terrain collision
-			var terrain = game_state.stage.get_terrain_at(bullet.position)
-			if terrain != null and CollisionService.check_bullet_terrain_collision(bullet, terrain):
-				terrain.take_damage(bullet.damage)
-				bullet.deactivate()
-				var terrain_id = "terrain_%d_%d" % [terrain.position.x, terrain.position.y]
 				events.append(CollisionEvent.create(
-					terrain_id,
+					tank.id,
 					bullet.id,
-					terrain.position,
-					"bullet_terrain",
+					tank.position,
+					"tank_bullet",
+					game_state.frame
+				))
+				events.append(TankDamagedEvent.create(
+					tank.id,
+					bullet.damage,
+					old_health,
+					new_health,
 					game_state.frame
 				))
 				hit_something = true
 				break
-			
-			# Bullet-to-bullet collision
-			for other_bullet in game_state.get_all_bullets():
-				if other_bullet == bullet or not other_bullet.is_active:
-					continue
-				if CollisionService.check_bullet_to_bullet_collision(bullet, other_bullet):
-					bullet.deactivate()
-					other_bullet.deactivate()
-					events.append(BulletDestroyedEvent.create(bullet.id, bullet.position, "bullet_collision", game_state.frame))
-					events.append(BulletDestroyedEvent.create(other_bullet.id, other_bullet.position, "bullet_collision", game_state.frame))
-					hit_something = true
-					break
-			if hit_something:
+		if hit_something:
+			break
+		
+		# Base collision
+		if game_state.stage.base != null and game_state.stage.base.is_alive():
+			if CollisionService.check_bullet_base_collision(bullet, game_state.stage.base):
+				game_state.stage.base.take_damage(bullet.damage)
+				bullet.deactivate()
+				events.append(CollisionEvent.create(
+					game_state.stage.base.id,
+					bullet.id,
+					game_state.stage.base.position,
+					"bullet_base",
+					game_state.frame
+				))
+				hit_something = true
 				break
-			
-			# If still active after this step, emit movement event for interpolation
-			events.append(BulletMovedEvent.create(
+		
+		# Terrain collision
+		var terrain = game_state.stage.get_terrain_at(bullet.position)
+		if terrain != null and CollisionService.check_bullet_terrain_collision(bullet, terrain):
+			terrain.take_damage(bullet.damage)
+			bullet.deactivate()
+			var terrain_id = "terrain_%d_%d" % [terrain.position.x, terrain.position.y]
+			events.append(CollisionEvent.create(
+				terrain_id,
 				bullet.id,
-				old_pos,
-				bullet.position,
+				terrain.position,
+				"bullet_terrain",
 				game_state.frame
 			))
-
+			hit_something = true
+			break
+		
+		# Bullet-to-bullet collision
+		for other_bullet in game_state.get_all_bullets():
+			if other_bullet == bullet or not other_bullet.is_active:
+				continue
+			if CollisionService.check_bullet_to_bullet_collision(bullet, other_bullet):
+				bullet.deactivate()
+				other_bullet.deactivate()
+				events.append(BulletDestroyedEvent.create(bullet.id, bullet.position, "bullet_collision", game_state.frame))
+				events.append(BulletDestroyedEvent.create(other_bullet.id, other_bullet.position, "bullet_collision", game_state.frame))
+				hit_something = true
+				break
+		if hit_something:
+			break
+		
+		# If still active after this step, emit movement event for interpolation
+		events.append(BulletMovedEvent.create(
+			bullet.id,
+			old_pos,
+			bullet.position,
+			game_state.frame
+		))
+	
 	return events
+
+## Respawn player tank at spawn position
+static func _respawn_player(game_state: GameState) -> void:
+	if game_state.stage.player_spawn_positions.size() > 0:
+		var spawn_pos = game_state.stage.player_spawn_positions[0]
+		var new_player = TankEntity.create(
+			game_state.generate_entity_id("player"),
+			TankEntity.Type.PLAYER,
+			spawn_pos,
+			Direction.create(Direction.UP)
+		)
+		game_state.add_tank(new_player)
+
+## Get score value for destroying an enemy tank
+static func _get_score_for_enemy(enemy_type: int) -> int:
+	match enemy_type:
+		TankEntity.Type.ENEMY_BASIC:
+			return 100
+		TankEntity.Type.ENEMY_FAST:
+			return 200
+		TankEntity.Type.ENEMY_POWER:
+			return 300
+		TankEntity.Type.ENEMY_ARMORED:
+			return 400
+		_:
+			return 100 # Default

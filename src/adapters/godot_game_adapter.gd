@@ -6,6 +6,7 @@ extends Node
 
 const GameState = preload("res://src/domain/aggregates/game_state.gd")
 const GameLoop = preload("res://src/domain/game_loop.gd")
+const GameTiming = preload("res://src/domain/constants/game_timing.gd")
 const InputAdapter = preload("res://src/adapters/input_adapter.gd")
 const TankEntity = preload("res://src/domain/entities/tank_entity.gd")
 const BulletEntity = preload("res://src/domain/entities/bullet_entity.gd")
@@ -21,7 +22,7 @@ const BulletMovedEvent = preload("res://src/domain/events/bullet_moved_event.gd"
 const BulletDestroyedEvent = preload("res://src/domain/events/bullet_destroyed_event.gd")
 const StageCompleteEvent = preload("res://src/domain/events/stage_complete_event.gd")
 const GameOverEvent = preload("res://src/domain/events/game_over_event.gd")
-const LOGIC_TPS: int = 10
+const LOGIC_TPS: int = GameTiming.LOGIC_TPS
 
 ## Signals for presentation layer
 signal tank_spawned(tank_id: String, position: Vector2, tank_type: int, direction: int)

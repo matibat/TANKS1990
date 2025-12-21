@@ -186,23 +186,23 @@ GameOverEvent       →     game_over(reason)            → Show game over UI
 
 ### Unit Tests (Domain)
 
-- 268 tests for pure domain logic
+- 366 tests for pure domain logic
 - No Godot dependencies
 - Fast execution (< 1 second)
 - 100% deterministic
 
 ### Integration Tests (Adapter)
 
-- 21 tests for adapter layer
+- 9 tests for adapter layer
 - Tests domain ↔ presentation bridge
 - Verifies signal emission
 - Validates state synchronization
 
 ### Total Coverage
 
-- 289 tests
-- 675 assertions
-- 100% passing
+- 375 tests (100% passing)
+- Comprehensive domain + integration coverage
+- BDD-style assertions
 
 ## Key Design Decisions
 

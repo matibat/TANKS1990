@@ -8,7 +8,6 @@ extends RefCounted
 
 const TankEntity = preload("res://src/domain/entities/tank_entity.gd")
 const GameState = preload("res://src/domain/aggregates/game_state.gd")
-const Command = preload("res://src/domain/commands/command.gd")
 const MoveCommand = preload("res://src/domain/commands/move_command.gd")
 const FireCommand = preload("res://src/domain/commands/fire_command.gd")
 const Position = preload("res://src/domain/value_objects/position.gd")
@@ -17,33 +16,40 @@ const Direction = preload("res://src/domain/value_objects/direction.gd")
 ## AI behavior constants
 const TILE_SIZE = 16
 const ALIGN_TOLERANCE_PIXELS = 8
+const DEFAULT_DIRECTION_HOLD_FRAMES = 3
+static var _direction_state: Dictionary = {}
 
 const DEFAULT_PROFILE = {
 	"chase_tiles": 8,
 	"shoot_tiles": 10,
-	"patrol_interval_frames": 24
+	"patrol_interval_frames": 24,
+	"direction_hold_frames": DEFAULT_DIRECTION_HOLD_FRAMES
 }
 
 const AI_PROFILES = {
 	TankEntity.Type.ENEMY_BASIC: {
 		"chase_tiles": 8,
 		"shoot_tiles": 10,
-		"patrol_interval_frames": 24
+		"patrol_interval_frames": 24,
+		"direction_hold_frames": 4
 	},
 	TankEntity.Type.ENEMY_FAST: {
 		"chase_tiles": 12,
 		"shoot_tiles": 10,
-		"patrol_interval_frames": 18
+		"patrol_interval_frames": 18,
+		"direction_hold_frames": 3
 	},
 	TankEntity.Type.ENEMY_POWER: {
 		"chase_tiles": 10,
 		"shoot_tiles": 12,
-		"patrol_interval_frames": 20
+		"patrol_interval_frames": 20,
+		"direction_hold_frames": 3
 	},
 	TankEntity.Type.ENEMY_ARMORED: {
 		"chase_tiles": 6,
 		"shoot_tiles": 9,
-		"patrol_interval_frames": 30
+		"patrol_interval_frames": 30,
+		"direction_hold_frames": 5
 	}
 }
 
@@ -68,16 +74,16 @@ static func decide_action(enemy: TankEntity, game_state: GameState, delta: float
 
 	# Close the gap until we can shoot
 	if not in_engagement:
-		return _create_chase_command(enemy, nearest_player.position, game_state.frame)
+		return _create_chase_command(enemy, nearest_player.position, game_state.frame, profile)
 
 	# Inside engagement window: prioritize lining up and firing instead of crowding the player
 	if aligned:
 		if _is_facing_target(enemy, nearest_player.position) and can_shoot(enemy):
 			return FireCommand.create(enemy.id, game_state.frame)
-		return _create_face_target_command(enemy, nearest_player.position, game_state.frame)
+		return _create_face_target_command(enemy, nearest_player.position, game_state.frame, profile)
 
 	# Not aligned yet: step toward an alignment axis but avoid over-closing beyond engagement range
-	return _create_alignment_step(enemy, nearest_player.position, game_state.frame)
+	return _create_alignment_step(enemy, nearest_player.position, game_state.frame, profile)
 
 ## Update cooldowns for enemy tank
 static func update_cooldowns(enemy: TankEntity, delta: float) -> void:
@@ -113,22 +119,78 @@ static func _create_patrol_command(enemy: TankEntity, frame: int, profile: Dicti
 	var interval = max(1, profile.get("patrol_interval_frames", DEFAULT_PROFILE["patrol_interval_frames"]))
 	var phase = int(frame / interval) + abs(hash(enemy.id))
 	var dir_value = directions[phase % directions.size()]
-	return MoveCommand.create(enemy.id, Direction.create(dir_value), frame)
+	return _create_move_command_with_hold(enemy.id, Direction.create(dir_value), frame, profile, true, enemy.get_instance_id())
 
 ## Create chase command (move toward player)
-static func _create_chase_command(enemy: TankEntity, target_pos: Position, frame: int) -> Command:
+static func _create_chase_command(enemy: TankEntity, target_pos: Position, frame: int, profile: Dictionary) -> Command:
 	var direction = _get_direction_toward(enemy.position, target_pos)
-	return MoveCommand.create(enemy.id, direction, frame)
+	return _create_move_command_with_hold(enemy.id, direction, frame, profile, true, enemy.get_instance_id())
 
 ## Create command that turns tank to face aligned target axis
-static func _create_face_target_command(enemy: TankEntity, target_pos: Position, frame: int) -> Command:
+
+static func _create_face_target_command(enemy: TankEntity, target_pos: Position, frame: int, profile: Dictionary) -> Command:
 	var direction = _get_axis_facing_direction(enemy.position, target_pos)
-	return MoveCommand.create(enemy.id, direction, frame)
+	# Honor the direction hold even when aligning so the enemy keeps a steady heading for the requested frames.
+	return _create_move_command_with_hold(enemy.id, direction, frame, profile, true, enemy.get_instance_id())
 
 ## Create a small alignment step to line up shots without over-chasing
-static func _create_alignment_step(enemy: TankEntity, target_pos: Position, frame: int) -> Command:
+static func _create_alignment_step(enemy: TankEntity, target_pos: Position, frame: int, profile: Dictionary) -> Command:
 	var direction = _get_direction_toward(enemy.position, target_pos)
-	return MoveCommand.create(enemy.id, direction, frame)
+	return _create_move_command_with_hold(enemy.id, direction, frame, profile, true, enemy.get_instance_id())
+
+
+static func _create_move_command_with_hold(tank_id: String, direction: Direction, frame: int, profile: Dictionary, allow_hold: bool, instance_id: int) -> MoveCommand:
+	var config = profile if profile != null else DEFAULT_PROFILE
+	if allow_hold:
+		var hold_frames = max(1, config.get("direction_hold_frames", DEFAULT_PROFILE["direction_hold_frames"]))
+		direction = _get_smoothed_direction(tank_id, direction, hold_frames, frame, instance_id)
+	else:
+		_reset_direction_state(tank_id, direction, frame, instance_id)
+	return MoveCommand.create(tank_id, direction, frame)
+
+
+static func _get_smoothed_direction(tank_id: String, desired_direction: Direction, hold_limit: int, frame: int, instance_id: int) -> Direction:
+	var now_frame = frame
+	var desired_value = desired_direction.value
+	var record = _direction_state.get(tank_id, null)
+	if record != null:
+		if record.get("instance_id", -1) != instance_id:
+			record = null
+			_direction_state.erase(tank_id)
+		else:
+			var last_frame = record.get("last_frame", -1)
+			if last_frame >= 0 and now_frame < last_frame:
+				record = null
+				_direction_state.erase(tank_id)
+	if record == null:
+		record = {
+			"direction": desired_value,
+			"unlock_frame": now_frame + hold_limit,
+			"last_frame": now_frame,
+			"instance_id": instance_id
+		}
+		_direction_state[tank_id] = record
+		return desired_direction
+	if now_frame <= record["unlock_frame"]:
+		record["last_frame"] = now_frame
+		_direction_state[tank_id] = record
+		return Direction.create(record["direction"])
+	record["direction"] = desired_value
+	record["unlock_frame"] = now_frame + hold_limit
+	record["last_frame"] = now_frame
+	_direction_state[tank_id] = record
+	return desired_direction
+
+static func _reset_direction_state(tank_id: String, direction: Direction, frame: int, instance_id: int) -> void:
+	_direction_state[tank_id] = {
+		"direction": direction.value,
+		"unlock_frame": frame,
+		"last_frame": frame,
+		"instance_id": instance_id
+	}
+
+static func clear_direction_state(tank_id: String) -> void:
+	_direction_state.erase(tank_id)
 
 ## Calculate Euclidean distance between two positions
 static func _calculate_distance(pos1: Position, pos2: Position) -> float:
