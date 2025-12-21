@@ -56,18 +56,20 @@ func _setup_visual() -> void:
 
 ## Called when tank should move to new position
 func move_to(new_position: Vector3, new_rotation: float) -> void:
-	# Store previous position for interpolation
+	# Store previous target so interpolation starts from the last committed tick
 	if use_interpolation:
-		last_position = position
-		last_rotation = rotation.y
-	
-	target_position = new_position
-	target_rotation = new_rotation
-	
-	# If not using interpolation, snap immediately
-	if not use_interpolation:
+		last_position = target_position
+		last_rotation = target_rotation
+	else:
 		position = new_position
 		rotation.y = new_rotation
+
+	target_position = new_position
+	target_rotation = new_rotation
+	tick_progress = 0.0
+
+	# If not using interpolation, snap immediately
+	if not use_interpolation:
 		tick_progress = 1.0
 
 ## Called when tank takes damage
@@ -105,6 +107,9 @@ func _physics_process(_delta: float) -> void:
 
 func set_tick_progress(progress: float) -> void:
 	if not use_interpolation:
+		return
+	# If there is no new target, avoid tiny lerp jitter while idle
+	if last_position.is_equal_approx(target_position) and is_equal_approx(last_rotation, target_rotation):
 		return
 	tick_progress = clamp(progress, 0.0, 1.0)
 	position = last_position.lerp(target_position, tick_progress)

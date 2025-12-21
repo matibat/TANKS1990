@@ -23,45 +23,45 @@ static func create(p_speed: int, p_fire_rate: int, p_armor: int, p_bullet_speed:
 static func player_default():
 	var s = new()
 	s.speed = 2 # speed: moderate
-	s.fire_rate = 60 # fire_rate: 60 frames = 1 second at 60 FPS
+	s.fire_rate = 6 # fire_rate: snappier at 10 TPS (~0.6s)
 	s.armor = 1 # armor: 1 hit point
-	s.bullet_speed = 4 # bullet_speed: fast
+	s.bullet_speed = 2 # bullet_speed: discrete but smooth when interpolated
 	return s
 
 ## Static factory method for basic enemy stats
 static func enemy_basic():
 	var s = new()
 	s.speed = 1 # speed: slow
-	s.fire_rate = 90 # fire_rate: slower than player
+	s.fire_rate = 10 # fire_rate: slower than player
 	s.armor = 1 # armor: 1 hit point
-	s.bullet_speed = 3 # bullet_speed: slower than player
+	s.bullet_speed = 2 # bullet_speed: slower than player
 	return s
 
 ## Static factory method for fast enemy stats
 static func enemy_fast():
 	var s = new()
 	s.speed = 3 # speed: fast
-	s.fire_rate = 75 # fire_rate: moderate
+	s.fire_rate = 8 # fire_rate: moderate at 10 TPS
 	s.armor = 1 # armor: 1 hit point
-	s.bullet_speed = 4 # bullet_speed: fast
+	s.bullet_speed = 3 # bullet_speed: fast but readable
 	return s
 
 ## Static factory method for power enemy stats
 static func enemy_power():
 	var s = new()
 	s.speed = 2 # speed: normal
-	s.fire_rate = 45 # fire_rate: fast shooting
+	s.fire_rate = 7 # fire_rate: fast shooting at 10 TPS
 	s.armor = 1 # armor: 1 hit point
-	s.bullet_speed = 4 # bullet_speed: fast
+	s.bullet_speed = 3 # bullet_speed: fast
 	return s
 
 ## Static factory method for armored enemy stats
 static func enemy_armored():
 	var s = new()
 	s.speed = 1 # speed: slow
-	s.fire_rate = 120 # fire_rate: very slow
+	s.fire_rate = 14 # fire_rate: very slow at 10 TPS
 	s.armor = 4 # armor: 4 hit points
-	s.bullet_speed = 3 # bullet_speed: slow
+	s.bullet_speed = 2 # bullet_speed: slow
 	return s
 
 ## String representation for debugging

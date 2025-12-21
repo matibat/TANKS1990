@@ -30,15 +30,17 @@ func _ready() -> void:
 
 ## Called when bullet should move to new position
 func move_to(new_position: Vector3) -> void:
-	# Store previous position for interpolation
+	# Store previous target so interpolation starts from last committed position
 	if use_interpolation:
-		last_position = position
-	
+		last_position = target_position
+	else:
+		position = new_position
+
 	target_position = new_position
-	
+	tick_progress = 0.0
+
 	# If not using interpolation, snap immediately
 	if not use_interpolation:
-		position = new_position
 		tick_progress = 1.0
 
 ## Called when bullet is destroyed
@@ -62,6 +64,9 @@ func _physics_process(_delta: float) -> void:
 
 func set_tick_progress(progress: float) -> void:
 	if not use_interpolation:
+		return
+	# Avoid redundant lerp when bullet hasn't advanced this tick
+	if last_position.is_equal_approx(target_position):
 		return
 	tick_progress = clamp(progress, 0.0, 1.0)
 	position = last_position.lerp(target_position, tick_progress)

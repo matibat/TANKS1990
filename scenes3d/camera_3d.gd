@@ -38,11 +38,11 @@ func _update_camera_size() -> void:
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
 	var aspect: float = max(viewport_size.aspect(), 0.0001)
 	var safety: float = CAMERA_PADDING + UI_SAFE_MARGIN
-	var half_height: float = _playfield_world_size * 0.5 + safety
-	var half_width: float = _playfield_world_size * 0.5 + safety
+	var full_height: float = _playfield_world_size + safety * 2.0
+	var full_width: float = _playfield_world_size + safety * 2.0
 
-	# Size is half of the vertical span; ensure both width and height fit
-	size = max(half_height, half_width / aspect)
+	# In orthogonal projection `size` represents the vertical span; pick the larger requirement
+	size = max(full_height, full_width / aspect)
 
 ## Set the player tank to follow (optional - for camera tracking)
 func set_player_tank(tank: Node3D) -> void:
@@ -55,16 +55,20 @@ func _process(_delta: float) -> void:
 ## Follow player tank but clamp to playfield bounds
 func _follow_player_clamped() -> void:
 	# Calculate half viewport size in world units
-	var half_view_width: float = size * get_viewport().get_visible_rect().size.aspect()
-	var half_view_height: float = size
+	var half_view_height: float = size * 0.5
+	var half_view_width: float = size * get_viewport().get_visible_rect().size.aspect() * 0.5
+
+	# Snap tracking to grid to avoid sub-tile drift
+	var snapped_x = snappedf(player_tank.position.x, TILE_SIZE_WORLD)
+	var snapped_z = snappedf(player_tank.position.z, TILE_SIZE_WORLD)
 
 	# Playfield bounds in world units (0 to 26)
 	var playfield_min := 0.0
 	var playfield_max := _playfield_world_size
 
 	# Clamp camera position to keep it within playfield while handling oversized views
-	position.x = _clamp_axis(player_tank.position.x, half_view_width, playfield_min, playfield_max)
-	position.z = _clamp_axis(player_tank.position.z, half_view_height, playfield_min, playfield_max)
+	position.x = _clamp_axis(snapped_x, half_view_width, playfield_min, playfield_max)
+	position.z = _clamp_axis(snapped_z, half_view_height, playfield_min, playfield_max)
 
 func _clamp_axis(value: float, half_view: float, min_bound: float, max_bound: float) -> float:
 	# If the view is wider than the playfield, anchor to center to avoid inverted clamps
