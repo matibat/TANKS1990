@@ -12,6 +12,7 @@ const Position = preload("res://src/domain/value_objects/position.gd")
 const Direction = preload("res://src/domain/value_objects/direction.gd")
 const GameState = preload("res://src/domain/aggregates/game_state.gd")
 const GameTiming = preload("res://src/domain/constants/game_timing.gd")
+const BULLET_SPAWN_OFFSET := 1 # Offset in tiles: 1 tile from tank center = 0.5 tiles past tank edge
 
 ## Spawn a player tank at given spawn index
 ## Returns newly created TankEntity
@@ -59,7 +60,7 @@ static func spawn_enemy_tank(game_state: GameState, enemy_type: int, spawn_index
 static func spawn_bullet(game_state: GameState, tank: TankEntity) -> BulletEntity:
 	# Calculate spawn position (one tile in front of tank)
 	var delta = tank.direction.to_position_delta()
-	var bullet_pos = tank.position.add(delta)
+	var bullet_pos = tank.position.add(Position.create(delta.x * BULLET_SPAWN_OFFSET, delta.y * BULLET_SPAWN_OFFSET))
 	
 	# Generate unique bullet ID
 	var bullet_id = game_state.generate_entity_id("bullet")

@@ -15,9 +15,9 @@ const RotateCommand = preload("res://src/domain/commands/rotate_command.gd")
 const PauseCommand = preload("res://src/domain/commands/pause_command.gd")
 const DomainEvent = preload("res://src/domain/events/domain_event.gd")
 const TankMovedEvent = preload("res://src/domain/events/tank_moved_event.gd")
-const BulletFiredEvent = preload("res://src/domain/events/bullet_fired_event.gd")
 const BulletEntity = preload("res://src/domain/entities/bullet_entity.gd")
 const Position = preload("res://src/domain/value_objects/position.gd")
+const BULLET_SPAWN_OFFSET := 0.5 # Offset in tiles: 1 tile from tank center = 0.5 tiles past tank edge
 
 ## Execute a command on game state and return emitted events
 static func execute_command(game_state: GameState, command: Command) -> Array[DomainEvent]:
@@ -83,9 +83,9 @@ static func _execute_fire_command(game_state: GameState, cmd: FireCommand) -> Ar
 	# Generate bullet ID
 	var bullet_id = game_state.generate_entity_id("bullet")
 	
-	# Calculate bullet spawn position (in front of tank)
+	# Calculate bullet spawn position (four tiles ahead of tank nose)
 	var spawn_offset = tank.direction.to_position_delta()
-	var bullet_position = tank.position.add(spawn_offset)
+	var bullet_position = tank.position.add(Position.create(spawn_offset.x * BULLET_SPAWN_OFFSET, spawn_offset.y * BULLET_SPAWN_OFFSET))
 	
 	# Create bullet with speed and damage
 	var bullet_speed = tank.stats.bullet_speed
