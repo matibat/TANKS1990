@@ -282,6 +282,11 @@ validate: precheck test
 	@echo ""
 	@echo "✅ Validation complete!"
 
+audio-import:
+	@echo "Generating and importing audio assets..."
+	@python3 generate_audio.py
+	@echo "✅ Audio assets imported!"
+
 clean:
 	@echo "Cleaning temporary files..."
 	@rm -rf .godot/imported/.import/

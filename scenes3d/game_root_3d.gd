@@ -38,11 +38,30 @@ const GameTiming = preload("res://src/domain/constants/game_timing.gd")
 ## Audio references
 @onready var background_music: AudioStreamPlayer = $Audio/BackgroundMusic
 @onready var tank_move_sound: AudioStreamPlayer = $Audio/SoundEffects/TankMove
+@onready var enemy_tank_move_sound: AudioStreamPlayer = $Audio/SoundEffects/EnemyTankMove
 @onready var tank_shoot_sound: AudioStreamPlayer = $Audio/SoundEffects/TankShoot
 @onready var tank_explosion_sound: AudioStreamPlayer = $Audio/SoundEffects/TankExplosion
 @onready var bullet_hit_sound: AudioStreamPlayer = $Audio/SoundEffects/BulletHit
-@onready var stage_complete_sound: AudioStreamPlayer = $Audio/SoundEffects/StageCompleteSound
+@onready var bullet_hit_tank_sound: AudioStreamPlayer = $Audio/SoundEffects/BulletHitTank
+@onready var stage_complete_sound: AudioStreamPlayer = $Audio/SoundEffects/LevelStart
 @onready var game_over_sound: AudioStreamPlayer = $Audio/SoundEffects/GameOverSound
+@onready var bullet_fire_enemy_sound: AudioStreamPlayer = $Audio/SoundEffects/BulletFireEnemy
+@onready var bullet_hit_wall_sound: AudioStreamPlayer = $Audio/SoundEffects/BulletHitWall
+@onready var enemy_spawn_sound: AudioStreamPlayer = $Audio/SoundEffects/EnemySpawn
+@onready var life_lost_sound: AudioStreamPlayer = $Audio/SoundEffects/LifeLost
+@onready var pause_sound: AudioStreamPlayer = $Audio/SoundEffects/Pause
+@onready var powerup_appear_sound: AudioStreamPlayer = $Audio/SoundEffects/PowerupAppear
+@onready var powerup_collect_sound: AudioStreamPlayer = $Audio/SoundEffects/PowerupCollect
+@onready var base_hit_sound: AudioStreamPlayer = $Audio/SoundEffects/BaseHit
+@onready var level_start_sound: AudioStreamPlayer = $Audio/SoundEffects/LevelStart
+@onready var title_screen_music: AudioStreamPlayer = $Audio/TitleScreenMusic
+
+## Loaded music streams
+var level_background_music_stream: AudioStreamWAV
+var title_screen_music_stream: AudioStreamWAV
+
+## Music sync state
+var _pending_music_start: String = "" # "level", "title", or ""
 
 ## State Management
 var _state_machine: GameStateMachine
@@ -72,6 +91,22 @@ func _ready() -> void:
 	# Initialize state machine
 	_state_machine = GameStateMachine.new()
 	_state_machine.state_changed.connect(_on_state_changed)
+	
+	# Connect adapter tick signal for music sync
+	adapter.tick_occurred.connect(_on_tick_occurred)
+	
+	# Connect adapter signals for game events
+	adapter.tank_spawned.connect(_on_tank_spawned)
+	adapter.tank_moved.connect(_on_tank_moved)
+	adapter.tank_damaged.connect(_on_tank_damaged)
+	adapter.tank_destroyed.connect(_on_tank_destroyed)
+	adapter.bullet_fired.connect(_on_bullet_fired)
+	adapter.bullet_moved.connect(_on_bullet_moved)
+	adapter.bullet_destroyed.connect(_on_bullet_destroyed)
+	adapter.stage_complete.connect(_on_stage_complete)
+	adapter.game_over.connect(_on_game_over)
+	adapter.lives_changed.connect(_on_lives_changed)
+	adapter.score_changed.connect(_on_score_changed)
 	
 	# Connect UI signals
 	_connect_ui_signals()
@@ -113,44 +148,70 @@ func _connect_ui_signals() -> void:
 
 ## Initialize audio system with procedural 8-bit sounds
 func _initialize_audio() -> void:
-	# Audio will be generated on-demand when sounds are played
+	# Load music streams from .wav files
+	level_background_music_stream = load("res://resources/audio/level_background_music.wav") as AudioStreamWAV
+	title_screen_music_stream = load("res://resources/audio/title_screen_music.wav") as AudioStreamWAV
+	
+	# Configure looping for tick synchronization
+	if level_background_music_stream:
+		level_background_music_stream.loop_mode = AudioStreamWAV.LoopMode.LOOP_FORWARD
+		level_background_music_stream.loop_begin = 0
+		level_background_music_stream.loop_end = int(level_background_music_stream.get_length() * level_background_music_stream.mix_rate)
+	
+	if title_screen_music_stream:
+		title_screen_music_stream.loop_mode = AudioStreamWAV.LoopMode.LOOP_FORWARD
+		title_screen_music_stream.loop_begin = 0
+		title_screen_music_stream.loop_end = int(title_screen_music_stream.get_length() * title_screen_music_stream.mix_rate)
+	
 	if DebugLog:
-		DebugLog.info("Audio system initialized with procedural 8-bit sounds")
+		DebugLog.info("Audio system initialized with .wav files for tick-synced music")
 
 ## Audio playback functions with on-demand generation
 
-func _play_background_music() -> void:
-	if not background_music.playing:
+func _play_background_music(music_type: String = "level") -> void:
+	if music_type == "level" and level_background_music_stream:
+		background_music.stream = level_background_music_stream
+		_pending_music_start = "level"
+	elif music_type == "title" and title_screen_music_stream:
+		background_music.stream = title_screen_music_stream
+		_pending_music_start = "title"
+	else:
+		# Fallback to procedural generation
 		_generate_background_music()
 		background_music.play()
+		return
+	
+	# Don't play immediately - wait for tick sync
 
 func _play_tank_move_sound() -> void:
-	_generate_tank_move_sound()
-	tank_move_sound.play()
+	if tank_move_sound:
+		tank_move_sound.play()
 
 func _play_tank_shoot_sound() -> void:
-	_generate_tank_shoot_sound()
-	tank_shoot_sound.play()
+	if tank_shoot_sound:
+		tank_shoot_sound.play()
 
 func _play_tank_explosion_sound() -> void:
-	_generate_tank_explosion_sound()
-	tank_explosion_sound.play()
+	if tank_explosion_sound:
+		tank_explosion_sound.play()
 
 func _play_bullet_hit_sound() -> void:
-	_generate_bullet_hit_sound()
-	bullet_hit_sound.play()
+	if bullet_hit_sound:
+		bullet_hit_sound.play()
 
 func _play_stage_complete_sound() -> void:
-	_generate_stage_complete_sound()
-	stage_complete_sound.play()
+	if stage_complete_sound:
+		stage_complete_sound.play()
 
 func _play_game_over_sound() -> void:
-	_generate_game_over_sound()
-	game_over_sound.play()
+	if game_over_sound:
+		game_over_sound.play()
 
 ## Procedural 8-bit sound generation functions
 
 func _generate_background_music() -> void:
+	if not background_music:
+		return
 	background_music.play()
 	var playback = background_music.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback == null:
@@ -184,6 +245,8 @@ func _generate_background_music() -> void:
 	# Keep playing for background music
 
 func _generate_tank_move_sound() -> void:
+	if not tank_move_sound:
+		return
 	tank_move_sound.play()
 	var playback = tank_move_sound.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback == null:
@@ -207,6 +270,8 @@ func _generate_tank_move_sound() -> void:
 	playback.push_buffer(data)
 
 func _generate_tank_shoot_sound() -> void:
+	if not tank_shoot_sound:
+		return
 	tank_shoot_sound.play()
 	var playback = tank_shoot_sound.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback == null:
@@ -229,6 +294,8 @@ func _generate_tank_shoot_sound() -> void:
 	playback.push_buffer(data)
 
 func _generate_tank_explosion_sound() -> void:
+	if not tank_explosion_sound:
+		return
 	tank_explosion_sound.play()
 	var playback = tank_explosion_sound.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback == null:
@@ -252,6 +319,8 @@ func _generate_tank_explosion_sound() -> void:
 	playback.push_buffer(data)
 
 func _generate_bullet_hit_sound() -> void:
+	if not bullet_hit_sound:
+		return
 	bullet_hit_sound.play()
 	var playback = bullet_hit_sound.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback == null:
@@ -274,6 +343,8 @@ func _generate_bullet_hit_sound() -> void:
 	playback.push_buffer(data)
 
 func _generate_stage_complete_sound() -> void:
+	if not stage_complete_sound:
+		return
 	stage_complete_sound.play()
 	var playback = stage_complete_sound.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback == null:
@@ -302,6 +373,8 @@ func _generate_stage_complete_sound() -> void:
 	playback.push_buffer(data)
 
 func _generate_game_over_sound() -> void:
+	if not game_over_sound:
+		return
 	game_over_sound.play()
 	var playback = game_over_sound.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback == null:
@@ -340,14 +413,17 @@ func _on_state_changed(old_state: int, new_state: int) -> void:
 	match new_state:
 		GameStateEnum.State.MENU:
 			_show_main_menu()
-			background_music.stop()
+			if not background_music.playing or background_music.stream != title_screen_music_stream:
+				_play_background_music("title")
 		GameStateEnum.State.PLAYING:
 			_show_hud()
-			if not background_music.playing:
-				_play_background_music()
+			if not background_music.playing or background_music.stream != level_background_music_stream:
+				_play_background_music("level")
 		GameStateEnum.State.PAUSED:
 			_show_pause_menu()
 			background_music.stop()
+			if pause_sound:
+				pause_sound.play()
 		GameStateEnum.State.GAME_OVER:
 			_show_game_over()
 			background_music.stop()
@@ -356,6 +432,16 @@ func _on_state_changed(old_state: int, new_state: int) -> void:
 			_show_stage_complete()
 			background_music.stop()
 			_play_stage_complete_sound()
+
+## Tick occurred handler for music sync
+func _on_tick_occurred() -> void:
+	# Sync music playback with tick boundaries
+	if _pending_music_start != "" and background_music and not background_music.playing:
+		background_music.play()
+		_pending_music_start = ""
+	
+	# Ensure music loops align with ticks (though WAV lengths are already multiples of tick duration)
+	# The loop points are set to ensure seamless looping at tick boundaries
 
 ## UI Screen Management
 
@@ -378,6 +464,8 @@ func _show_hud() -> void:
 	hud.update_lives(current_lives)
 
 func _show_pause_menu() -> void:
+	if pause_sound:
+		pause_sound.play()
 	pause_menu.show_menu()
 
 func _show_game_over() -> void:
@@ -392,6 +480,8 @@ func _show_stage_complete() -> void:
 ## UI Signal Handlers
 
 func _on_start_game() -> void:
+	if level_start_sound:
+		level_start_sound.play()
 	if _state_machine.transition_to(GameStateEnum.State.PLAYING):
 		_start_new_game()
 
@@ -401,8 +491,8 @@ func _on_quit_game() -> void:
 func _on_resume_game() -> void:
 	_state_machine.transition_to(GameStateEnum.State.PLAYING)
 	pause_menu.hide_menu()
-	if not background_music.playing:
-		_play_background_music()
+	if not background_music.playing or background_music.stream != level_background_music_stream:
+		_play_background_music("level")
 
 func _on_quit_to_menu() -> void:
 	if _state_machine.transition_to(GameStateEnum.State.MENU):
@@ -642,6 +732,9 @@ func _on_tank_spawned(tank_id: String, position: Vector2, tank_type: int, direct
 		camera.set_player_tank(tank_node)
 		if DebugLog:
 			DebugLog.info("Camera tracking player tank", {"tank_id": tank_id})
+	else:
+		if enemy_spawn_sound:
+			enemy_spawn_sound.play()
 	
 	print("Tank spawned: ", tank_id, " at ", position, " world: ", world_pos, " type: ", tank_type)
 
@@ -664,11 +757,17 @@ func _on_tank_moved(tank_id: String, old_position: Vector2, new_position: Vector
 		# Play move sound (only for player tank to avoid spam)
 		if tank_id == player_tank_id:
 			_play_tank_move_sound()
+		else:
+			if enemy_tank_move_sound:
+				enemy_tank_move_sound.play()
 
 func _on_tank_damaged(tank_id: String, damage: int, old_health: int, new_health: int) -> void:
 	if tank_nodes.has(tank_id):
 		var tank_node = tank_nodes[tank_id]
 		tank_node.take_damage(damage, new_health)
+	
+	if bullet_hit_tank_sound:
+		bullet_hit_tank_sound.play()
 	
 	print("Tank damaged: ", tank_id, " health: ", old_health, " -> ", new_health)
 
@@ -679,6 +778,11 @@ func _on_tank_destroyed(tank_id: String, position: Vector2) -> void:
 		
 		# Play explosion sound
 		_play_tank_explosion_sound()
+		
+		# Play life lost sound if player tank
+		if tank_id == player_tank_id:
+			if life_lost_sound:
+				life_lost_sound.play()
 		
 		# Remove after animation
 		await get_tree().create_timer(0.5).timeout
@@ -703,7 +807,12 @@ func _on_bullet_fired(bullet_id: String, position: Vector2, direction: int, tank
 	bullet_nodes[bullet_id] = bullet_node
 	
 	# Play shoot sound
-	_play_tank_shoot_sound()
+	if tank_id == player_tank_id:
+		if tank_shoot_sound:
+			tank_shoot_sound.play()
+	else:
+		if bullet_fire_enemy_sound:
+			bullet_fire_enemy_sound.play()
 	
 	if DebugLog:
 		DebugLog.gameplay("Bullet fired", {"bullet_id": bullet_id, "tank_id": tank_id})
@@ -719,7 +828,8 @@ func _on_bullet_destroyed(bullet_id: String, position: Vector2) -> void:
 		bullet_node.play_destroy_effect()
 		
 		# Play hit sound
-		_play_bullet_hit_sound()
+		if bullet_hit_wall_sound:
+			bullet_hit_wall_sound.play()
 		
 		# Remove after brief delay
 		await get_tree().create_timer(0.1).timeout
@@ -732,12 +842,21 @@ func _on_stage_complete() -> void:
 	print("=== STAGE COMPLETE ===")
 	if DebugLog:
 		DebugLog.gameplay("Stage complete")
+	_play_stage_complete_sound()
 	if _state_machine.transition_to(GameStateEnum.State.STAGE_COMPLETE):
 		_show_stage_complete()
 
 func _on_game_over(reason: String) -> void:
 	print("=== GAME OVER ===")
 	print("Reason: ", reason)
+	
+	_play_game_over_sound()
+	
+	# Play base hit sound if reason contains "base"
+	if reason.to_lower().contains("base"):
+		if base_hit_sound:
+			base_hit_sound.play()
+	
 	if DebugLog:
 		DebugLog.gameplay("Game over", {"reason": reason})
 	if _state_machine.transition_to(GameStateEnum.State.GAME_OVER):

@@ -1,0 +1,516 @@
+# player_tank_move
+
+Waveform: Square Wave, 25% duty cycle (for a buzzy rumble).
+
+Note sequence: Alternating C2 (hold 1/8) - G2 (hold 1/8), with slight pitch bend down on each note.
+
+Timing: Loop indefinitely at 60 BPM (short loop every 0.5 seconds).
+
+Effects: Volume envelope: Attack 0, Decay 8, Sustain 4, Release 2. Slight vibrato depth 2, speed 4.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 60 6 150 "Tank Move"
+COLUMNS : 1
+INSTRUMENTS {
+  00 : {
+    NAME "Rumble"
+    TYPE 0
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 0 8 4 2 0
+  }
+}
+PATTERN 00
+ROW 00 : C-2 00 . 08 . . . . . . .
+ROW 01 : G-2 00 . 08 . . . . . . .
+ROW 02 : --- .. . .. . . . . . . .
+LOOP POINT 0
+```
+
+# enemy_tank_move
+
+Waveform: Square Wave, 12.5% duty cycle (thinner sound for distinction).
+
+Note sequence: C2 (hold 1/8) - G2 (hold 1/8) with random pitch offset ±1 semitone every other cycle.
+
+Timing: Loop indefinitely at 60 BPM (loop every 0.5 seconds).
+
+Effects: Volume envelope: Attack 0, Decay 6, Sustain 3, Release 2. Modest vibrato depth 3, speed 5.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 60 6 150 "Enemy Move"
+COLUMNS : 1
+INSTRUMENTS {
+  00 : {
+    NAME "Rumble Var"
+    TYPE 0
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 0 6 3 2 0
+  }
+}
+PATTERN 00
+ROW 00 : C-2 00 . 06 . . . . . . .
+ROW 01 : G-2 00 . 06 . . . . . . .
+ROW 02 : --- .. . .. . . . . . . .
+LOOP POINT 0
+```
+
+# bullet_fire_player
+
+Waveform: Square Wave, 50% duty cycle.
+
+Note sequence: C5 (1/16) - E5 (1/16) with quick decay.
+
+Timing: 0.2 seconds total at 120 BPM.
+
+Effects: Volume envelope: Attack 0, Decay 15, Sustain 0, Release 0 (sharp zap).
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 120 6 150 "Player Fire"
+COLUMNS : 1
+INSTRUMENTS {
+  00 : {
+    NAME "Zap"
+    TYPE 0
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 0 15 0 0 0
+  }
+}
+PATTERN 00
+ROW 00 : C-5 00 . 15 . . . . . . .
+ROW 01 : E-5 00 . 12 . . . . . . .
+```
+
+# bullet_fire_enemy
+
+Waveform: Square Wave, 50% duty cycle (muted volume).
+
+Note sequence: C4 (1/16) - E4 (1/16).
+
+Timing: 0.2 seconds total at 120 BPM.
+
+Effects: Volume envelope: Attack 0, Decay 12, Sustain 0, Release 0.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 120 6 150 "Enemy Fire"
+COLUMNS : 1
+INSTRUMENTS {
+  00 : {
+    NAME "Muted Zap"
+    TYPE 0
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 0 12 0 0 0
+  }
+}
+PATTERN 00
+ROW 00 : C-4 00 . 12 . . . . . . .
+ROW 01 : E-4 00 . 10 . . . . . . .
+```
+
+# bullet_hit_wall
+
+Waveform: Noise channel (white noise).
+
+Note sequence: Short burst at pitch 0C (hold 1/32).
+
+Timing: 0.1 seconds at 120 BPM.
+
+Effects: Volume envelope: Attack 0, Decay 10, Sustain 0, Release 0. Metallic ping simulation.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 120 6 150 "Wall Hit"
+COLUMNS : 1
+INSTRUMENTS {
+  00 : {
+    NAME "Ping"
+    TYPE 3  // Noise
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 0 10 0 0 0
+  }
+}
+PATTERN 00
+ROW 00 : C-# 00 . 10 . . . . . . .  // # for noise
+```
+
+# bullet_hit_tank
+
+Waveform: Noise channel.
+
+Note sequence: Pitch 08 (hold 1/16) - 06 (hold 1/16).
+
+Timing: 0.3 seconds at 120 BPM.
+
+Effects: Volume envelope: Attack 2, Decay 12, Sustain 0, Release 2. Pop effect.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 120 6 150 "Tank Hit"
+COLUMNS : 1
+INSTRUMENTS {
+  00 : {
+    NAME "Pop"
+    TYPE 3
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 2 12 0 2 0
+  }
+}
+PATTERN 00
+ROW 00 : 08# 00 . 12 . . . . . . .
+ROW 01 : 06# 00 . 10 . . . . . . .
+```
+
+# tank_explosion
+
+Waveform: Layered noise and square waves.
+
+Note sequence: Square: C1 (1/8) ascending to C4 (1/8); Noise: 0F-0E-0D-0C burst, then alternating 0A-08.
+
+Timing: 1 second at 120 BPM.
+
+Effects: Crescendo volume, decay on noise. Variation 1: Add pause after initial burst. Variation 2: Longer decay on square.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 120 6 150 "Explosion"
+COLUMNS : 1 1
+INSTRUMENTS {
+  00 : {
+    NAME "Boom Square"
+    TYPE 0
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 0 15 5 5 0
+  }
+  01 : {
+    NAME "Boom Noise"
+    TYPE 3
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 0 15 0 0 0
+  }
+}
+PATTERN 00
+ROW 00 : C-1 00 . 15 . . . . . . . : 0F# 01 . 15 . . . . . . .
+ROW 01 : --- .. . .. . . . . . . . : 0E# 01 . 14 . . . . . . .
+ROW 02 : D-1 00 . 14 . . . . . . . : 0D# 01 . 13 . . . . . . .
+ROW 03 : --- .. . .. . . . . . . . : 0C# 01 . 12 . . . . . . .
+ROW 04 : E-1 00 . 13 . . . . . . . : ... .. . .. . . . . . . .
+ROW 05 : --- .. . .. . . . . . . . : 0A# 01 . 10 . . . . . . .
+ROW 06 : F-1 00 . 12 . . . . . . . : 08# 01 . 09 . . . . . . .
+ROW 07 : --- .. . .. . . . . . . . : 0A# 01 . 08 . . . . . . .
+ROW 08 : G-1 00 . 11 . . . . . . . : 06# 01 . 07 . . . . . . .
+ROW 09 : --- .. . .. . . . . . . . : 04# 01 . 06 . . . . . . .
+```
+
+# base_hit
+
+Waveform: Square wave for siren + noise for explosion.
+
+Note sequence: Square: A4 (1/16) - B4 (1/16) rising repeat 2x; then noise burst 0C (1/8).
+
+Timing: 1.5 seconds at 120 BPM.
+
+Effects: Alarm vibrato depth 4, speed 6; explosion decay.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 120 6 150 "Base Hit"
+COLUMNS : 1 1
+INSTRUMENTS {
+  00 : {
+    NAME "Siren"
+    TYPE 0
+    SEQ_ENABLE 0 1 0 1 0
+    SEQ 0 12 8 4 0 : VIBRATO 4 6
+  }
+  01 : {
+    NAME "Burst"
+    TYPE 3
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 0 15 0 0 0
+  }
+}
+PATTERN 00
+ROW 00 : A-4 00 . 12 . . . . . . .
+ROW 01 : B-4 00 . 12 . . . . . . .
+ROW 02 : A-4 00 . 12 . . . . . . .
+ROW 03 : B-4 00 . 12 . . . . . . .
+ROW 04 : ... .. . .. . . . . . . .
+ROW 05 : ... .. . .. . . . . . . . : 0C# 01 . 15 . . . . . . .
+ROW 06 : ... .. . .. . . . . . . . : 0A# 01 . 12 . . . . . . .
+ROW 07 : ... .. . .. . . . . . . . : 08# 01 . 10 . . . . . . .
+```
+
+# powerup_appear
+
+Waveform: Triangle wave.
+
+Note sequence: E5 (1/16) - G5 (1/16) - E5 (1/16).
+
+Timing: 0.5 seconds at 120 BPM.
+
+Effects: No envelope, clean chime.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 120 6 150 "Powerup Appear"
+COLUMNS : 1
+INSTRUMENTS {
+  00 : {
+    NAME "Chime"
+    TYPE 2  // Triangle
+  }
+}
+PATTERN 00
+ROW 00 : E-5 00 . .. . . . . . . .
+ROW 01 : G-5 00 . .. . . . . . . .
+ROW 02 : E-5 00 . .. . . . . . . .
+```
+
+# powerup_collect
+
+Waveform: Triangle wave.
+
+Note sequence: C5 (1/16) - E5 (1/16) - G5 (1/16).
+
+Timing: 0.5 seconds at 120 BPM.
+
+Effects: Ascending, slight sustain.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 120 6 150 "Powerup Collect"
+COLUMNS : 1
+INSTRUMENTS {
+  00 : {
+    NAME "Ka-Ching"
+    TYPE 2
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 0 15 10 5 0
+  }
+}
+PATTERN 00
+ROW 00 : C-5 00 . 15 . . . . . . .
+ROW 01 : E-5 00 . 15 . . . . . . .
+ROW 02 : G-5 00 . 15 . . . . . . .
+```
+
+# life_lost
+
+Waveform: Square wave.
+
+Note sequence: G4 (1/8) - E4 (1/8) - C4 (1/8).
+
+Timing: 1 second at 90 BPM.
+
+Effects: Descending, with decay envelope.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 90 6 150 "Life Lost"
+COLUMNS : 1
+INSTRUMENTS {
+  00 : {
+    NAME "Wail"
+    TYPE 0
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 0 12 6 3 0
+  }
+}
+PATTERN 00
+ROW 00 : G-4 00 . 12 . . . . . . .
+ROW 02 : E-4 00 . 10 . . . . . . .
+ROW 04 : C-4 00 . 08 . . . . . . .
+```
+
+# pause
+
+Waveform: Square wave.
+
+Note sequence: Single C4 (hold 1/32).
+
+Timing: 0.1 seconds at 120 BPM.
+
+Effects: Simple beep, quick decay.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 120 6 150 "Pause"
+COLUMNS : 1
+INSTRUMENTS {
+  00 : {
+    NAME "Beep"
+    TYPE 0
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 0 10 0 0 0
+  }
+}
+PATTERN 00
+ROW 00 : C-4 00 . 10 . . . . . . .
+```
+
+# game_over
+
+Waveform: Square wave melody.
+
+Note sequence: C4 (1/8) - B3 (1/8) - A3 (1/8) - G3 (1/8), repeat 2x.
+
+Timing: 3 seconds at 80 BPM.
+
+Effects: Minor key, looping twice with fade out.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 80 6 150 "Game Over"
+COLUMNS : 1
+INSTRUMENTS {
+  00 : {
+    NAME "Melancholy"
+    TYPE 0
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 0 12 8 4 0
+  }
+}
+PATTERN 00
+ROW 00 : C-4 00 . 12 . . . . . . .
+ROW 02 : B-3 00 . 12 . . . . . . .
+ROW 04 : A-3 00 . 12 . . . . . . .
+ROW 06 : G-3 00 . 12 . . . . . . .
+ROW 08 : C-4 00 . 10 . . . . . . .
+ROW 0A : B-3 00 . 10 . . . . . . .
+ROW 0C : A-3 00 . 10 . . . . . . .
+ROW 0E : G-3 00 . 10 . . . . . . .
+```
+
+# level_start
+
+Waveform: Square wave.
+
+Note sequence: C4 (1/16) - D4 (1/16) - E4 (1/16) - F4 (1/16) - G4 (1/8).
+
+Timing: 1 second at 120 BPM.
+
+Effects: Ascending fanfare, bright envelope.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 120 6 150 "Level Start"
+COLUMNS : 1
+INSTRUMENTS {
+  00 : {
+    NAME "Fanfare"
+    TYPE 0
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 0 15 10 5 0
+  }
+}
+PATTERN 00
+ROW 00 : C-4 00 . 15 . . . . . . .
+ROW 01 : D-4 00 . 15 . . . . . . .
+ROW 02 : E-4 00 . 15 . . . . . . .
+ROW 03 : F-4 00 . 15 . . . . . . .
+ROW 04 : G-4 00 . 15 . . . . . . .
+ROW 05 : --- .. . .. . . . . . . .
+```
+
+# enemy_spawn
+
+Waveform: Noise channel sweep.
+
+Note sequence: Pitch sweep from 0F to 04 (over 1/8).
+
+Timing: 0.2 seconds at 120 BPM.
+
+Effects: Quick whoosh, volume decay.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 120 6 150 "Spawn"
+COLUMNS : 1
+INSTRUMENTS {
+  00 : {
+    NAME "Whoosh"
+    TYPE 3
+    SEQ_ENABLE 0 1 0 0 1  // Pitch sequence
+    SEQ 0 12 6 0 0 : PITCH 0F 0E 0D 0C 0B 0A 09 08 07 06 05 04
+  }
+}
+PATTERN 00
+ROW 00 : 0F# 00 . 12 . . . . . . .
+```
+
+# title_screen_music
+
+Waveform: Square wave lead, triangle bass.
+
+Note sequence: Lead: C4 (1/4) E4 (1/4) G4 (1/4) C5 (1/4); Bass: C2 (1/2) G2 (1/2). Repeat pattern.
+
+Timing: 120 BPM, loop every 30 seconds (8-bar loop).
+
+Effects: Upbeat, with arpeggio on lead.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 120 6 150 "Title Music"
+COLUMNS : 1 1
+INSTRUMENTS {
+  00 : {
+    NAME "Lead"
+    TYPE 0
+    SEQ_ENABLE 0 1 0 0 0
+    SEQ 0 12 10 8 0
+  }
+  01 : {
+    NAME "Bass"
+    TYPE 2
+  }
+}
+PATTERN 00
+ROW 00 : C-4 00 . 12 . . . . . . . : C-2 01 . .. . . . . . . .
+ROW 04 : E-4 00 . 12 . . . . . . . : --- .. . .. . . . . . . .
+ROW 08 : G-4 00 . 12 . . . . . . . : G-2 01 . .. . . . . . . .
+ROW 0C : C-5 00 . 12 . . . . . . . : --- .. . .. . . . . . . .
+ROW 10 : C-4 00 . 12 . . . . . . . : C-2 01 . .. . . . . . . .
+ROW 14 : E-4 00 . 12 . . . . . . . : --- .. . .. . . . . . . .
+ROW 18 : G-4 00 . 12 . . . . . . . : G-2 01 . .. . . . . . . .
+ROW 1C : C-5 00 . 12 . . . . . . . : --- .. . .. . . . . . . .
+LOOP POINT 0
+```
+Example BeepBox URL: https://www.beepbox.co/#9n31s0k0l00e0t2m0a7g0j07r1i0o3210T0v1u20f0q1d1c0h0w2b4p1T0v1u20f0q1d1c0h0w2b4p1T2v1u1f0q1d1c0h0w1
+
+# level_background_music
+
+Waveform: Triangle wave.
+
+Note sequence: Sparse: C3 (1/4 every 4 beats) - E3 (1/4) - G3 (1/4), spaced out.
+
+Timing: 100 BPM, loop every 60 seconds (16-bar loop).
+
+Effects: Ambient, low volume, no effects.
+
+Famitracker Pattern Example (Text Export Snippet):
+```
+TRACK 100 6 150 "Level BGM"
+COLUMNS : 1
+INSTRUMENTS {
+  00 : {
+    NAME "Ambient"
+    TYPE 2
+  }
+}
+PATTERN 00
+ROW 00 : C-3 00 . .. . . . . . . .
+ROW 10 : E-3 00 . .. . . . . . . .
+ROW 20 : G-3 00 . .. . . . . . . .
+ROW 30 : C-3 00 . .. . . . . . . .
+ROW 40 : E-3 00 . .. . . . . . . .
+ROW 50 : G-3 00 . .. . . . . . . .
+LOOP POINT 0
+```
+Example BeepBox URL: https://www.beepbox.co/#9n31s0k0l00e0t2m1a7g0j07r1i0o3210T2v1u1f0q1d1c0h0w1
+
+Additional Requests:
+- Variations: For tank_explosion, use Variation 1 with added silence row after ROW 03 for a paused burst effect. For bullet_hit_tank, alternate pitch 07-05 for Variation 2.
+- Example Tool Exports: The Famitracker snippets above can be copied into a text file and imported via Famitracker's text import feature. For BeepBox, see the URLs provided for looping examples (adjust as needed in the tool).

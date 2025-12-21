@@ -36,6 +36,7 @@ signal stage_complete()
 signal game_over(reason: String)
 signal lives_changed(lives: int)
 signal score_changed(score: int)
+signal tick_occurred()
 
 ## Domain state
 var game_state: GameState
@@ -92,6 +93,10 @@ func _physics_process(_delta: float) -> void:
 	
 	# 3. Convert domain events to Godot signals
 	_process_domain_events(events)
+	
+	# Emit tick signal if events occurred (indicating a tick happened)
+	if not events.is_empty():
+		tick_occurred.emit()
 	
 	# 4. Sync domain state to presentation
 	sync_state_to_presentation()

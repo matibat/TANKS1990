@@ -146,7 +146,6 @@ func test_given_input_adapter_when_get_commands_for_frame_with_move_and_fire_the
 
 func test_given_no_input_when_get_commands_for_frame_then_returns_empty():
 	# Given: No input (ensure no actions are pressed)
-	
 	# When: Call get_commands_for_frame
 	var commands = input_adapter.get_commands_for_frame("tank1", 0)
 	

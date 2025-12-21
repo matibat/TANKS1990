@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://dxm7jw8kqp2n1"]
+[gd_scene load_steps=27 format=3 uid="uid://dxm7jw8kqp2n1"]
 
 [ext_resource type="Script" path="res://scenes3d/game_root_3d.gd" id="1_gameroot"]
 [ext_resource type="Script" path="res://src/adapters/godot_game_adapter.gd" id="2_adapter"]
@@ -9,6 +9,23 @@
 [ext_resource type="PackedScene" path="res://scenes3d/ui/pause_menu.tscn" id="7_pause"]
 [ext_resource type="PackedScene" path="res://scenes3d/ui/game_over.tscn" id="8_gameover"]
 [ext_resource type="PackedScene" path="res://scenes3d/ui/stage_complete.tscn" id="9_stagecomplete"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/level_background_music.wav" id="10_bg_music"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/player_tank_move.wav" id="11_tank_move"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/bullet_fire_player.wav" id="12_tank_shoot"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/tank_explosion.wav" id="13_tank_explosion"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/bullet_hit_tank.wav" id="14_bullet_hit"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/level_start.wav" id="15_stage_complete"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/game_over.wav" id="16_game_over"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/base_hit.wav" id="17_base_hit"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/bullet_fire_enemy.wav" id="18_bullet_fire_enemy"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/bullet_hit_wall.wav" id="19_bullet_hit_wall"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/enemy_spawn.wav" id="20_enemy_spawn"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/enemy_tank_move.wav" id="21_enemy_tank_move"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/life_lost.wav" id="22_life_lost"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/pause.wav" id="23_pause"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/powerup_appear.wav" id="24_powerup_appear"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/powerup_collect.wav" id="25_powerup_collect"]
+[ext_resource type="AudioStreamWAV" path="res://resources/audio/title_screen_music.wav" id="26_title_music"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_arena"]
 size = Vector2(26, 26)
@@ -82,32 +99,78 @@ surface_material_override/0 = SubResource("StandardMaterial3D_arena")
 [node name="Audio" type="Node" parent="."]
 
 [node name="BackgroundMusic" type="AudioStreamPlayer" parent="Audio"]
-stream = SubResource("AudioStreamGenerator_background")
+stream = ExtResource("10_bg_music")
 volume_db = -10.0
 autoplay = false
+loop = true
 
 [node name="SoundEffects" type="Node" parent="Audio"]
 
 [node name="TankMove" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
-stream = SubResource("AudioStreamGenerator_tank_move")
+stream = ExtResource("11_tank_move")
 volume_db = -15.0
 
 [node name="TankShoot" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
-stream = SubResource("AudioStreamGenerator_tank_shoot")
+stream = ExtResource("12_tank_shoot")
 volume_db = -12.0
 
 [node name="TankExplosion" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
-stream = SubResource("AudioStreamGenerator_tank_explosion")
+stream = ExtResource("13_tank_explosion")
 volume_db = -8.0
+
+[node name="BulletHitTank" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = ExtResource("14_bullet_hit")
+volume_db = -10.0
+
+[node name="BulletHitWall" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = ExtResource("19_bullet_hit_wall")
+volume_db = -10.0
+
+[node name="LevelStart" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = ExtResource("15_stage_complete")
+volume_db = -10.0
+
+[node name="GameOverSound" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = ExtResource("16_game_over")
+volume_db = -10.0
+
+[node name="BaseHit" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = ExtResource("17_base_hit")
+volume_db = -10.0
+
+[node name="BulletFireEnemy" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = ExtResource("18_bullet_fire_enemy")
+volume_db = -12.0
 
 [node name="BulletHit" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
 stream = SubResource("AudioStreamGenerator_bullet_hit")
 volume_db = -10.0
 
-[node name="StageCompleteSound" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
-stream = SubResource("AudioStreamGenerator_stage_complete")
+[node name="EnemySpawn" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = ExtResource("20_enemy_spawn")
 volume_db = -10.0
 
-[node name="GameOverSound" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
-stream = SubResource("AudioStreamGenerator_game_over")
+[node name="EnemyTankMove" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = ExtResource("21_enemy_tank_move")
+volume_db = -15.0
+
+[node name="LifeLost" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = ExtResource("22_life_lost")
 volume_db = -10.0
+
+[node name="Pause" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = ExtResource("23_pause")
+volume_db = -10.0
+
+[node name="PowerupAppear" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = ExtResource("24_powerup_appear")
+volume_db = -10.0
+
+[node name="PowerupCollect" type="AudioStreamPlayer" parent="Audio/SoundEffects"]
+stream = ExtResource("25_powerup_collect")
+volume_db = -10.0
+
+[node name="TitleScreenMusic" type="AudioStreamPlayer" parent="Audio"]
+stream = ExtResource("26_title_music")
+volume_db = -10.0
+loop = true
