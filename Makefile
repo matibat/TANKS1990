@@ -85,7 +85,7 @@ test: precheck
 	fi; \
 	run_gut() { \
 		cmd=$$1; \
-		if [ "$(MAKE_VERBOSE)" = "1" ] || [ "$(MAKE_LOG_OUTPUT)" = "1" ]; then \
+		if [ "$(MAKE_VERBOSE)" = "1" ]; then \
 			eval "$$cmd" 2>&1 | tee "$$logfile"; \
 		else \
 			eval "$$cmd" > "$$logfile" 2>&1; \
@@ -100,30 +100,36 @@ test: precheck
 		run_gut '$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK)' || status=$$?; \
 	fi; \
 	if [ $$status -ne 0 ]; then \
-		if [ "$(MAKE_VERBOSE)" = "1" ] || [ "$(MAKE_LOG_OUTPUT)" = "1" ]; then \
-			echo ""; \
+		echo ""; \
+		if [ "$(MAKE_VERBOSE)" = "1" ]; then \
 			echo "❌ Tests failed (see output above)."; \
+		elif [ "$(MAKE_LOG_OUTPUT)" = "1" ]; then \
+			echo "❌ Tests failed. Full output:"; \
 			cat "$$logfile"; \
+		elif [ "$(QUIET)" = "1" ]; then \
+			echo "❌ Tests failed. Errors only:"; \
+			grep -E "SCRIPT ERROR|ERROR:|Parse Error|Compile Error|\[Failed\]|---- .* failing" "$$logfile" || cat "$$logfile"; \
 		else \
+			echo "❌ Tests failed. Summary:"; \
 			awk 'BEGIN {show=0} {if ($$0 ~ /Run Summary/) {if (prev_nonempty != "") print prev_nonempty; print; show=1; next} if (show) print; if ($$0 != "") prev_nonempty=$$0}' "$$logfile"; \
 		fi; \
 		exit $$status; \
 	fi; \
-	if [ "$(MAKE_VERBOSE)" != "1" ] && [ "$(MAKE_LOG_OUTPUT)" != "1" ]; then \
-		if [ "$(QUIET)" = "1" ]; then \
-			echo ""; \
-			grep -nE "ERROR|SCRIPT ERROR|Parse Error|Compile Error" "$$logfile" || true; \
-		else \
-			echo ""; \
-			grep -nE "WARNING:|Deprecated" "$$logfile" || true; \
-		fi; \
-		if grep -q "All tests passed!" "$$logfile"; then \
-			total=$$(grep "^Tests" "$$logfile" | awk '{print $$NF}' | head -n1 || true); \
-			passing=$$(grep "^Passing Tests" "$$logfile" | awk '{print $$NF}' | head -n1 || true); \
-			total=$${total:-0}; \
-			passing=$${passing:-0}; \
-			printf "✅ Tests passed: %s/%s\n" "$$passing" "$$total"; \
-		fi; \
+	echo ""; \
+	if [ "$(MAKE_VERBOSE)" = "1" ]; then \
+		echo "✅ All tests passed!"; \
+	elif [ "$(MAKE_LOG_OUTPUT)" = "1" ]; then \
+		echo "✅ All tests passed! Full output:"; \
+		cat "$$logfile"; \
+	elif [ "$(QUIET)" = "1" ]; then \
+		total=$$(grep "^Tests" "$$logfile" | awk '{print $$NF}' | head -n1 || echo "0"); \
+		passing=$$(grep "^Passing Tests" "$$logfile" | awk '{print $$NF}' | head -n1 || echo "0"); \
+		printf "✅ Tests passed: %s/%s\n" "$$passing" "$$total"; \
+	else \
+		grep -E "WARNING:|Deprecated" "$$logfile" || true; \
+		total=$$(grep "^Tests" "$$logfile" | awk '{print $$NF}' | head -n1 || echo "0"); \
+		passing=$$(grep "^Passing Tests" "$$logfile" | awk '{print $$NF}' | head -n1 || echo "0"); \
+		printf "✅ Tests passed: %s/%s\n" "$$passing" "$$total"; \
 	fi
 
 # Legacy aliases for backward compatibility (all use unified test command)
@@ -224,10 +230,10 @@ help:
 	@echo "  make check-compile      - Check GDScript compilation"
 	@echo ""
 	@echo "Output control flags (for check-import, check-compile, and test):"
-	@echo "  VERBOSE=1               - Stream full Godot output with warnings and errors"
-	@echo "  LOG_OUTPUT=1            - Stream Godot output even when not in verbose mode"
-	@echo "  QUIET=1                 - Show only errors with short success messages"
-	@echo "  Default                 - Show errors and warnings with short success messages"
+	@echo "  VERBOSE=1               - Show full real-time output (all tests, logs, everything)"
+	@echo "  LOG_OUTPUT=1            - Show full buffered output on completion (all logs)"
+	@echo "  QUIET=1                 - Show minimal output with errors only"
+	@echo "  Default                 - Show summary with test structure and warnings"
 	@echo ""
 	@echo "Testing (unified interface):"
 	@echo "  make test                      - Run all tests"
