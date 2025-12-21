@@ -9,6 +9,7 @@ GUT_PRE_HOOK ?= res://tests/hooks/pre_run_hook.gd
 # Verbosity control
 VERBOSE ?= 0
 QUIET ?= 0
+LOG_OUTPUT ?= 0
 LOG_DIR := .godot/logs
 
 .DEFAULT_GOAL := help
@@ -69,30 +70,53 @@ check-compile:
 #   make test PATTERN=test_tank       # Run tests matching pattern
 #   make test SUITE=domain PATTERN=test_tank_entity  # Combine filters
 test: precheck
+	@mkdir -p $(LOG_DIR)
 	@suite=$${SUITE:-all}; \
 	pattern=$${PATTERN:-}; \
+	logdir=$(LOG_DIR); \
+	logfile=$$(mktemp "$${logdir}/gut-test.XXXXXX.log"); \
+	trap 'rm -f "$$logfile"' EXIT; \
 	if [ "$$suite" = "all" ]; then \
 		test_dir="res://tests"; \
 	else \
 		test_dir="res://tests/$$suite"; \
 	fi; \
+	run_gut() { \
+		cmd=$$1; \
+		if [ "$(VERBOSE)" = "1" ] || [ "$(LOG_OUTPUT)" = "1" ]; then \
+			eval "$$cmd" 2>&1 | tee "$$logfile"; \
+		else \
+			eval "$$cmd" > "$$logfile" 2>&1; \
+		fi; \
+	}; \
+	status=0; \
 	if [ -n "$$pattern" ]; then \
 		echo "Running tests matching '$$pattern' in $$test_dir..."; \
-		if [ "$(QUIET)" = "1" ]; then \
-			$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir -gselect=$$pattern $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK) 2>&1 | grep -vE "WARNING:|Godot Engine|^\[.*\]|^GUT version:|^Godot version:|using \[.*\] for temporary"; \
-		elif [ "$(VERBOSE)" = "1" ]; then \
-			$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir -gselect=$$pattern $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK); \
-		else \
-			$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir -gselect=$$pattern $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK) 2>&1 | grep -vE "WARNING:"; \
-		fi; \
+		run_gut '$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir -gselect=$$pattern $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK)' || status=$$?; \
 	else \
 		echo "Running all tests in $$test_dir..."; \
+		run_gut '$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK)' || status=$$?; \
+	fi; \
+	if [ $$status -ne 0 ]; then \
+		echo ""; \
+		echo "❌ Tests failed (see output above)."; \
+		cat "$$logfile"; \
+		exit $$status; \
+	fi; \
+	if [ "$(VERBOSE)" != "1" ] && [ "$(LOG_OUTPUT)" != "1" ]; then \
 		if [ "$(QUIET)" = "1" ]; then \
-			$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK) 2>&1 | grep -vE "WARNING:|Godot Engine|^\[.*\]|^GUT version:|^Godot version:|using \[.*\] for temporary"; \
-		elif [ "$(VERBOSE)" = "1" ]; then \
-			$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK); \
+			echo ""; \
+			grep -nE "ERROR|SCRIPT ERROR|Parse Error|Compile Error" "$$logfile" || true; \
 		else \
-			$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK) 2>&1 | grep -vE "WARNING:"; \
+			echo ""; \
+			grep -nE "WARNING:|Deprecated" "$$logfile" || true; \
+		fi; \
+		if grep -q "All tests passed!" "$$logfile"; then \
+			total=$$(grep "^Tests" "$$logfile" | awk '{print $$NF}' | head -n1 || true); \
+			passing=$$(grep "^Passing Tests" "$$logfile" | awk '{print $$NF}' | head -n1 || true); \
+			total=$${total:-0}; \
+			passing=$${passing:-0}; \
+			printf "✅ Tests passed: %s/%s\n" "$$passing" "$$total"; \
 		fi; \
 	fi
 
@@ -193,8 +217,9 @@ help:
 	@echo "  make check-import       - Import all assets"
 	@echo "  make check-compile      - Check GDScript compilation"
 	@echo ""
-	@echo "Output control flags (for check-import and check-compile):"
+	@echo "Output control flags (for check-import, check-compile, and test):"
 	@echo "  VERBOSE=1               - Stream full Godot output with warnings and errors"
+	@echo "  LOG_OUTPUT=1            - Stream Godot output even when not in verbose mode"
 	@echo "  QUIET=1                 - Show only errors with short success messages"
 	@echo "  Default                 - Show errors and warnings with short success messages"
 	@echo ""
