@@ -88,12 +88,10 @@ check_file() {
         fi
     done
     
-    # If no violations, mark as clean
-    if [ $file_has_violation -eq 0 ]; then
-        echo "✅ $file"
+    # If violations, mark as file with violations
+    if [ $file_has_violation -eq 1 ]; then
+        echo "❌ $file"
     fi
-    
-    echo ""
 }
 
 # Find all .gd files in src/domain/
