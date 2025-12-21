@@ -15,9 +15,10 @@ const RotateCommand = preload("res://src/domain/commands/rotate_command.gd")
 const PauseCommand = preload("res://src/domain/commands/pause_command.gd")
 const DomainEvent = preload("res://src/domain/events/domain_event.gd")
 const TankMovedEvent = preload("res://src/domain/events/tank_moved_event.gd")
+const BulletFiredEvent = preload("res://src/domain/events/bullet_fired_event.gd")
 const BulletEntity = preload("res://src/domain/entities/bullet_entity.gd")
 const Position = preload("res://src/domain/value_objects/position.gd")
-const BULLET_SPAWN_OFFSET := 0.5 # Offset in tiles: 1 tile from tank center = 0.5 tiles past tank edge
+const BULLET_SPAWN_OFFSET := 3 # Offset in tiles: 3 tiles from tank center (4th unit) - outside 3-unit tank hitbox
 
 ## Execute a command on game state and return emitted events
 static func execute_command(game_state: GameState, command: Command) -> Array[DomainEvent]:
