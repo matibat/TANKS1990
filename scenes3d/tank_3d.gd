@@ -4,6 +4,7 @@ extends Node3D
 ## Pure presentation - reacts to adapter signals, no game logic
 
 const TankEntity = preload("res://src/domain/entities/tank_entity.gd")
+const INTERP_EPS := 0.1
 
 ## Tank identity
 var tank_id: String = ""
@@ -26,6 +27,9 @@ var _has_pending_motion: bool = false
 var _idle_time: float = 0.0
 var _base_turret_scale: Vector3
 var _idle_scale_pulse: float = 0.015
+var _base_body_color: Color
+var _base_turret_color: Color
+var previous_progress: float = 0.0
 
 func _ready() -> void:
 	target_position = position
@@ -36,6 +40,8 @@ func _ready() -> void:
 	
 	# Set color based on tank type
 	_setup_visual()
+	_base_body_color = body.material.albedo_color
+	_base_turret_color = turret.material.albedo_color
 
 ## Setup visual appearance based on tank type
 func _setup_visual() -> void:
@@ -62,6 +68,8 @@ func _setup_visual() -> void:
 
 ## Called when tank should move to new position
 func move_to(new_position: Vector3, new_rotation: float) -> void:
+	if target_position.is_equal_approx(new_position) and is_equal_approx(target_rotation, new_rotation):
+		return
 	# Store current pose so interpolation starts from the actual previous position
 	if use_interpolation:
 		last_position = position
@@ -106,20 +114,28 @@ func play_destroy_effect() -> void:
 
 ## Optional: Smooth interpolation in physics process
 func _physics_process(_delta: float) -> void:
-	if not use_interpolation:
-		return
-
-	position = last_position.lerp(target_position, tick_progress)
-	rotation.y = lerp_angle(last_rotation, target_rotation, tick_progress)
+	# Interpolation is handled by set_tick_progress called from game_root
+	pass
 
 func _process(delta: float) -> void:
-	# Invulnerability flicker effect
-	if tank_entity and tank_entity.is_invulnerable():
-		var flicker_rate = 0.1 # Flicker every 0.1 seconds
-		visible = int(Time.get_ticks_msec() / (flicker_rate * 1000)) % 2 == 0
+	# Invulnerability visual: gentle alpha pulse instead of visibility toggling
+	var invuln = tank_entity and tank_entity.is_invulnerable()
+	if invuln:
+		_idle_time = 0.0
+		turret.scale = _base_turret_scale
+		var phase = sin(Time.get_ticks_msec() * 0.0125)
+		var alpha = clamp(0.6 + 0.4 * phase, 0.2, 1.0)
+		var body_color = _base_body_color
+		body_color.a = alpha
+		var turret_color = _base_turret_color
+		turret_color.a = alpha
+		body.material.albedo_color = body_color
+		turret.material.albedo_color = turret_color
 	else:
 		visible = true
-	
+		body.material.albedo_color = _base_body_color
+		turret.material.albedo_color = _base_turret_color
+
 	# Idle animation: subtle turret breathing only when no motion is pending
 	if not use_interpolation:
 		return
@@ -128,19 +144,50 @@ func _process(delta: float) -> void:
 		turret.scale = _base_turret_scale
 		return
 	_idle_time += delta
-	var wobble = sin(_idle_time * TAU * 0.25) * _idle_scale_pulse
-	var scale_factor = 1.0 + wobble
-	turret.scale = _base_turret_scale * scale_factor
+	var cycle_time = 4.0
+	var cycle_progress = fmod(_idle_time, cycle_time)
+	if cycle_progress < 2.0:
+		var wobble = sin(cycle_progress * TAU * 0.5) * _idle_scale_pulse
+		var scale_factor = 1.0 + wobble
+		turret.scale = _base_turret_scale * scale_factor
+	else:
+		turret.scale = _base_turret_scale
 
 func set_tick_progress(progress: float) -> void:
 	if not use_interpolation:
 		return
+	
+	# Detect tick reset (progress went low, assuming tick happened)
+	var was_reset = progress < previous_progress
+	previous_progress = progress
+	
+	if was_reset:
+		# Complete interpolation
+		_has_pending_motion = false
+		position = target_position
+		rotation.y = target_rotation
+		last_position = target_position
+		last_rotation = target_rotation
+		tick_progress = 1.0
+	
 	if not _has_pending_motion:
+		position = target_position
+		rotation.y = target_rotation
 		return
+	
 	tick_progress = clamp(progress, 0.0, 1.0)
 	position = last_position.lerp(target_position, tick_progress)
 	rotation.y = lerp_angle(last_rotation, target_rotation, tick_progress)
-	if is_equal_approx(tick_progress, 1.0):
+	
+	if tick_progress >= 0.5:
 		_has_pending_motion = false
 		last_position = target_position
 		last_rotation = target_rotation
+		tick_progress = 1.0
+
+	if not _has_pending_motion:
+		position = target_position
+		rotation.y = target_rotation
+
+func is_interpolating() -> bool:
+	return _has_pending_motion
