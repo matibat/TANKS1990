@@ -23,17 +23,19 @@ The script detects and reports violations of domain purity:
 1. **Node Inheritance**
    - `extends Node`, `extends Node2D`, `extends Node3D`
    - `extends Control`, `extends Resource`
-   
 2. **Godot Annotations**
+
    - `@export` - exposes variables to editor
    - `@onready` - deferred initialization
 
 3. **Node References**
+
    - `$NodePath` - node path syntax
    - `get_node()` - node tree access
    - `get_tree()` - scene tree access
 
 4. **Scene/Resource Loading**
+
    - `load("res://...tscn")` - scene files
    - `preload("res://...tscn")` - scene preloading
    - `load("res://...tres")` - resource files
@@ -48,12 +50,14 @@ The script detects and reports violations of domain purity:
 Domain classes should use:
 
 1. **RefCounted Inheritance**
+
    ```gdscript
    class_name MyDomainClass
    extends RefCounted
    ```
 
 2. **Value Objects**
+
    ```gdscript
    const Position = preload("res://src/domain/value_objects/position.gd")
    var position: Position
@@ -68,6 +72,7 @@ Domain classes should use:
 ## Output Examples
 
 ### Clean Domain Layer
+
 ```
 === Domain Layer Purity Verification ===
 
@@ -89,6 +94,7 @@ Summary:
 ```
 
 ### Violations Detected
+
 ```
 ❌ src/domain/test_violation.gd
    Line 4: Godot @export annotation
@@ -151,6 +157,7 @@ Add to your continuous integration pipeline:
 ## Files Scanned
 
 The script automatically checks all `.gd` files in:
+
 - `src/domain/entities/`
 - `src/domain/value_objects/`
 - `src/domain/services/`

@@ -222,6 +222,7 @@ assert(CollisionService.check_bullet_to_bullet_collision(bullet1, bullet2) == fa
 **Breaking Change from Pixel-Based System**:
 
 Previous implementation used 8-pixel collision radius:
+
 ```gdscript
 # OLD (removed):
 var distance_squared = dx * dx + dy * dy
@@ -230,6 +231,7 @@ return distance_squared <= COLLISION_DISTANCE * COLLISION_DISTANCE
 ```
 
 New implementation requires bullets to be on the same tile. This makes collision:
+
 - More predictable for players
 - Deterministic for networked gameplay
 - Consistent with original NES Tank 1990 behavior

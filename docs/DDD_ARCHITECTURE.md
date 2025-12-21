@@ -210,6 +210,7 @@ func equals(other: Position) -> bool:
 ```
 
 Bullets collide when at the exact same grid tile, regardless of:
+
 - Movement direction
 - Pixel offsets (handled by presentation layer)
 - Animation states
