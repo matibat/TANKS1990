@@ -153,3 +153,111 @@ func test_given_nonexistent_tank_when_move_command_executed_then_no_events():
 	
 	# Then: No events emitted
 	assert_eq(events.size(), 0)
+
+## =============================================================================
+## Test Group: Bullet Spawn Position Verification (4th Unit Tests)
+## =============================================================================
+
+func test_given_tank_firing_north_when_fire_command_executed_then_bullet_spawns_at_correct_offset():
+	# Given: Tank at (10, 10) facing NORTH (UP)
+	var game_state = create_game_state_with_player_tank()
+	var tank = game_state.get_player_tanks()[0]
+	tank.position = Position.create(10, 10)
+	tank.direction = Direction.create(Direction.UP)
+	var command = FireCommand.create(tank.id, 20)
+	
+	# When: Fire command is executed
+	var events = CommandHandler.execute_command(game_state, command)
+	
+	# Then: Bullet should spawn at 4th unit (3 tiles ahead = y-3)
+	# Expected position: (10, 7) for NORTH direction
+	var all_bullets = game_state.get_all_bullets()
+	assert_eq(all_bullets.size(), 1, "Exactly one bullet should be spawned")
+	var bullet = all_bullets[0]
+	assert_eq(bullet.position.x, 10, "Bullet X position should match tank X (10)")
+	assert_eq(bullet.position.y, 7, "Bullet Y position should be 3 tiles ahead (10 - 3 = 7)")
+
+func test_given_tank_firing_east_when_fire_command_executed_then_bullet_spawns_at_correct_offset():
+	# Given: Tank at (10, 10) facing EAST (RIGHT)
+	var game_state = create_game_state_with_player_tank()
+	var tank = game_state.get_player_tanks()[0]
+	tank.position = Position.create(10, 10)
+	tank.direction = Direction.create(Direction.RIGHT)
+	var command = FireCommand.create(tank.id, 20)
+	
+	# When: Fire command is executed
+	var events = CommandHandler.execute_command(game_state, command)
+	
+	# Then: Bullet should spawn at 4th unit (3 tiles ahead = x+3)
+	# Expected position: (13, 10) for EAST direction
+	var all_bullets = game_state.get_all_bullets()
+	assert_eq(all_bullets.size(), 1, "Exactly one bullet should be spawned")
+	var bullet = all_bullets[0]
+	assert_eq(bullet.position.x, 13, "Bullet X position should be 3 tiles ahead (10 + 3 = 13)")
+	assert_eq(bullet.position.y, 10, "Bullet Y position should match tank Y (10)")
+
+func test_given_multi_tile_tank_when_fires_then_bullet_spawns_outside_hitbox():
+	# Given: Tank at (10, 10) facing NORTH with multi-tile hitbox
+	var game_state = create_game_state_with_player_tank()
+	var tank = game_state.get_player_tanks()[0]
+	tank.position = Position.create(10, 10)
+	tank.direction = Direction.create(Direction.UP)
+	var command = FireCommand.create(tank.id, 20)
+	
+	# When: Fire command is executed
+	var events = CommandHandler.execute_command(game_state, command)
+	
+	# Then: Bullet should spawn outside tank's 3-unit hitbox
+	# Tank hitbox is 3 units long, bullet should spawn at 4th unit (beyond hitbox)
+	var all_bullets = game_state.get_all_bullets()
+	var bullet = all_bullets[0]
+	var hitbox = tank.get_hitbox()
+	var hitbox_tiles = hitbox.get_occupied_tiles()
+	
+	# Check bullet position is NOT in hitbox
+	var bullet_in_hitbox = false
+	for tile in hitbox_tiles:
+		if tile.equals(bullet.position):
+			bullet_in_hitbox = true
+			break
+	
+	assert_false(bullet_in_hitbox, 
+		"Bullet should spawn OUTSIDE tank hitbox (at 4th unit, beyond 3-unit hitbox)")
+
+func test_given_tank_firing_south_when_fire_command_executed_then_bullet_spawns_at_correct_offset():
+	# Given: Tank at (10, 10) facing SOUTH (DOWN)
+	var game_state = create_game_state_with_player_tank()
+	var tank = game_state.get_player_tanks()[0]
+	tank.position = Position.create(10, 10)
+	tank.direction = Direction.create(Direction.DOWN)
+	var command = FireCommand.create(tank.id, 20)
+	
+	# When: Fire command is executed
+	var events = CommandHandler.execute_command(game_state, command)
+	
+	# Then: Bullet should spawn at 4th unit (3 tiles ahead = y+3)
+	# Expected position: (10, 13) for SOUTH direction
+	var all_bullets = game_state.get_all_bullets()
+	assert_eq(all_bullets.size(), 1, "Exactly one bullet should be spawned")
+	var bullet = all_bullets[0]
+	assert_eq(bullet.position.x, 10, "Bullet X position should match tank X (10)")
+	assert_eq(bullet.position.y, 13, "Bullet Y position should be 3 tiles ahead (10 + 3 = 13)")
+
+func test_given_tank_firing_west_when_fire_command_executed_then_bullet_spawns_at_correct_offset():
+	# Given: Tank at (10, 10) facing WEST (LEFT)
+	var game_state = create_game_state_with_player_tank()
+	var tank = game_state.get_player_tanks()[0]
+	tank.position = Position.create(10, 10)
+	tank.direction = Direction.create(Direction.LEFT)
+	var command = FireCommand.create(tank.id, 20)
+	
+	# When: Fire command is executed
+	var events = CommandHandler.execute_command(game_state, command)
+	
+	# Then: Bullet should spawn at 4th unit (3 tiles ahead = x-3)
+	# Expected position: (7, 10) for WEST direction
+	var all_bullets = game_state.get_all_bullets()
+	assert_eq(all_bullets.size(), 1, "Exactly one bullet should be spawned")
+	var bullet = all_bullets[0]
+	assert_eq(bullet.position.x, 7, "Bullet X position should be 3 tiles ahead (10 - 3 = 7)")
+	assert_eq(bullet.position.y, 10, "Bullet Y position should match tank Y (10)")
