@@ -10,6 +10,8 @@ GUT_PRE_HOOK ?= res://tests/hooks/pre_run_hook.gd
 VERBOSE ?= 0
 QUIET ?= 0
 LOG_OUTPUT ?= 0
+MAKE_VERBOSE := $(if $(filter environment,$(origin VERBOSE)),0,$(VERBOSE))
+MAKE_LOG_OUTPUT := $(if $(filter environment,$(origin LOG_OUTPUT)),0,$(LOG_OUTPUT))
 LOG_DIR := .godot/logs
 
 .DEFAULT_GOAL := help
@@ -18,7 +20,7 @@ LOG_DIR := .godot/logs
 # Args: $(1)=command, $(2)=logfile, $(3)=error_pattern, $(4)=exclude_pattern, $(5)=success_msg
 define run_godot_check
 	@mkdir -p $(LOG_DIR)
-	@if [ "$(VERBOSE)" = "1" ]; then \
+	@if [ "$(MAKE_VERBOSE)" = "1" ]; then \
 		$(1) 2>&1 | tee $(LOG_DIR)/$(2); \
 		if grep -E "$(3)" $(LOG_DIR)/$(2) $(if $(4),| grep -v "$(4)",) > /dev/null; then \
 			echo ""; \
@@ -37,7 +39,7 @@ define run_godot_check
 			fi; \
 			exit 1; \
 		fi; \
-		if [ "$(VERBOSE)" != "1" ]; then \
+		if [ "$(MAKE_VERBOSE)" != "1" ]; then \
 			echo "✅ $(5)"; \
 		else \
 			echo "✅ $(5)"; \
@@ -83,7 +85,7 @@ test: precheck
 	fi; \
 	run_gut() { \
 		cmd=$$1; \
-		if [ "$(VERBOSE)" = "1" ] || [ "$(LOG_OUTPUT)" = "1" ]; then \
+		if [ "$(MAKE_VERBOSE)" = "1" ] || [ "$(MAKE_LOG_OUTPUT)" = "1" ]; then \
 			eval "$$cmd" 2>&1 | tee "$$logfile"; \
 		else \
 			eval "$$cmd" > "$$logfile" 2>&1; \
@@ -103,7 +105,7 @@ test: precheck
 		cat "$$logfile"; \
 		exit $$status; \
 	fi; \
-	if [ "$(VERBOSE)" != "1" ] && [ "$(LOG_OUTPUT)" != "1" ]; then \
+	if [ "$(MAKE_VERBOSE)" != "1" ] && [ "$(MAKE_LOG_OUTPUT)" != "1" ]; then \
 		if [ "$(QUIET)" = "1" ]; then \
 			echo ""; \
 			grep -nE "ERROR|SCRIPT ERROR|Parse Error|Compile Error" "$$logfile" || true; \
