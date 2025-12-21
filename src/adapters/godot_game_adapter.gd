@@ -41,8 +41,9 @@ signal score_changed(score: int)
 var game_state: GameState
 var game_loop: GameLoop
 
-## Input handler
-var input_adapter: InputAdapter
+## Input handler (can be swapped for remote/server command providers)
+var input_adapter
+var command_provider
 
 ## Tracking dictionaries for entity lifecycle
 var tracked_tanks: Dictionary # tank_id -> {position, health, direction}
@@ -63,6 +64,7 @@ func initialize(p_game_state: GameState) -> void:
 	game_loop = GameLoop.new()
 	game_loop.set_ticks_per_second(LOGIC_TPS)
 	input_adapter = InputAdapter.new()
+	command_provider = input_adapter
 	tracked_tanks = {}
 	tracked_bullets = {}
 	tracked_lives = game_state.player_lives
@@ -82,8 +84,8 @@ func _physics_process(_delta: float) -> void:
 	
 	# 1. Gather input commands
 	var commands: Array = []
-	if player_tank_id != "" and game_state.get_tank(player_tank_id) != null:
-		commands = input_adapter.get_commands_for_frame(player_tank_id, game_state.frame)
+	if player_tank_id != "" and game_state.get_tank(player_tank_id) != null and command_provider and command_provider.has_method("get_commands_for_frame"):
+		commands = command_provider.get_commands_for_frame(player_tank_id, game_state.frame)
 	
 	# 2. Process frame in domain (pure logic)
 	var events = game_loop.process_frame(game_state, commands, _delta)
@@ -249,6 +251,10 @@ func direction_to_rotation(direction: Direction) -> float:
 ## Set the player tank ID for input processing
 func set_player_tank(tank_id: String) -> void:
 	player_tank_id = tank_id
+
+## Swap the command provider (e.g., remote/network source)
+func set_command_provider(provider) -> void:
+	command_provider = provider
 
 ## Get current frame number
 func get_current_frame() -> int:
