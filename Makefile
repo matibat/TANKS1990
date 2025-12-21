@@ -75,6 +75,10 @@ test: precheck
 	@mkdir -p $(LOG_DIR)
 	@suite=$${SUITE:-all}; \
 	pattern=$${PATTERN:-}; \
+	flag_verbose=$${VERBOSE:-0}; \
+	flag_quiet=$${QUIET:-0}; \
+	flag_logs=$${LOG_OUTPUT:-0}; \
+	echo "Flags: VERBOSE=$$flag_verbose QUIET=$$flag_quiet LOG_OUTPUT=$$flag_logs"; \
 	logdir=$(LOG_DIR); \
 	logfile=$$(mktemp "$${logdir}/gut-test.XXXXXX.log"); \
 	trap 'rm -f "$$logfile"' EXIT; \
@@ -116,19 +120,26 @@ test: precheck
 		exit $$status; \
 	fi; \
 	echo ""; \
+		total=$$(grep "^Tests" "$$logfile" | awk '{print $$NF}' | head -n1); \
+		total=$${total:-0}; \
+		passing=$$(grep "^Passing Tests" "$$logfile" | awk '{print $$NF}' | head -n1); \
+		passing=$${passing:-0}; \
 	if [ "$(MAKE_VERBOSE)" = "1" ]; then \
 		echo "✅ All tests passed!"; \
 	elif [ "$(MAKE_LOG_OUTPUT)" = "1" ]; then \
 		echo "✅ All tests passed! Full output:"; \
 		cat "$$logfile"; \
-	elif [ "$(QUIET)" = "1" ]; then \
-		total=$$(grep "^Tests" "$$logfile" | awk '{print $$NF}' | head -n1 || echo "0"); \
-		passing=$$(grep "^Passing Tests" "$$logfile" | awk '{print $$NF}' | head -n1 || echo "0"); \
-		printf "✅ Tests passed: %s/%s\n" "$$passing" "$$total"; \
 	else \
-		grep -E "WARNING:|Deprecated" "$$logfile" || true; \
-		total=$$(grep "^Tests" "$$logfile" | awk '{print $$NF}' | head -n1 || echo "0"); \
-		passing=$$(grep "^Passing Tests" "$$logfile" | awk '{print $$NF}' | head -n1 || echo "0"); \
+		if [ "$(QUIET)" != "1" ]; then \
+			grep -E "WARNING:|Deprecated" "$$logfile" || true; \
+		fi; \
+		if [ -n "$$pattern" ] && [ "$$total" -eq 0 ]; then \
+			echo ""; \
+			echo "⚠️ Pattern '$$pattern' matched no tests."; \
+			echo "   PATTERN filters case-sensitive substrings of GUT test names (e.g., PATTERN=test_game_loop)."; \
+		fi; \
+		printf "Total registered tests: %s\n" "$$total"; \
+		printf "Passing tests: %s\n" "$$passing"; \
 		printf "✅ Tests passed: %s/%s\n" "$$passing" "$$total"; \
 	fi
 
