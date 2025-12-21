@@ -78,6 +78,28 @@ func _ready() -> void:
 	# Adapter should be initialized externally via initialize()
 	set_physics_process(false)
 
+## Capture input events and buffer them for next frame processing
+## This prevents input drops between game ticks
+func _input(event: InputEvent) -> void:
+	if input_adapter == null:
+		return
+	
+	# Only capture key press events (not releases)
+	if event is InputEventKey and event.pressed and not event.echo:
+		var timestamp = Time.get_ticks_msec()
+		
+		# Check if event matches any of our game actions
+		if event.is_action("move_up"):
+			input_adapter.capture_action("move_up", timestamp)
+		elif event.is_action("move_down"):
+			input_adapter.capture_action("move_down", timestamp)
+		elif event.is_action("move_left"):
+			input_adapter.capture_action("move_left", timestamp)
+		elif event.is_action("move_right"):
+			input_adapter.capture_action("move_right", timestamp)
+		elif event.is_action("fire"):
+			input_adapter.capture_action("fire", timestamp)
+
 ## Process one physics frame (60 FPS)
 func _physics_process(_delta: float) -> void:
 	if game_state == null or game_loop == null:
