@@ -11,6 +11,8 @@ VERBOSE ?= 0
 QUIET ?= 0
 LOG_DIR := .godot/logs
 
+.DEFAULT_GOAL := help
+
 # Macro for running Godot checks with output control
 # Args: $(1)=command, $(2)=logfile, $(3)=error_pattern, $(4)=exclude_pattern, $(5)=success_msg
 define run_godot_check
@@ -55,9 +57,6 @@ check-import:
 check-compile:
 	@echo "Checking GDScript compilation..."
 	$(call run_godot_check,$(GODOT) --headless --script res://tests/hooks/compile_check.gd --quit,check-compile.log,SCRIPT ERROR|Parse Error|Compile Error,,All scripts compiled successfully)
-
-# Test runner: Unified command for all test scenarios
-.PHONY: test
 
 # Test runner: Unified command for all test scenarios
 .PHONY: test
