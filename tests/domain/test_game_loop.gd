@@ -27,7 +27,10 @@ var game_state: GameState
 var stage: StageState
 
 func before_each():
-	# Create a simple stage
+	_initialize_game_state()
+
+func _initialize_game_state() -> void:
+	# Ensure each test uses a fresh stage/game state
 	stage = StageState.create(1, 26, 26)
 	stage.set_base(Position.create(12, 24))
 	stage.add_player_spawn(Position.create(12, 20))
@@ -628,6 +631,7 @@ func test_given_player_bullet_hits_enemy_when_process_frame_then_enemy_takes_dam
 ## BDD: ACCEPTANCE - Given player and enemy bullets hit same terrain simultaneously When process_frame Then player bullet resolves first
 func test_given_player_and_enemy_bullets_hit_same_terrain_when_process_frame_then_player_bullet_resolves_first():
 	# Given: Player tank and enemy tank
+	_initialize_game_state()
 	var player = TankEntity.create("player1", TankEntity.Type.PLAYER, Position.create(10, 8), Direction.create(Direction.DOWN))
 	game_state.add_tank(player)
 	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC, Position.create(10, 12), Direction.create(Direction.UP))
@@ -681,6 +685,7 @@ func test_given_player_and_enemy_bullets_hit_same_terrain_when_process_frame_the
 ## BDD: ACCEPTANCE - Given multiple player bullets and enemy bullets When process_frame Then all player bullets resolve before enemy bullets
 func test_given_multiple_player_and_enemy_bullets_when_process_frame_then_player_bullets_resolve_first():
 	# Given: Player and enemy tanks
+	_initialize_game_state()
 	var player = TankEntity.create("player1", TankEntity.Type.PLAYER, Position.create(5, 5), Direction.create(Direction.DOWN))
 	game_state.add_tank(player)
 	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC, Position.create(15, 15), Direction.create(Direction.UP))
