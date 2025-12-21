@@ -28,6 +28,9 @@ tests/
 │   ├── entities/        # Entity behavior tests
 │   ├── services/        # Domain service tests
 │   ├── value_objects/   # Value object tests
+│   │   ├── test_input_buffer.gd      # Input buffering (7 tests)
+│   │   ├── test_tank_hitbox.gd       # Collision hitbox (6 tests)
+│   │   └── [other value objects...]
 │   └── aggregates/      # Game state tests
 │
 ├── integration/         # 9 tests - Component interactions
@@ -35,8 +38,10 @@ tests/
 │   ├── test_game_loop_integration.gd
 │   └── test_adapter_sync.gd
 │
-├── unit/                # Unit tests (legacy 2D code)
-│   └── [2D scene tests]
+├── unit/                # Unit tests (adapters & legacy)
+│   ├── adapters/
+│   │   └── test_input_adapter.gd    # Input system integration (20+ tests)
+│   └── [legacy 2D scene tests]
 │
 └── hooks/               # Test utilities
     ├── pre_run_hook.gd  # Test setup
@@ -67,7 +72,32 @@ make test SUITE=domain PATTERN=test_tank_entity
 
 # Collision service tests
 make test SUITE=domain PATTERN=test_collision_service
+
+# Game mechanics tests (input, hitbox, combat)
+make test PATTERN=test_input_buffer
+make test PATTERN=test_tank_hitbox
+make test SUITE=unit PATTERN=test_input_adapter
 ```
+
+**Game Mechanics Test Coverage:**
+
+See [GAME_MECHANICS.md](GAME_MECHANICS.md) for implementation details of these features.
+
+- **Input System** (`test_input_buffer.gd`): 7 tests
+  - Buffer storage and retrieval
+  - Duplicate action handling
+  - Clear and empty checks
+  - Serialization/deserialization
+
+- **Collision System** (`test_tank_hitbox.gd`): 6 tests
+  - Direction-aware hitbox calculation
+  - 4×3 tile occupancy (excludes 4th visual unit)
+  - Position containment checks
+
+- **Input Adapter** (`test_input_adapter.gd`): 20+ tests
+  - Event-based capture integration
+  - Command conversion
+  - Buffer lifecycle management
 
 **Test Structure** (BDD Style):
 

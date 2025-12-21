@@ -30,6 +30,8 @@ bash scripts/validate-3d-gameplay.sh
 - **Space** or **Enter** - Fire
 - **P** or **Escape** - Pause
 
+**Input System:** Uses buffered input capture to prevent keypress drops. See [GAME_MECHANICS.md](GAME_MECHANICS.md#input-system) for technical details.
+
 ## What You'll See
 
 1. **Gray arena floor** (26x26 grid)

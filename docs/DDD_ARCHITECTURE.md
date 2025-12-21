@@ -59,7 +59,9 @@ src/
 │   │   ├── direction.gd
 │   │   ├── health.gd
 │   │   ├── velocity.gd
-│   │   └── tank_stats.gd
+│   │   ├── tank_stats.gd
+│   │   ├── input_buffer.gd    # Buffers input between ticks
+│   │   └── tank_hitbox.gd     # 4×3 collision hitbox
 │   ├── aggregates/            # Consistency boundaries
 │   │   ├── game_state.gd      # Root aggregate
 │   │   └── stage_state.gd
@@ -102,11 +104,25 @@ src/
 
 **Purpose**: Primitives with business meaning and validation.
 
+**Core Value Objects:**
+
 - `Position(x: int, y: int)` - Tile coordinates
 - `Direction(UP/DOWN/LEFT/RIGHT)` - Cardinal directions
 - `Health(current: int, maximum: int)` - HP with max constraint
 - `Velocity(dx: int, dy: int)` - Movement speed per frame
 - `TankStats(speed, fire_rate, armor, bullet_speed)` - Tank capabilities
+
+**Gameplay Systems Value Objects:**
+
+- `InputBuffer` - Buffers player input actions between game ticks
+  - Prevents keypress drops during frame processing
+  - Event-based capture with timestamp storage
+  - See [GAME_MECHANICS.md](GAME_MECHANICS.md#input-system) for details
+
+- `TankHitbox` - Represents tank collision area (4 wide × 3 long)
+  - Direction-aware hitbox rotation
+  - Critical: 4th visual unit excluded from hitbox
+  - See [GAME_MECHANICS.md](GAME_MECHANICS.md#collision-system) for details
 
 **Key Properties**:
 
