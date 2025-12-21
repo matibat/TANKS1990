@@ -100,15 +100,15 @@ test: precheck
 		run_gut '$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK)' || status=$$?; \
 	fi; \
 	if [ $$status -ne 0 ]; then \
-		echo ""; \
 		if [ "$(MAKE_VERBOSE)" = "1" ] || [ "$(MAKE_LOG_OUTPUT)" = "1" ]; then \
+			echo ""; \
 			echo "❌ Tests failed (see output above)."; \
 			cat "$$logfile"; \
 		else \
-			tail -n 120 "$$logfile"; \
+			awk 'BEGIN {show=0} {if ($$0 ~ /Run Summary/) {if (prev_nonempty != "") print prev_nonempty; print; show=1; next} if (show) print; if ($$0 != "") prev_nonempty=$$0}' "$$logfile"; \
 		fi; \
 		exit $$status; \
-	fi;
+	fi; \
 	if [ "$(MAKE_VERBOSE)" != "1" ] && [ "$(MAKE_LOG_OUTPUT)" != "1" ]; then \
 		if [ "$(QUIET)" = "1" ]; then \
 			echo ""; \
