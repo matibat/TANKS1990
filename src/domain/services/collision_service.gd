@@ -17,6 +17,7 @@ const GameState = preload("res://src/domain/aggregates/game_state.gd")
 ## Check if tank and bullet collide
 ## Returns false if tank owns the bullet (can't hit own bullets)
 ## Returns false if tank is dead or bullet is inactive
+## Uses multi-tile hitbox (4×3 tiles) for collision detection
 static func check_tank_bullet_collision(tank: TankEntity, bullet: BulletEntity) -> bool:
 	# Dead tanks don't collide
 	if not tank.is_alive():
@@ -30,18 +31,21 @@ static func check_tank_bullet_collision(tank: TankEntity, bullet: BulletEntity) 
 	if tank.id == bullet.owner_id:
 		return false
 	
-	# Check position overlap
-	return tank.position.equals(bullet.position)
+	# Check if bullet position overlaps with any tile in tank's hitbox
+	var hitbox = tank.get_hitbox()
+	return hitbox.contains_position(bullet.position)
 
 ## Check if tank and terrain collide
 ## Returns true if tank is at position with impassable terrain
+## Uses multi-tile hitbox (4×3 tiles) for collision detection
 static func check_tank_terrain_collision(tank: TankEntity, terrain_cell: TerrainCell) -> bool:
-	# Check if positions match
-	if not tank.position.equals(terrain_cell.position):
+	# Check if terrain is passable for tank
+	if terrain_cell.is_passable_for_tank():
 		return false
 	
-	# Check if terrain is passable for tank
-	return not terrain_cell.is_passable_for_tank()
+	# Check if terrain position overlaps with any tile in tank's hitbox
+	var hitbox = tank.get_hitbox()
+	return hitbox.contains_position(terrain_cell.position)
 
 ## Check if bullet and terrain collide
 ## Returns true if bullet is at position with impassable terrain for bullets
@@ -55,13 +59,21 @@ static func check_bullet_terrain_collision(bullet: BulletEntity, terrain_cell: T
 
 ## Check if two tanks collide
 ## Returns false if either tank is dead
+## Uses multi-tile hitbox (4×3 tiles) for collision detection
 static func check_tank_tank_collision(tank1: TankEntity, tank2: TankEntity) -> bool:
 	# Dead tanks don't collide
 	if not tank1.is_alive() or not tank2.is_alive():
 		return false
 	
-	# Check position overlap
-	return tank1.position.equals(tank2.position)
+	# Check if any tile in tank1's hitbox overlaps with any tile in tank2's hitbox
+	var hitbox1 = tank1.get_hitbox()
+	var hitbox2 = tank2.get_hitbox()
+	
+	for tile in hitbox1.get_occupied_tiles():
+		if hitbox2.contains_position(tile):
+			return true
+	
+	return false
 
 ## Check if bullet and base collide
 ## Returns false if bullet is inactive or base is destroyed
@@ -102,6 +114,7 @@ static func is_position_blocked_for_tank(stage: StageState, pos: Position, ignor
 ## Check if position is occupied by a tank
 ## ignore_tank_id allows checking if tank can stay at its current position
 ## Dead tanks don't occupy positions
+## Uses multi-tile hitbox (4×3 tiles) for collision detection
 static func is_position_occupied_by_tank(game_state: GameState, pos: Position, ignore_tank_id) -> bool:
 	for tank_id in game_state.tanks:
 		# Skip ignored tank
@@ -114,8 +127,9 @@ static func is_position_occupied_by_tank(game_state: GameState, pos: Position, i
 		if not tank.is_alive():
 			continue
 		
-		# Check if tank is at position
-		if tank.position.equals(pos):
+		# Check if position is within tank's hitbox
+		var hitbox = tank.get_hitbox()
+		if hitbox.contains_position(pos):
 			return true
 	
 	return false

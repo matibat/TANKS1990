@@ -9,6 +9,7 @@ const Position = preload("res://src/domain/value_objects/position.gd")
 const Direction = preload("res://src/domain/value_objects/direction.gd")
 const Health = preload("res://src/domain/value_objects/health.gd")
 const TankStats = preload("res://src/domain/value_objects/tank_stats.gd")
+const TankHitbox = preload("res://src/domain/value_objects/tank_hitbox.gd")
 
 ## Tank type enum
 enum Type {
@@ -128,6 +129,11 @@ func move_to(new_position: Position) -> void:
 ## Stop tank movement
 func stop_moving() -> void:
 	is_moving = false
+
+## Get tank hitbox (multi-tile collision area)
+## Returns TankHitbox value object representing 4×3 occupied tiles
+func get_hitbox():
+	return TankHitbox.create(position, direction)
 
 ## Serialize to dictionary
 func to_dict() -> Dictionary:
