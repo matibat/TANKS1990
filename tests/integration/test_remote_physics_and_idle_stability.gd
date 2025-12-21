@@ -245,9 +245,9 @@ func test_given_terrain_tile_in_front_of_tank_when_bullet_fires_then_terrain_is_
 	player_entity.cooldown_frames = 0
 	player_entity.set_invulnerable(0)
 	
-	# Add terrain tile in front of tank (tank at ~12,20 facing UP, so terrain at 12,19)
+	# Add terrain tile 5 tiles ahead (tank at ~12,20 facing UP, bullet spawns at y-3, so terrain at 12,15 to ensure hit)
 	var tank_pos = player_entity.position
-	var terrain_pos = Position.create(tank_pos.x, tank_pos.y - 1)
+	var terrain_pos = Position.create(tank_pos.x, tank_pos.y - 5)
 	var terrain_cell = TerrainCell.create(terrain_pos, TerrainCell.CellType.BRICK)
 	game_root.adapter.game_state.stage.add_terrain_cell(terrain_cell)
 	

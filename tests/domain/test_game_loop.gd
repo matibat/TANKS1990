@@ -14,6 +14,7 @@ const Position = preload("res://src/domain/value_objects/position.gd")
 const Direction = preload("res://src/domain/value_objects/direction.gd")
 const MoveCommand = preload("res://src/domain/commands/move_command.gd")
 const FireCommand = preload("res://src/domain/commands/fire_command.gd")
+const AIService = preload("res://src/domain/services/ai_service.gd")
 const TankMovedEvent = preload("res://src/domain/events/tank_moved_event.gd")
 const BulletMovedEvent = preload("res://src/domain/events/bullet_moved_event.gd")
 const CollisionEvent = preload("res://src/domain/events/collision_event.gd")
@@ -508,24 +509,28 @@ func test_given_large_delta_when_process_frame_then_consumes_all_ready_ticks_onc
 
 ## Phase 2.4: Game Loop Integration Tests
 func test_given_enemy_tanks_when_process_frame_then_ai_commands_executed():
-	# Given: Enemy tank and player tank
+	# Given: Enemy tank and player tank (positioned with clear line of sight within map bounds)
 	var player = TankEntity.create("player1", TankEntity.Type.PLAYER,
-		Position.create(10, 10), Direction.create(Direction.UP))
+		Position.create(12, 10), Direction.create(Direction.UP))
 	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC,
-		Position.create(10, 15), Direction.create(Direction.UP))
+		Position.create(12, 16), Direction.create(Direction.UP))
+	
+	# Ensure enemy can fire immediately (no cooldown) and clear AI state
+	enemy.cooldown_frames = 0
+	AIService.clear_direction_state(enemy.id)
 	
 	game_state.add_tank(player)
 	game_state.add_tank(enemy)
 	
-	var initial_dir = enemy.direction.value
+	var initial_pos_x = enemy.position.x
+	var initial_pos_y = enemy.position.y
 	
 	# When: Process multiple frames (AI should eventually act)
 	for i in range(10):
 		var events = GameLoop.process_frame_static(game_state, [])
 	
 	# Then: Enemy should have made some AI decision (moved or fired)
-	# This will fail until AI integration is complete
-	var moved = enemy.position.x != 10 or enemy.position.y != 15
+	var moved = enemy.position.x != initial_pos_x or enemy.position.y != initial_pos_y
 	var fired = game_state.get_all_bullets().size() > 0
 	assert_true(moved or fired, "Enemy should have performed AI action (move or fire)")
 
@@ -630,11 +635,11 @@ func test_given_player_bullet_hits_enemy_when_process_frame_then_enemy_takes_dam
 
 ## BDD: ACCEPTANCE - Given player and enemy bullets hit same terrain simultaneously When process_frame Then player bullet resolves first
 func test_given_player_and_enemy_bullets_hit_same_terrain_when_process_frame_then_player_bullet_resolves_first():
-	# Given: Player tank and enemy tank
+	# Given: Player tank and enemy tank (positioned away from terrain)
 	_initialize_game_state()
-	var player = TankEntity.create("player1", TankEntity.Type.PLAYER, Position.create(10, 8), Direction.create(Direction.DOWN))
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER, Position.create(5, 5), Direction.create(Direction.UP))
 	game_state.add_tank(player)
-	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC, Position.create(10, 12), Direction.create(Direction.UP))
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC, Position.create(15, 15), Direction.create(Direction.UP))
 	game_state.add_tank(enemy)
 	
 	# Given: Brick terrain at (10, 10) with 1 health
