@@ -152,6 +152,32 @@ test: precheck
 		printf "✅ Tests passed: %s/%s\n" "$$passing" "$$total"; \
 	fi
 
+# Add support for running a single test script
+.PHONY: test-script
+
+test-script: precheck
+	@if [ -z "$(SCRIPT)" ]; then \
+		echo "❌ Error: SCRIPT parameter required"; \
+		echo "Usage: make test-script SCRIPT=<path_to_test_script.gd>"; \
+		echo "Example: make test-script SCRIPT=tests/domain/test_tank_hitbox.gd"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(SCRIPT)" ]; then \
+		echo "❌ Error: Test script '$(SCRIPT)' not found"; \
+		exit 1; \
+	fi
+	@echo "Running single test script $(SCRIPT)..."
+	@mkdir -p $(LOG_DIR)
+	logfile=$$(mktemp "$(LOG_DIR)/gut-test-script.XXXXXX.log"); \
+	trap 'rm -f "$$logfile"' EXIT; \
+	$(GODOT) --headless -s $(GUT_SCRIPT) -gtest=$(SCRIPT) $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK) > "$$logfile" 2>&1 || { \
+		cat "$$logfile"; \
+		echo "❌ Test script $(SCRIPT) failed."; \
+		exit 1; \
+	}; \
+	cat "$$logfile"; \
+	echo "✅ Test script $(SCRIPT) passed."
+
 # Legacy aliases for backward compatibility (all use unified test command)
 .PHONY: test-unit test-integration test-performance test-domain
 
