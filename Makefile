@@ -6,48 +6,55 @@ GUT_SCRIPT := addons/gut/gut_cmdln.gd
 GUT_FLAGS ?= -gexit
 GUT_PRE_HOOK ?= res://tests/hooks/pre_run_hook.gd
 
-# Early-fail: Check assets and compilation before running tests
-.PHONY: precheck check-only check-import check-compile
+# Verbosity control
+VERBOSE ?= 0
+QUIET ?= 0
+LOG_DIR := .godot/logs
 
-precheck: check-only check-import check-compile
-	@echo "✅ All pre-checks passed"
-
-check-only:
-	@echo "Checking assets and project validity..."
-	@$(GODOT) --headless --check-only --quit 2>&1 | tee /tmp/check-only.log
-	@if grep -q "ERROR\|SCRIPT ERROR" /tmp/check-only.log; then \
-		echo ""; \
-		echo "❌ Asset or project errors detected. Fix before proceeding."; \
-		rm -f /tmp/check-only.log; \
-		exit 1; \
+# Macro for running Godot checks with output control
+# Args: $(1)=command, $(2)=logfile, $(3)=error_pattern, $(4)=exclude_pattern, $(5)=success_msg
+define run_godot_check
+	@mkdir -p $(LOG_DIR)
+	@if [ "$(VERBOSE)" = "1" ]; then \
+		$(1) 2>&1 | tee $(LOG_DIR)/$(2); \
+		if grep -E "$(3)" $(LOG_DIR)/$(2) $(if $(4),| grep -v "$(4)",) > /dev/null; then \
+			echo ""; \
+			echo "❌ $(5) failed. See output above."; \
+			exit 1; \
+		fi; \
+	else \
+		$(1) > $(LOG_DIR)/$(2) 2>&1; \
+		if grep -E "$(3)" $(LOG_DIR)/$(2) $(if $(4),| grep -v "$(4)",) > /dev/null; then \
+			echo ""; \
+			echo "❌ $(5) failed. Full output:"; \
+			if [ "$(QUIET)" = "1" ]; then \
+				grep -E "ERROR|SCRIPT ERROR|Parse Error|Compile Error" $(LOG_DIR)/$(2) || cat $(LOG_DIR)/$(2); \
+			else \
+				cat $(LOG_DIR)/$(2); \
+			fi; \
+			exit 1; \
+		fi; \
+		if [ "$(VERBOSE)" != "1" ]; then \
+			echo "✅ $(5)"; \
+		else \
+			echo "✅ $(5)"; \
+		fi; \
 	fi
-	@rm -f /tmp/check-only.log
-	@echo "✅ Assets and project valid"
+endef
+
+# Early-fail: Check assets and compilation before running tests
+.PHONY: precheck check-import check-compile
+
+precheck: check-import check-compile
+	@echo "✅ All pre-checks passed"
 
 check-import:
 	@echo "Importing assets..."
-	@$(GODOT) --headless --import --quit 2>&1 | tee /tmp/check-import.log
-	@if grep -E "SCRIPT ERROR|Parse Error|Compile Error" /tmp/check-import.log | grep -v "RID allocations\|resources still in use\|ObjectDB instances leaked" > /dev/null; then \
-		echo ""; \
-		echo "❌ Import errors detected. Fix before proceeding."; \
-		rm -f /tmp/check-import.log; \
-		exit 1; \
-	fi
-	@rm -f /tmp/check-import.log
-	@echo "✅ Assets imported successfully (Godot headless resource warnings ignored)"
+	$(call run_godot_check,$(GODOT) --headless --import --quit,check-import.log,SCRIPT ERROR|Parse Error|Compile Error,RID allocations|resources still in use|ObjectDB instances leaked,Assets imported successfully)
 
 check-compile:
 	@echo "Checking GDScript compilation..."
-	@$(GODOT) --headless --script res://tests/hooks/compile_check.gd --quit 2>&1 | tee /tmp/check-compile.log
-	@if grep -q "SCRIPT ERROR\|Parse Error\|Compile Error" /tmp/check-compile.log; then \
-		echo ""; \
-		echo "❌ Compilation errors detected. Fix before running tests."; \
-		cat /tmp/check-compile.log; \
-		rm -f /tmp/check-compile.log; \
-		exit 1; \
-	fi
-	@rm -f /tmp/check-compile.log
-	@echo "✅ All scripts compiled successfully"
+	$(call run_godot_check,$(GODOT) --headless --script res://tests/hooks/compile_check.gd --quit,check-compile.log,SCRIPT ERROR|Parse Error|Compile Error,,All scripts compiled successfully)
 
 # Test runner: Unified command for all test scenarios
 .PHONY: test
@@ -72,10 +79,22 @@ test: precheck
 	fi; \
 	if [ -n "$$pattern" ]; then \
 		echo "Running tests matching '$$pattern' in $$test_dir..."; \
-		$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir -gselect=$$pattern $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK); \
+		if [ "$(QUIET)" = "1" ]; then \
+			$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir -gselect=$$pattern $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK) 2>&1 | grep -vE "WARNING:|Godot Engine|^\[.*\]|^GUT version:|^Godot version:|using \[.*\] for temporary"; \
+		elif [ "$(VERBOSE)" = "1" ]; then \
+			$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir -gselect=$$pattern $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK); \
+		else \
+			$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir -gselect=$$pattern $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK) 2>&1 | grep -vE "WARNING:"; \
+		fi; \
 	else \
 		echo "Running all tests in $$test_dir..."; \
-		$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK); \
+		if [ "$(QUIET)" = "1" ]; then \
+			$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK) 2>&1 | grep -vE "WARNING:|Godot Engine|^\[.*\]|^GUT version:|^Godot version:|using \[.*\] for temporary"; \
+		elif [ "$(VERBOSE)" = "1" ]; then \
+			$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK); \
+		else \
+			$(GODOT) --headless -s $(GUT_SCRIPT) -gdir=$$test_dir $(GUT_FLAGS) -gpre_run_script=$(GUT_PRE_HOOK) 2>&1 | grep -vE "WARNING:"; \
+		fi; \
 	fi
 
 # Legacy aliases for backward compatibility (all use unified test command)
@@ -95,17 +114,90 @@ test-domain:
 
 
 # Development helpers
-.PHONY: help clean demo3d edit validate
+.PHONY: help clean demo3d edit validate check-script validate-script check-errors
+
+# Script-level development commands
+# Usage:
+#   make check-script FILE=src/domain/entities/tank_entity.gd
+#   make validate-script FILE=tests/domain/test_game_loop.gd
+#   make check-errors FILE=scenes3d/tank_3d.gd
+
+check-script:
+	@if [ -z "$(FILE)" ]; then \
+		echo "❌ Error: FILE parameter required"; \
+		echo "Usage: make check-script FILE=<path_to_file.gd>"; \
+		echo "Example: make check-script FILE=src/domain/entities/tank_entity.gd"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(FILE)" ]; then \
+		echo "❌ Error: File '$(FILE)' not found"; \
+		exit 1; \
+	fi
+	@echo "Checking syntax of $(FILE)..."
+	@$(GODOT) --headless --check-only --script $(FILE) 2>&1 | tee /tmp/check-script.log
+	@if grep -q "ERROR\|SCRIPT ERROR\|Parse Error" /tmp/check-script.log; then \
+		echo ""; \
+		echo "❌ Syntax errors detected in $(FILE)"; \
+		rm -f /tmp/check-script.log; \
+		exit 1; \
+	fi
+	@rm -f /tmp/check-script.log
+	@echo "✅ $(FILE) syntax is valid"
+
+validate-script:
+	@if [ -z "$(FILE)" ]; then \
+		echo "❌ Error: FILE parameter required"; \
+		echo "Usage: make validate-script FILE=<path_to_file.gd>"; \
+		echo "Example: make validate-script FILE=tests/domain/test_game_loop.gd"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(FILE)" ]; then \
+		echo "❌ Error: File '$(FILE)' not found"; \
+		exit 1; \
+	fi
+	@echo "Validating script $(FILE)..."
+	@$(GODOT) --headless --script $(FILE) 2>&1 | tee /tmp/validate-script.log
+	@if grep -q "SCRIPT ERROR\|Parse Error\|Compile Error" /tmp/validate-script.log; then \
+		echo ""; \
+		echo "❌ Validation errors detected in $(FILE)"; \
+		cat /tmp/validate-script.log; \
+		rm -f /tmp/validate-script.log; \
+		exit 1; \
+	fi
+	@rm -f /tmp/validate-script.log
+	@echo "✅ $(FILE) validated successfully"
+
+check-errors:
+	@if [ -z "$(FILE)" ]; then \
+		echo "❌ Error: FILE parameter required"; \
+		echo "Usage: make check-errors FILE=<path_to_file.gd>"; \
+		echo "Example: make check-errors FILE=scenes3d/tank_3d.gd"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(FILE)" ]; then \
+		echo "❌ Error: File '$(FILE)' not found"; \
+		exit 1; \
+	fi
+	@echo "Checking for detailed errors in $(FILE)..."
+	@$(GODOT) --headless --check-only --script $(FILE) 2>&1 | tee /tmp/check-errors.log
+	@echo ""
+	@echo "Full error output for $(FILE):"
+	@cat /tmp/check-errors.log
+	@rm -f /tmp/check-errors.log
 
 help:
 	@echo "TANKS1990 - Makefile Commands"
 	@echo "=============================="
 	@echo ""
 	@echo "Pre-checks (run automatically before tests):"
-	@echo "  make precheck           - Run all pre-checks (assets + imports + compilation)"
-	@echo "  make check-only         - Check assets and project validity"
+	@echo "  make precheck           - Run all pre-checks (imports + compilation)"
 	@echo "  make check-import       - Import all assets"
 	@echo "  make check-compile      - Check GDScript compilation"
+	@echo ""
+	@echo "Output control flags (for check-import and check-compile):"
+	@echo "  VERBOSE=1               - Stream full Godot output with warnings and errors"
+	@echo "  QUIET=1                 - Show only errors with short success messages"
+	@echo "  Default                 - Show errors and warnings with short success messages"
 	@echo ""
 	@echo "Testing (unified interface):"
 	@echo "  make test                      - Run all tests"
@@ -125,6 +217,11 @@ help:
 	@echo "  make demo3d             - Open 3D demo scene in Godot editor"
 	@echo "  make edit               - Open project in Godot editor"
 	@echo ""
+	@echo "Script-level development:"
+	@echo "  make check-script FILE=<path>    - Check syntax of a single GDScript file"
+	@echo "  make validate-script FILE=<path> - Run validation on a single script"
+	@echo "  make check-errors FILE=<path>    - Show detailed errors for a file"
+	@echo ""
 	@echo "Quality:"
 	@echo "  make validate           - Run all pre-checks + all tests"
 	@echo "  make clean              - Clean temporary files"
@@ -134,6 +231,7 @@ help:
 	@echo "  make test SUITE=domain                 # Just domain tests"
 	@echo "  make test PATTERN=test_game_loop       # Tests matching pattern"
 	@echo "  make test SUITE=domain PATTERN=tank    # Domain tests with 'tank' in name"
+	@echo "  make check-script FILE=src/domain/entities/tank_entity.gd  # Check single file"
 	@echo "  make demo3d                            # See the 3D game!"
 
 demo3d:
@@ -151,6 +249,7 @@ validate: precheck test
 clean:
 	@echo "Cleaning temporary files..."
 	@rm -rf .godot/imported/.import/
+	@rm -rf $(LOG_DIR)
 	@rm -f .godot/uid_cache.bin~
 	@rm -f /tmp/check-*.log
 	@find . -name "*.log" -type f -delete
