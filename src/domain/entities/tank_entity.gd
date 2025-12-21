@@ -29,6 +29,7 @@ var direction: Direction
 var health: Health
 var stats: TankStats
 var cooldown_frames: int
+var invulnerability_frames: int
 var is_moving: bool
 var is_player: bool
 
@@ -40,6 +41,7 @@ static func create(p_id: String, p_tank_type: int, p_position: Position, p_direc
 	tank.position = p_position
 	tank.direction = p_direction
 	tank.cooldown_frames = 0
+	tank.invulnerability_frames = 0
 	tank.is_moving = false
 	
 	# Determine if player tank
@@ -82,6 +84,14 @@ func can_fire() -> bool:
 func can_move() -> bool:
 	return is_alive()
 
+## Check if tank is invulnerable (spawn protection)
+func is_invulnerable() -> bool:
+	return invulnerability_frames > 0
+
+## Set invulnerability frames (typically on spawn)
+func set_invulnerable(frames: int) -> void:
+	invulnerability_frames = frames
+
 ## Take damage
 func take_damage(amount: int) -> void:
 	health = health.take_damage(amount)
@@ -102,6 +112,8 @@ func fire() -> void:
 func update_cooldown() -> void:
 	if cooldown_frames > 0:
 		cooldown_frames -= 1
+	if invulnerability_frames > 0:
+		invulnerability_frames -= 1
 
 ## Get next position based on current direction and speed
 func get_next_position() -> Position:

@@ -30,6 +30,7 @@ func before_each():
 	# Create a simple stage
 	stage = StageState.create(1, 26, 26)
 	stage.set_base(Position.create(12, 24))
+	stage.add_player_spawn(Position.create(12, 20))
 	game_state = GameState.create(stage, 3)
 
 ## BDD: Given commands When process_frame Then executes commands
@@ -292,6 +293,60 @@ func test_given_bullet_hits_base_when_process_frame_then_base_damaged():
 	var collision_events = events.filter(func(e): return e is CollisionEvent)
 	assert_gt(collision_events.size(), 0, "CollisionEvent should be emitted")
 
+func test_given_player_destroyed_with_spare_life_when_process_frame_then_respawns_new_tank():
+	# Given: Player tank on field with an extra life in reserve
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER, Position.create(10, 10), Direction.create(Direction.UP))
+	game_state.add_tank(player)
+	game_state.player_lives = 2
+
+	# Given: Bullet that will destroy the player immediately
+	var bullet = BulletEntity.create("bullet1", "enemy", Position.create(10, 10), Direction.create(Direction.UP), 0, 1)
+	game_state.add_bullet(bullet)
+
+	# When: Process frame
+	var events = GameLoop.process_frame_static(game_state, [])
+
+	# Then: A new player is spawned and lives decrease
+	assert_eq(game_state.player_lives, 1, "Player lives should decrement after death")
+	var players = game_state.get_player_tanks()
+	assert_eq(players.size(), 1, "Player should respawn when lives remain")
+	assert_ne(players[0].id, player.id, "Respawned player should have a new id")
+
+func test_given_player_destroyed_without_lives_when_process_frame_then_game_over_event_and_no_respawn():
+	# Given: Player with no spare lives
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER, Position.create(8, 8), Direction.create(Direction.UP))
+	game_state.add_tank(player)
+	game_state.player_lives = 1
+
+	# Given: Bullet that will destroy the player immediately
+	var bullet = BulletEntity.create("bullet1", "enemy", Position.create(8, 8), Direction.create(Direction.UP), 0, 1)
+	game_state.add_bullet(bullet)
+
+	# When: Process frame
+	var events = GameLoop.process_frame_static(game_state, [])
+
+	# Then: Game over event emitted and no player remains
+	var game_over_events = events.filter(func(e): return e is GameOverEvent)
+	assert_eq(game_over_events.size(), 1, "GameOverEvent should be emitted when out of lives")
+	assert_eq(game_state.get_player_tanks().size(), 0, "No player should remain when out of lives")
+
+func test_given_enemy_destroyed_when_process_frame_then_score_increases():
+	# Given: Player and enemy occupying same tile with stationary bullet to ensure hit
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER, Position.create(5, 5), Direction.create(Direction.UP))
+	var enemy = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC, Position.create(5, 5), Direction.create(Direction.UP))
+	game_state.add_tank(player)
+	game_state.add_tank(enemy)
+	game_state.score = 0
+
+	var bullet = BulletEntity.create("bullet1", player.id, Position.create(5, 5), Direction.create(Direction.UP), 0, 1)
+	game_state.add_bullet(bullet)
+
+	# When: Process frame
+	var events = GameLoop.process_frame_static(game_state, [])
+
+	# Then: Score increases on enemy kill
+	assert_eq(game_state.score, 100, "Enemy kill should award score")
+
 ## ==========================================
 ## Phase 1.3: Tick-based Game Loop Tests
 ## ==========================================
@@ -467,3 +522,53 @@ func test_given_stage_start_when_process_frames_then_enemies_spawn_over_time():
 	# Then: At least some enemies should have spawned
 	assert_true(spawn_count > 0,
 		"Enemies should spawn over time (got %d spawns)" % spawn_count)
+
+## BDD: Given enemy bullet hits enemy tank When process_frame Then no damage (friendly fire prevention)
+func test_given_enemy_bullet_hits_enemy_tank_when_process_frame_then_no_friendly_fire():
+	# Given: Enemy tank at (10, 10)
+	var enemy_tank = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC, Position.create(10, 10), Direction.create(Direction.UP))
+	game_state.add_tank(enemy_tank)
+	
+	# Given: Another enemy tank shooting
+	var shooter = TankEntity.create("enemy2", TankEntity.Type.ENEMY_BASIC, Position.create(10, 8), Direction.create(Direction.DOWN))
+	game_state.add_tank(shooter)
+	
+	# Given: Enemy bullet (from enemy2) at position of enemy1
+	var bullet = BulletEntity.create("bullet1", "enemy2", Position.create(10, 10), Direction.create(Direction.DOWN), 0, 1)
+	game_state.add_bullet(bullet)
+	
+	var initial_health = enemy_tank.health.current
+	
+	# When: Process frame
+	GameLoop.process_frame_static(game_state, [])
+	
+	# Then: Enemy tank took NO damage (friendly fire prevented)
+	assert_eq(enemy_tank.health.current, initial_health, "Enemy tank should not take damage from friendly bullet")
+	
+	# Then: Bullet is still active (no collision)
+	assert_true(bullet.is_active, "Bullet should still be active (no friendly fire collision)")
+
+## BDD: Given player bullet hits enemy tank When process_frame Then enemy takes damage
+func test_given_player_bullet_hits_enemy_when_process_frame_then_enemy_takes_damage():
+	# Given: Enemy tank at (10, 10)
+	var enemy_tank = TankEntity.create("enemy1", TankEntity.Type.ENEMY_BASIC, Position.create(10, 10), Direction.create(Direction.UP))
+	game_state.add_tank(enemy_tank)
+	
+	# Given: Player tank shooting
+	var player = TankEntity.create("player1", TankEntity.Type.PLAYER, Position.create(10, 8), Direction.create(Direction.DOWN))
+	game_state.add_tank(player)
+	
+	# Given: Player bullet at position of enemy
+	var bullet = BulletEntity.create("bullet1", "player1", Position.create(10, 10), Direction.create(Direction.DOWN), 0, 1)
+	game_state.add_bullet(bullet)
+	
+	var initial_health = enemy_tank.health.current
+	
+	# When: Process frame
+	GameLoop.process_frame_static(game_state, [])
+	
+	# Then: Enemy tank took damage (no friendly fire, different teams)
+	assert_lt(enemy_tank.health.current, initial_health, "Enemy tank should take damage from player bullet")
+	
+	# Then: Bullet deactivated
+	assert_false(bullet.is_active, "Bullet should be deactivated after hit")

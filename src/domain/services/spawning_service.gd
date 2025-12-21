@@ -21,8 +21,11 @@ static func spawn_player_tank(game_state: GameState, spawn_index: int) -> TankEn
 	# Generate unique tank ID
 	var tank_id = game_state.generate_entity_id("player")
 	
-	# Create tank facing UP by default
+	# Create player tank facing UP by default
 	var tank = TankEntity.create(tank_id, TankEntity.Type.PLAYER, spawn_pos, Direction.create(Direction.UP))
+	
+	# Set spawn invulnerability (3 seconds at 60 FPS)
+	tank.set_invulnerable(180)
 	
 	return tank
 
@@ -38,6 +41,9 @@ static func spawn_enemy_tank(game_state: GameState, enemy_type: int, spawn_index
 	
 	# Create enemy tank facing DOWN by default
 	var tank = TankEntity.create(tank_id, enemy_type, spawn_pos, Direction.create(Direction.DOWN))
+	
+	# Set spawn invulnerability (3 seconds at 60 FPS)
+	tank.set_invulnerable(180)
 	
 	# Update stage enemy counts
 	game_state.stage.enemies_remaining -= 1

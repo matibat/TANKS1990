@@ -15,6 +15,7 @@ var last_position: Vector3 # Position at last logic tick
 var tick_progress: float = 0.0
 var movement_speed: float = 15.0 # Faster than tanks for bullets
 var use_interpolation: bool = true
+var _has_pending_motion: bool = false
 
 func _ready() -> void:
 	target_position = position
@@ -38,6 +39,7 @@ func move_to(new_position: Vector3) -> void:
 
 	target_position = new_position
 	tick_progress = 0.0
+	_has_pending_motion = use_interpolation
 
 	# If not using interpolation, snap immediately
 	if not use_interpolation:
@@ -65,8 +67,10 @@ func _physics_process(_delta: float) -> void:
 func set_tick_progress(progress: float) -> void:
 	if not use_interpolation:
 		return
-	# Avoid redundant lerp when bullet hasn't advanced this tick
-	if last_position.is_equal_approx(target_position):
+	if not _has_pending_motion:
 		return
 	tick_progress = clamp(progress, 0.0, 1.0)
 	position = last_position.lerp(target_position, tick_progress)
+	if is_equal_approx(tick_progress, 1.0):
+		_has_pending_motion = false
+		last_position = target_position

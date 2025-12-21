@@ -190,6 +190,8 @@ func _start_new_game() -> void:
 	
 	# Initialize adapter
 	adapter.initialize(game_state)
+	current_lives = game_state.player_lives
+	current_score = game_state.score
 	
 	# Connect adapter signals
 	_connect_adapter_signals()
@@ -292,6 +294,8 @@ func _connect_adapter_signals() -> void:
 	adapter.bullet_destroyed.connect(_on_bullet_destroyed)
 	adapter.stage_complete.connect(_on_stage_complete)
 	adapter.game_over.connect(_on_game_over)
+	adapter.lives_changed.connect(_on_lives_changed)
+	adapter.score_changed.connect(_on_score_changed)
 
 func _disconnect_adapter_signals() -> void:
 	if adapter == null:
@@ -307,6 +311,8 @@ func _disconnect_adapter_signals() -> void:
 		"bullet_destroyed": _on_bullet_destroyed,
 		"stage_complete": _on_stage_complete,
 		"game_over": _on_game_over,
+		"lives_changed": _on_lives_changed,
+		"score_changed": _on_score_changed,
 	}
 
 	for signal_name in connections.keys():
@@ -346,6 +352,7 @@ func _create_test_game_state() -> GameState:
 	
 	# Spawn player tank at first spawn position
 	var player_tank = SpawningService.spawn_player_tank(game_state, 0)
+	player_tank.set_invulnerable(180)  # 3 seconds at 60 FPS
 	game_state.add_tank(player_tank)
 	player_tank_id = player_tank.id
 	
@@ -376,6 +383,10 @@ func _on_tank_spawned(tank_id: String, position: Vector2, tank_type: int, direct
 	tank_node.tank_type = tank_type
 	tank_node.name = "Tank_" + tank_id
 	
+	# Set reference to domain entity for invulnerability checking
+	if adapter and adapter.game_state:
+		tank_node.tank_entity = adapter.game_state.get_tank(tank_id)
+	
 	# Set initial position and rotation
 	tank_node.position = world_pos
 	tank_node.rotation.y = rotation_y
@@ -385,7 +396,8 @@ func _on_tank_spawned(tank_id: String, position: Vector2, tank_type: int, direct
 	tank_nodes[tank_id] = tank_node
 	
 	# If this is the player tank, tell camera to track it
-	if tank_id == player_tank_id and tank_type == TankEntity.Type.PLAYER:
+	if tank_type == TankEntity.Type.PLAYER:
+		player_tank_id = tank_id
 		camera.set_player_tank(tank_node)
 		if DebugLog:
 			DebugLog.info("Camera tracking player tank", {"tank_id": tank_id})
@@ -466,12 +478,26 @@ func _on_stage_complete() -> void:
 	print("=== STAGE COMPLETE ===")
 	if DebugLog:
 		DebugLog.gameplay("Stage complete")
+	if _state_machine.transition_to(GameStateEnum.State.STAGE_COMPLETE):
+		_show_stage_complete()
 
 func _on_game_over(reason: String) -> void:
 	print("=== GAME OVER ===")
 	print("Reason: ", reason)
 	if DebugLog:
 		DebugLog.gameplay("Game over", {"reason": reason})
+	if _state_machine.transition_to(GameStateEnum.State.GAME_OVER):
+		_show_game_over()
+
+func _on_lives_changed(lives: int) -> void:
+	current_lives = lives
+	if hud:
+		hud.update_lives(current_lives)
+
+func _on_score_changed(score: int) -> void:
+	current_score = score
+	if hud:
+		hud.update_score(current_score)
 
 ## Coordinate Conversion
 

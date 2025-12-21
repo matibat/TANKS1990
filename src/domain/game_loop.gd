@@ -159,6 +159,13 @@ static func _move_bullets_and_handle_collisions(game_state: GameState) -> Array[
 					continue
 				if tank.id == bullet.owner_id:
 					continue
+				# Friendly fire prevention: bullets don't hit same team
+				var bullet_owner = game_state.get_tank(bullet.owner_id)
+				if bullet_owner and bullet_owner.is_player == tank.is_player:
+					continue  # Same team, skip collision
+				# Invulnerability: spawn-protected tanks don't take damage
+				if tank.is_invulnerable():
+					continue
 				if CollisionService.check_tank_bullet_collision(tank, bullet):
 					var old_health = tank.health.current
 					tank.take_damage(bullet.damage)

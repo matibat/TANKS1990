@@ -62,24 +62,22 @@ static func decide_action(enemy: TankEntity, game_state: GameState, delta: float
 	var profile = _get_ai_profile(enemy.tank_type)
 	var distance = _calculate_distance(enemy.position, nearest_player.position)
 	var aligned = _is_axis_aligned(enemy.position, nearest_player.position)
-	
-	# Shoot if lined up and ready
-	var shoot_range = profile["shoot_tiles"] * TILE_SIZE
-	if aligned and _is_facing_target(enemy, nearest_player.position) and can_shoot(enemy):
-		if distance <= shoot_range:
-			return FireCommand.create(enemy.id, game_state.frame)
 
-	# If aligned but not facing the player, turn toward them
-	if aligned and not _is_facing_target(enemy, nearest_player.position):
-		return _create_face_target_command(enemy, nearest_player.position, game_state.frame)
-	
-	# Chase when close enough
-	var chase_range = profile["chase_tiles"] * TILE_SIZE
-	if distance <= chase_range:
+	var shoot_range = profile["shoot_tiles"] * TILE_SIZE
+	var in_engagement = distance <= shoot_range
+
+	# Close the gap until we can shoot
+	if not in_engagement:
 		return _create_chase_command(enemy, nearest_player.position, game_state.frame)
-	
-	# Default to patrol
-	return _create_patrol_command(enemy, game_state.frame, profile)
+
+	# Inside engagement window: prioritize lining up and firing instead of crowding the player
+	if aligned:
+		if _is_facing_target(enemy, nearest_player.position) and can_shoot(enemy):
+			return FireCommand.create(enemy.id, game_state.frame)
+		return _create_face_target_command(enemy, nearest_player.position, game_state.frame)
+
+	# Not aligned yet: step toward an alignment axis but avoid over-closing beyond engagement range
+	return _create_alignment_step(enemy, nearest_player.position, game_state.frame)
 
 ## Update cooldowns for enemy tank
 static func update_cooldowns(enemy: TankEntity, delta: float) -> void:
@@ -125,6 +123,11 @@ static func _create_chase_command(enemy: TankEntity, target_pos: Position, frame
 ## Create command that turns tank to face aligned target axis
 static func _create_face_target_command(enemy: TankEntity, target_pos: Position, frame: int) -> Command:
 	var direction = _get_axis_facing_direction(enemy.position, target_pos)
+	return MoveCommand.create(enemy.id, direction, frame)
+
+## Create a small alignment step to line up shots without over-chasing
+static func _create_alignment_step(enemy: TankEntity, target_pos: Position, frame: int) -> Command:
+	var direction = _get_direction_toward(enemy.position, target_pos)
 	return MoveCommand.create(enemy.id, direction, frame)
 
 ## Calculate Euclidean distance between two positions

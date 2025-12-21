@@ -8,6 +8,7 @@ const TankEntity = preload("res://src/domain/entities/tank_entity.gd")
 ## Tank identity
 var tank_id: String = ""
 var tank_type: int = TankEntity.Type.PLAYER
+var tank_entity: TankEntity = null  # Reference to domain entity for invulnerability check
 
 ## Visual components
 @onready var body: CSGBox3D = $Body
@@ -21,12 +22,17 @@ var last_rotation: float
 var tick_progress: float = 0.0
 var movement_speed: float = 5.0
 var use_interpolation: bool = true # Enable smooth interpolation
+var _has_pending_motion: bool = false
+var _idle_time: float = 0.0
+var _base_turret_scale: Vector3
+var _idle_scale_pulse: float = 0.015
 
 func _ready() -> void:
 	target_position = position
 	target_rotation = rotation.y
 	last_position = position
 	last_rotation = rotation.y
+	_base_turret_scale = turret.scale
 	
 	# Set color based on tank type
 	_setup_visual()
@@ -67,6 +73,7 @@ func move_to(new_position: Vector3, new_rotation: float) -> void:
 	target_position = new_position
 	target_rotation = new_rotation
 	tick_progress = 0.0
+	_has_pending_motion = use_interpolation
 
 	# If not using interpolation, snap immediately
 	if not use_interpolation:
@@ -105,12 +112,35 @@ func _physics_process(_delta: float) -> void:
 	position = last_position.lerp(target_position, tick_progress)
 	rotation.y = lerp_angle(last_rotation, target_rotation, tick_progress)
 
+func _process(delta: float) -> void:
+	# Invulnerability flicker effect
+	if tank_entity and tank_entity.is_invulnerable():
+		var flicker_rate = 0.1  # Flicker every 0.1 seconds
+		visible = int(Time.get_ticks_msec() / (flicker_rate * 1000)) % 2 == 0
+	else:
+		visible = true
+	
+	# Idle animation: subtle turret breathing only when no motion is pending
+	if not use_interpolation:
+		return
+	if _has_pending_motion:
+		_idle_time = 0.0
+		turret.scale = _base_turret_scale
+		return
+	_idle_time += delta
+	var wobble = sin(_idle_time * TAU * 0.25) * _idle_scale_pulse
+	var scale_factor = 1.0 + wobble
+	turret.scale = _base_turret_scale * scale_factor
+
 func set_tick_progress(progress: float) -> void:
 	if not use_interpolation:
 		return
-	# If there is no new target, avoid tiny lerp jitter while idle
-	if last_position.is_equal_approx(target_position) and is_equal_approx(last_rotation, target_rotation):
+	if not _has_pending_motion:
 		return
 	tick_progress = clamp(progress, 0.0, 1.0)
 	position = last_position.lerp(target_position, tick_progress)
 	rotation.y = lerp_angle(last_rotation, target_rotation, tick_progress)
+	if is_equal_approx(tick_progress, 1.0):
+		_has_pending_motion = false
+		last_position = target_position
+		last_rotation = target_rotation

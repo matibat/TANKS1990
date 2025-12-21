@@ -33,6 +33,8 @@ signal bullet_moved(bullet_id: String, old_position: Vector2, new_position: Vect
 signal bullet_destroyed(bullet_id: String, position: Vector2)
 signal stage_complete()
 signal game_over(reason: String)
+signal lives_changed(lives: int)
+signal score_changed(score: int)
 
 ## Domain state
 var game_state: GameState
@@ -44,6 +46,8 @@ var input_adapter: InputAdapter
 ## Tracking dictionaries for entity lifecycle
 var tracked_tanks: Dictionary # tank_id -> {position, health, direction}
 var tracked_bullets: Dictionary # bullet_id -> {position}
+var tracked_lives: int = -1
+var tracked_score: int = -1
 
 ## Constants
 const TILE_SIZE: float = 16.0 # Pixels per tile (for 2D)
@@ -60,6 +64,8 @@ func initialize(p_game_state: GameState) -> void:
 	input_adapter = InputAdapter.new()
 	tracked_tanks = {}
 	tracked_bullets = {}
+	tracked_lives = game_state.player_lives
+	tracked_score = game_state.score
 	
 	# Enable physics processing for frame-based updates
 	set_physics_process(true)
@@ -86,6 +92,7 @@ func _physics_process(_delta: float) -> void:
 	
 	# 4. Sync domain state to presentation
 	sync_state_to_presentation()
+	_sync_meta()
 
 ## Sync domain state to presentation layer
 func sync_state_to_presentation() -> void:
@@ -102,6 +109,8 @@ func sync_state_to_presentation() -> void:
 func _sync_tanks() -> void:
 	for tank in game_state.get_all_tanks():
 		var tank_id = tank.id
+		if tank.is_player and (player_tank_id == "" or game_state.get_tank(player_tank_id) == null):
+			player_tank_id = tank_id
 		
 		# Check if this is a new tank
 		if not tracked_tanks.has(tank_id):
@@ -189,6 +198,17 @@ func _cleanup_removed_entities() -> void:
 	# Remove from tracking
 	for bullet_id in bullets_to_remove:
 		tracked_bullets.erase(bullet_id)
+
+## Sync meta values like lives and score
+func _sync_meta() -> void:
+	if game_state == null:
+		return
+	if tracked_lives != game_state.player_lives:
+		tracked_lives = game_state.player_lives
+		lives_changed.emit(tracked_lives)
+	if tracked_score != game_state.score:
+		tracked_score = game_state.score
+		score_changed.emit(tracked_score)
 
 ## Process domain events and emit corresponding Godot signals
 func _process_domain_events(events: Array) -> void:
